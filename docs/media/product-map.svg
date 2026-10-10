@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1140 432" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="product-map-title product-map-desc">
+      <title id="product-map-title">Sanduq Skills product map</title>
+      <desc id="product-map-desc">Three plugin bundles: dev-tools holds the user-manual core skill and four skills that extend it, the core uses illustrate from illustration-tools for diagrams when it is installed, and agent-tools holds delegate-task on its own.</desc>
+      <defs><style data-illustrate-export-fonts="true">@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <style>
+          svg { color: #4f6078; }
+          .bg, .mask { fill: #f6f8fc; }
+          .box { fill: #ffffff; stroke: #15233c; }
+          .core { fill: #e9effc; stroke: #2563eb; }
+          .zone { fill: rgba(21,35,60,0.03); stroke: #c7d2e2; }
+          .tag { fill: none; stroke: rgba(21,35,60,0.40); }
+          .rule { stroke: rgba(21,35,60,0.12); }
+          .ink { fill: #15233c; }
+          .muted { fill: #4f6078; }
+          .accent { fill: #2563eb; }
+          .lnk { color: #1d4ed8; }
+          .mk { fill: #4f6078; }
+          .mk-link { fill: #1d4ed8; }
+          .sans { font-family: system-ui, sans-serif; }
+          .mono { font-family: ui-monospace, monospace; }
+          @media (prefers-color-scheme: dark) {
+            svg { color: #b6c2d4; }
+            .bg, .mask { fill: #101827; }
+            .box { fill: #17233a; stroke: #f5f7fb; }
+            .core { fill: #1b2c4d; stroke: #6ea0ff; }
+            .zone { fill: rgba(245,247,251,0.03); stroke: #40506a; }
+            .tag { stroke: rgba(245,247,251,0.40); }
+            .rule { stroke: rgba(245,247,251,0.12); }
+            .ink { fill: #f5f7fb; }
+            .muted { fill: #b6c2d4; }
+            .accent { fill: #6ea0ff; }
+            .lnk { color: #8ab4ff; }
+            .mk { fill: #b6c2d4; }
+            .mk-link { fill: #8ab4ff; }
+          }
+        </style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon class="mk" points="0 0, 8 3, 0 6"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon class="accent" points="0 0, 8 3, 0 6"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon class="mk-link" points="0 0, 8 3, 0 6"/>
+        </marker>
+      </defs>
+
+      <rect class="bg" width="100%" height="100%"/>
+
+      <!-- Bundle zones -->
+      <rect class="zone" x="40" y="64" width="780" height="288" rx="8" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="muted mono" x="60" y="88" font-size="8" letter-spacing="0.18em">DEV-TOOLS · PLUGIN · V1.1.1</text>
+      <rect class="zone" x="860" y="64" width="240" height="128" rx="8" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="muted mono" x="880" y="88" font-size="8" letter-spacing="0.18em">ILLUSTRATION-TOOLS · V3.4.0</text>
+      <rect class="zone" x="860" y="224" width="240" height="128" rx="8" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="muted mono" x="880" y="248" font-size="8" letter-spacing="0.18em">AGENT-TOOLS · V1.1.3</text>
+
+      <!-- Connectors, drawn before boxes -->
+      <path d="M 148,264 V 208 Q 148,200 156,200 H 364 Q 372,200 372,192 V 176" fill="none" stroke="currentColor" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 336,264 V 236 Q 336,228 344,228 H 404 Q 412,228 412,220 V 176" fill="none" stroke="currentColor" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 524,264 V 236 Q 524,228 516,228 H 460 Q 452,228 452,220 V 176" fill="none" stroke="currentColor" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 712,264 V 208 Q 712,200 704,200 H 500 Q 492,200 492,192 V 176" fill="none" stroke="currentColor" stroke-width="1" marker-end="url(#arrow)"/>
+      <g class="lnk">
+        <line x1="532" y1="144" x2="880" y2="144" stroke="currentColor" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+      </g>
+      <rect class="mask" x="664" y="124" width="64" height="12" rx="2"/>
+      <text class="mono" x="696" y="133" font-size="8" fill="currentColor" text-anchor="middle" letter-spacing="0.06em">DIAGRAMS</text>
+
+      <!-- user-manual (core, focal) -->
+      <rect class="mask" x="332" y="112" width="200" height="64" rx="6"/>
+      <rect class="core" x="332" y="112" width="200" height="64" rx="6" stroke-width="1.2"/>
+      <rect class="tag" x="340" y="118" width="36" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="358" y="127" font-size="7" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <text class="ink sans" x="432" y="148" font-size="12" font-weight="600" text-anchor="middle">user-manual</text>
+      <text class="muted mono" x="432" y="164" font-size="9" text-anchor="middle">editions · HTML · PDF</text>
+
+      <!-- Extensions -->
+      <rect class="mask" x="60" y="264" width="176" height="64" rx="6"/>
+      <rect class="box" x="60" y="264" width="176" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="68" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="82" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink sans" x="148" y="300" font-size="12" font-weight="600" text-anchor="middle">API docs</text>
+      <text class="muted mono" x="148" y="316" font-size="9" text-anchor="middle">user-manual-api-docs</text>
+
+      <rect class="mask" x="248" y="264" width="176" height="64" rx="6"/>
+      <rect class="box" x="248" y="264" width="176" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="256" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="270" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink sans" x="336" y="300" font-size="12" font-weight="600" text-anchor="middle">Release docs</text>
+      <text class="muted mono" x="336" y="316" font-size="9" text-anchor="middle">user-manual-release-docs</text>
+
+      <rect class="mask" x="436" y="264" width="176" height="64" rx="6"/>
+      <rect class="box" x="436" y="264" width="176" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="444" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="458" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink sans" x="524" y="300" font-size="12" font-weight="600" text-anchor="middle">UI screenshots</text>
+      <text class="muted mono" x="524" y="316" font-size="9" text-anchor="middle">user-manual-ui-screenshots</text>
+
+      <rect class="mask" x="624" y="264" width="176" height="64" rx="6"/>
+      <rect class="box" x="624" y="264" width="176" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="632" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="646" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink sans" x="712" y="300" font-size="12" font-weight="600" text-anchor="middle">Preview publishing</text>
+      <text class="muted mono" x="712" y="316" font-size="8.5" text-anchor="middle">user-manual-preview-publishing</text>
+
+      <!-- illustrate -->
+      <rect class="mask" x="880" y="112" width="200" height="64" rx="6"/>
+      <rect class="box" x="880" y="112" width="200" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="888" y="118" width="36" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="906" y="127" font-size="7" text-anchor="middle" letter-spacing="0.08em">SKILL</text>
+      <text class="ink sans" x="980" y="148" font-size="12" font-weight="600" text-anchor="middle">illustrate</text>
+      <text class="muted mono" x="980" y="164" font-size="9" text-anchor="middle">44 diagram types</text>
+
+      <!-- delegate-task -->
+      <rect class="mask" x="880" y="264" width="200" height="64" rx="6"/>
+      <rect class="box" x="880" y="264" width="200" height="64" rx="6" stroke-width="1"/>
+      <rect class="tag" x="888" y="270" width="36" height="12" rx="2" stroke-width="0.8"/>
+      <text class="ink mono" x="906" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">SKILL</text>
+      <text class="ink sans" x="980" y="300" font-size="12" font-weight="600" text-anchor="middle">delegate-task</text>
+      <text class="muted mono" x="980" y="316" font-size="9" text-anchor="middle">other agent CLIs</text>
+
+      <!-- Legend strip -->
+      <line class="rule" x1="40" y1="372" x2="1100" y2="372" stroke-width="0.8"/>
+      <text class="muted mono" x="40" y="392" font-size="8" letter-spacing="0.18em">LEGEND</text>
+      <rect class="core" x="40" y="404" width="16" height="12" rx="2" stroke-width="1"/>
+      <text class="muted sans" x="64" y="413" font-size="8.5">Core skill</text>
+      <rect class="box" x="148" y="404" width="16" height="12" rx="2" stroke-width="1"/>
+      <text class="muted sans" x="172" y="413" font-size="8.5">Skill</text>
+      <rect class="zone" x="236" y="404" width="16" height="12" rx="2" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="muted sans" x="260" y="413" font-size="8.5">Bundle (Claude Code plugin)</text>
+      <line x1="416" y1="410" x2="444" y2="410" stroke="currentColor" stroke-width="1"/>
+      <text class="muted sans" x="452" y="413" font-size="8.5">Extends the core</text>
+      <g class="lnk"><line x1="560" y1="410" x2="588" y2="410" stroke="currentColor" stroke-width="1" stroke-dasharray="5,4"/></g>
+      <text class="muted sans" x="596" y="413" font-size="8.5">Uses when installed</text>
+    </svg>

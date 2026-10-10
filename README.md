@@ -14,15 +14,27 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 
 | Skill | What it does | Bundle (Claude Code plugin) |
 | --- | --- | --- |
-| `illustrate` | Draws 44 kinds of diagrams and charts (architecture, sequence, state, flow, ER, timelines, Sankey, and more) as editable HTML with SVG/PNG export, plus animated SVG or GIF for READMEs, in your project's colors and fonts. | `illustration-tools` |
-| `user-manual` | Creates and maintains an application manual with End User, Administrator, and Technical editions, in Markdown, MkDocs HTML, and PDF. English is required; Arabic (right-to-left) is optional. | `dev-tools` |
-| `user-manual-api-docs` | API reference pages for public, administrator, and private audiences. | `dev-tools` |
-| `user-manual-release-docs` | Release notes and migration guides per audience. | `dev-tools` |
-| `user-manual-ui-screenshots` | Repeatable, redacted screenshots of web and mobile screens. | `dev-tools` |
-| `user-manual-preview-publishing` | Private previews of the manual for pull requests, and release builds. | `dev-tools` |
-| `delegate-task` | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
+| [`illustrate`](docs/skills/illustrate.md) | Draws 44 kinds of diagrams and charts (architecture, sequence, state, flow, ER, timelines, Sankey, and more) as editable HTML with SVG/PNG export, plus animated SVG or GIF for READMEs, in your project's colors and fonts. | `illustration-tools` |
+| [`user-manual`](docs/skills/user-manual.md) | Creates and maintains an application manual with End User, Administrator, and Technical editions, in Markdown, MkDocs HTML, and PDF. English is required; Arabic (right-to-left) is optional. | `dev-tools` |
+| [`user-manual-api-docs`](docs/skills/user-manual-api-docs.md) | API reference pages for public, administrator, and private audiences. | `dev-tools` |
+| [`user-manual-release-docs`](docs/skills/user-manual-release-docs.md) | Release notes and migration guides per audience. | `dev-tools` |
+| [`user-manual-ui-screenshots`](docs/skills/user-manual-ui-screenshots.md) | Repeatable, redacted screenshots of web and mobile screens. | `dev-tools` |
+| [`user-manual-preview-publishing`](docs/skills/user-manual-preview-publishing.md) | Private previews of the manual for pull requests, and release builds. | `dev-tools` |
+| [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
 
 The five `user-manual*` skills work together, but you can install only the ones you need.
+
+## Documentation
+
+- [Product map](docs/product-map.md): what each bundle and skill does, and how they relate.
+- One page per skill: [illustrate](docs/skills/illustrate.md), [user-manual](docs/skills/user-manual.md),
+  [user-manual-api-docs](docs/skills/user-manual-api-docs.md),
+  [user-manual-release-docs](docs/skills/user-manual-release-docs.md),
+  [user-manual-ui-screenshots](docs/skills/user-manual-ui-screenshots.md),
+  [user-manual-preview-publishing](docs/skills/user-manual-preview-publishing.md), and
+  [delegate-task](docs/skills/delegate-task.md).
+- [Glossary](docs/glossary.md): the terms these skills use.
+- [Animated examples](docs/examples.md): one diagram per arrow style, with the exact export command.
 
 ## Install
 
@@ -63,7 +75,7 @@ Or as plain skills: `npx skills add samykabu/sanduq-skills --skill illustrate -a
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-1. Download the skill archive (for example `illustrate-v3.2.1.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
+1. Download the skill archive (for example `illustrate-v3.4.0.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
    or zip the skill folder yourself (for example `skills/illustration-tools/skills/illustrate/`).
 2. In Claude Desktop, open **Settings → Capabilities**, make sure code execution is on, and upload
    the zip under **Skills**.
