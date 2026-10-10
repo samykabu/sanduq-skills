@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Validate JSON
         run: find . -path ./node_modules -prune -o -path '*/node_modules/*' -prune -o -name '*.json' -print0 | xargs -0 -n1 jq empty
       - name: Plugin manifests match their bundles

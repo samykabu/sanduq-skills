@@ -1081,6 +1081,13 @@ function plant(id, { supervisorPid, childPid, journalExtra = [], meta = {} }) {
 const DEAD_PID = 2147483646;
 
 function e2e(id, env, extraArgs = []) {
+  env = { ...env };
+  if ((env.FAKE_STREAM || '').length > 64 * 1024) {  // Linux caps one environment string at 128 KiB
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-stream-')), 'stream.jsonl');
+    fs.writeFileSync(file, env.FAKE_STREAM);
+    delete env.FAKE_STREAM;
+    env.FAKE_STREAM_FILE = file;
+  }
   const start = spawnSync(process.execPath, [DRIVER, 'start',
     '--harness', 'codex', '--cwd', os.tmpdir(), '--timeout', '60',
     '--task', 'fake task', ...extraArgs], {
@@ -1382,7 +1389,9 @@ t('E2E an additive adapter does not double-count records across the cap', () => 
 if (process.platform === 'win32') {
   t('SKIP relay-shutdown drain (no deliverable signal on win32)', () => {});
 } else {
-  t('E2E signalling the RELAY still produces a drained terminal result', async () => {
+  // Synchronous on purpose: every later case blocks the event loop in spawnSync, so a timer here
+  // would fire only after the 4 s run had already finished and its supervisor exited.
+  t('E2E signalling the RELAY still produces a drained terminal result', () => {
     const start = spawnSync(process.execPath, [DRIVER, 'start', '--harness', 'codex',
       '--cwd', os.tmpdir(), '--timeout', '120', '--task', 'slow'], {
       encoding: 'utf8', timeout: 60_000,
@@ -1394,10 +1403,11 @@ if (process.platform === 'win32') {
     assert.equal(start.status, 0, start.stderr);
     const runId = JSON.parse(start.stdout).run_id;
     const meta = JSON.parse(fs.readFileSync(path.join(scratchRuns, runId, 'meta.json'), 'utf8'));
-    await new Promise((r) => setTimeout(r, 800));
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 800);
     process.kill(meta.supervisor_pid, 'SIGTERM');
-    await new Promise((r) => setTimeout(r, 4000));
-    const res = JSON.parse(fs.readFileSync(path.join(scratchRuns, runId, 'result.json'), 'utf8'));
+    const col = spawnSync(process.execPath, [DRIVER, 'collect', runId, '--wait', '45', '--json'],
+      { encoding: 'utf8', timeout: 60_000, env: { ...process.env, ...RUNS_ENV } });
+    const res = JSON.parse(col.stdout);
     assert.equal(res.status_provenance.primary, 'relay_aborted');
     assert.equal(res.session_id, 'th_e2e',
       'the stream captured before the signal must survive the drain');

@@ -6,6 +6,10 @@
 - Claude runs report the model that did the work: `actual_model` is the `modelUsage` entry with the
   most output tokens, not a side call's model.
 - Moved to the samykabu/sanduq-skills repository.
+- `--resume` with an unknown run id reports "no such run to resume" before looking for the harness CLI.
+- Fix a relay SIGTERM on Linux publishing the harness as killed by SIGKILL instead of `relay_aborted`;
+  the test fake harness no longer truncates stdout past 64 KiB on POSIX pipes. All 174 tests pass on
+  Windows and Linux.
 
 ## 1.1.1 — 2026-09-27
 

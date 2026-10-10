@@ -8,11 +8,14 @@
 //
 //   FAKE_VERSION   what `--version` prints                (default: 9.9.9)
 //   FAKE_STREAM    the stdout body for a normal run       (default: empty)
+//   FAKE_STREAM_FILE  read the body from this file instead (large bodies on Linux)
 //   FAKE_STDERR    the stderr body                        (default: empty)
 //   FAKE_EXIT      the process exit code                  (default: 0)
 //   FAKE_SLEEP_MS  delay before exiting                    (default: 0)
 //   FAKE_CHUNK     if set, stdout is emitted in N-byte chunks so a multibyte
 //                  character and a JSON line both straddle a chunk boundary
+
+import fs from 'node:fs';
 
 const argv = process.argv.slice(2);
 
@@ -29,7 +32,8 @@ if (process.env.FAKE_CODEX_RESUME_SANDBOX) {
   }
 }
 
-const body = process.env.FAKE_STREAM || '';
+const body = process.env.FAKE_STREAM_FILE
+  ? fs.readFileSync(process.env.FAKE_STREAM_FILE, 'utf8') : (process.env.FAKE_STREAM || '');
 const errBody = process.env.FAKE_STDERR || '';
 const code = Number(process.env.FAKE_EXIT || 0);
 const sleepMs = Number(process.env.FAKE_SLEEP_MS || 0);
@@ -72,7 +76,10 @@ function finish() {
       process.kill(process.pid, process.env.FAKE_SELF_SIGNAL);
       return;
     }
-    process.exit(Number.isFinite(code) ? code : 0);
+    // exitCode, not process.exit(): stdout writes to a pipe are asynchronous on
+    // POSIX, and exit() drops whatever the pipe has not yet accepted - on Linux
+    // everything past the first 64 KiB. A real harness does not lose its output.
+    process.exitCode = Number.isFinite(code) ? code : 0;
   };
   if (sleepMs > 0) setTimeout(bye, sleepMs);
   else bye();
