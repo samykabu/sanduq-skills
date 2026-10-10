@@ -1,8 +1,8 @@
 name: release
 
 # Tag a bundle as <bundle>-vX.Y.Z (for example illustration-tools-v3.2.1). The tag must match the
-# bundle's plugin.json version. The release then opens a pin-update PR in samykabu/sanduq, which
-# vendors the skill and hosts the marketplace entry.
+# bundle's plugin.json version. samykabu/sanduq picks the release up daily (its vendor-update
+# workflow vendors the skill, repins the marketplace entry and opens a pull request).
 on:
   push:
     tags: ['*-v*.*.*']
@@ -13,8 +13,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      PIN_TOKEN: ${{ secrets.SANDUQ_PIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Check tag against plugin.json
@@ -45,10 +43,3 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" *.zip SHA256SUMS --title "$GITHUB_REF_NAME" \
             --notes "See CHANGELOG.md. Commit: $GITHUB_SHA"
-      - name: Open pin update in samykabu/sanduq
-        if: env.PIN_TOKEN != ''
-        env:
-          GH_TOKEN: ${{ env.PIN_TOKEN }}
-        run: |
-          gh workflow run vendor-update.yml --repo samykabu/sanduq \
-            -f bundle="${{ steps.meta.outputs.bundle }}" -f ref="$GITHUB_REF_NAME" -f sha="$GITHUB_SHA"
