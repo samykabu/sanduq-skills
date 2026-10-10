@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate JSON
+        run: find . -path ./node_modules -prune -o -path '*/node_modules/*' -prune -o -name '*.json' -print0 | xargs -0 -n1 jq empty
+      - name: Plugin manifests match their bundles
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          for manifest in sorted(pathlib.Path('skills').glob('*/.claude-plugin/plugin.json')):
+              data = json.loads(manifest.read_text(encoding='utf-8'))
+              bundle = manifest.parent.parent
+              if data.get('name') != bundle.name:
+                  sys.exit(f'{manifest}: name must be {bundle.name}')
+              for key in ('version', 'license', 'description'):
+                  if not data.get(key):
+                      sys.exit(f'{manifest}: missing {key}')
+              if not any(bundle.glob('skills/*/SKILL.md')):
+                  sys.exit(f'{bundle}: no skills/<name>/SKILL.md')
+          PY
+      - name: Skills CLI discovers every skill
+        run: |
+          npx -y skills@latest add . --list > list.txt
+          cat list.txt
+          for s in illustrate user-manual user-manual-api-docs user-manual-release-docs user-manual-ui-screenshots user-manual-preview-publishing delegate-task; do
+            grep -q "$s" list.txt || { echo "missing $s"; exit 1; }
+          done
+      - run: git diff --check
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: python -m pip install -r requirements-test.txt
+      - name: Install Playwright for Illustrate render checks
+        shell: bash
+        run: |
+          python -m pip install playwright==1.63.0
+          python -m playwright install --with-deps chromium
+      - name: Illustrate tests
+        run: python -m unittest discover -s skills/illustration-tools/tests -q
+      - name: Illustrate builders and verifiers
+        shell: bash
+        working-directory: skills/illustration-tools/skills/illustrate
+        run: |
+          python scripts/build-exploded-examples.py --check
+          python scripts/build-axonometric-plan-examples.py --check
+          python scripts/verify-exploded.py --all
+          python scripts/verify-axonometric-plan.py --all
+          python scripts/verify-motion.py --shipped
+          python scripts/verify-semantic-motion.py
+          python scripts/verify-geometry.py --all --baseline
+          python scripts/lint-skin.py --all --baseline
+          for v in architecture-delta treemap marimekko sankey heatmap waterfall slopegraph ridgeline streamgraph bump bubble beeswarm; do python scripts/verify-$v.py --all; done
+          python scripts/verify-polar.py
+          python scripts/verify-dumbbell.py
+          python scripts/verify-sequence-oauth.py
+          python scripts/verify-block-registry.py --all
+          python scripts/lint-render.py --self-test
+          python scripts/lint-render.py --all
+      - name: User Manual tests
+        run: python -m unittest discover -s skills/dev-tools/skills/user-manual/tests -q
+      - name: Delegate Task tests
+        run: node skills/agent-tools/skills/delegate-task/test/run.mjs
