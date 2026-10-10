@@ -3,6 +3,21 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
+## Unreleased
+
+- Illustrate: arrows end straight. A marker follows the exact end tangent, but the eye follows the
+  line arriving at the head, so a curve or rounded corner still bending at the tip made its head look
+  wrong. New §6 connector rule 7: every arrow runs straight for its arrowhead's length + 4px (10px
+  minimum) before each tip, both tips when two-headed; routed connectors finish their last corner
+  there (shrinking it to `r=4` when tight) and curves put their last control point on that lead.
+  SKILL.md, primitives-core.md and the type references that prescribe `r=8` corners state the rule.
+- New `scripts/verify-arrow-ends.py` (in CI, and run by `self_check.py`): sizes each arrowhead from
+  its marker (`markerWidth`, `refX`, `viewBox`, `markerUnits` x stroke width) and fails a tip that
+  bends more than 3° within its lead. Covers `<path>` (arcs sampled), `<polyline>` and `<line>`.
+- Fixed 65 bent arrow ends in shipped examples: 23 in light, 21 each in dark and full (architecture,
+  datalake, deployment, high-level, high-level-vertical, it-state, medallion, state); the 8 matching
+  hand-drawn variants are regenerated. The medallion promotion-arc formula now ends on a 16px lead.
+
 ## 2026-10-10 — illustration-tools 3.3.0: animated SVG export
 
 - `export_diagram.py --animated` writes `<name>.animated.svg` from a motion figure: each step fades in
