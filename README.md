@@ -14,7 +14,7 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 
 | Skill | What it does | Bundle (Claude Code plugin) |
 | --- | --- | --- |
-| `illustrate` | Draws 44 kinds of diagrams and charts (architecture, sequence, state, flow, ER, timelines, Sankey, and more) as editable HTML with SVG/PNG export, in your project's colors and fonts. | `illustration-tools` |
+| `illustrate` | Draws 44 kinds of diagrams and charts (architecture, sequence, state, flow, ER, timelines, Sankey, and more) as editable HTML with SVG/PNG export, plus animated SVG or GIF for READMEs, in your project's colors and fonts. | `illustration-tools` |
 | `user-manual` | Creates and maintains an application manual with End User, Administrator, and Technical editions, in Markdown, MkDocs HTML, and PDF. English is required; Arabic (right-to-left) is optional. | `dev-tools` |
 | `user-manual-api-docs` | API reference pages for public, administrator, and private audiences. | `dev-tools` |
 | `user-manual-release-docs` | Release notes and migration guides per audience. | `dev-tools` |
@@ -102,7 +102,8 @@ approval is repeated.
 ```
 
 You get one self-contained HTML file you can open in a browser and edit. Ask for
-`Export it as SVG` when you want to embed it.
+`Export it as SVG` when you want to embed it, or `Export it as an animated SVG with pulsing arrows`
+(or as a GIF) for a README: arrows can draw on, flow, pulse or slide chevrons in their direction.
 
 ```text
 $user-manual Create a manual for our booking application. Inspect the repository, interview me
