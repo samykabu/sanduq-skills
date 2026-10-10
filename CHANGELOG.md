@@ -3,8 +3,11 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
-## Unreleased
+## 2026-10-10 — illustration-tools 3.4.0: animated arrows, GIF export, straight arrow ends
 
+- `--arrows=draw|flow|pulse|draw-flow|chevrons` (default `draw`) animates every arrow in its
+  direction in `--animated` exports, for motion figures and ordinary diagrams alike.
+- `--gif` exports the same animation as a looping GIF (`--theme light|dark`, `--fps`).
 - Illustrate: arrows end straight. A marker follows the exact end tangent, but the eye follows the
   line arriving at the head, so a curve or rounded corner still bending at the tip made its head look
   wrong. New §6 connector rule 7: every arrow runs straight for its arrowhead's length + 4px (10px
