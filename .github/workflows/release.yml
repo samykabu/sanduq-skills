@@ -33,7 +33,9 @@ jobs:
           # One archive per skill folder (SKILL.md at its root) for Claude Desktop uploads.
           for skill in skills/"$bundle"/skills/*/; do
             name="$(basename "$skill")"
-            cp skills/"$bundle"/LICENSE skills/"$bundle"/THIRD_PARTY_NOTICES.md "$skill"
+            cp skills/"$bundle"/LICENSE "$skill"
+            # Only bundles with third-party material carry notices.
+            if [ -f skills/"$bundle"/THIRD_PARTY_NOTICES.md ]; then cp skills/"$bundle"/THIRD_PARTY_NOTICES.md "$skill"; fi
             (cd skills/"$bundle"/skills && zip -qr "../../../${name}-v${version}.zip" "$name" -x '*/node_modules/*' '*/__pycache__/*' '*/test/*')
           done
           sha256sum *.zip > SHA256SUMS

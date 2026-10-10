@@ -1,8 +1,12 @@
 # Changelog
 
+## 1.1.3 — 2026-10-10
+
+- Remove a third-party notices file that did not apply: this bundle contains no third-party material.
+
 ## 1.1.2 — 2026-10-10
 
-- Relicensed under MIT; the plugin now carries LICENSE and THIRD_PARTY_NOTICES.md.
+- Relicensed under MIT; the plugin now carries LICENSE.
 - Claude runs report the model that did the work: `actual_model` is the `modelUsage` entry with the
   most output tokens, not a side call's model.
 - Moved to the samykabu/sanduq-skills repository.

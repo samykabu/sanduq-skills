@@ -2,7 +2,8 @@
 
 The root [`LICENSE`](LICENSE) (MIT) covers Sanduq Skills' original contributions. The material below
 remains under its upstream license. These notices must travel with any copy that includes that
-material; each bundle also carries a copy of this file.
+material. All of it ships in the `illustration-tools` bundle (the Illustrate skill), which carries
+a copy of this file; `dev-tools` and `agent-tools` contain no third-party material.
 
 ## Illustrate skill
 
