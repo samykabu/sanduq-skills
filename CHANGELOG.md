@@ -3,6 +3,24 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
+## 2026-10-11 — illustration-tools 3.4.1: exports keep the page styles
+
+- Fix: SVG, `--animated` and `--gif` exports copied only the `<svg>` element and dropped the page's
+  `<style>`, so shapes styled by page classes or `var(--token)` fell back to the SVG default black
+  fill. 29 shipped examples were affected: process and dp-integration (light, dark, full, hand),
+  data-flow and medallion (same four), loop (light, dark, full, terminal), it-state and
+  dp-security-matrix (light, dark, full), state-lifecycle (dark, full) and policy-trace-animated.
+  Every export now carries the page rules into the SVG's own `<style>`: html/body rules become
+  `:root` keeping only tokens and inherited text and paint properties (no layout), `@media` blocks
+  such as `prefers-color-scheme` are kept, and `@import`, `@font-face`, `@keyframes`, animations,
+  transitions and the page's motion runtime rules are left out. Reduced-motion gating is unchanged.
+- Fix: a figure holding nested `<svg>` icons (high-level, high-level-vertical) was cut at the first
+  inner `</svg>`, and an HTML comment containing `--` (streamgraph, all four variants) is not XML;
+  10 such exports failed to open. Exports now take the whole top-level figure and drop HTML comments.
+- New `tests/test_export_page_styles.py`: every shipped example's exports parse as the whole figure,
+  define every custom property they use and style every page class they use; a rendered check
+  compares black pixels against the source page.
+
 ## 2026-10-10 — illustration-tools 3.4.0: animated arrows, GIF export, straight arrow ends
 
 - `--arrows=draw|flow|pulse|draw-flow|chevrons` (default `draw`) animates every arrow in its
