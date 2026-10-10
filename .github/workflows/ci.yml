@@ -32,7 +32,7 @@ jobs:
           PY
       - name: Skills CLI discovers every skill
         run: |
-          npx -y skills@latest add . --list > list.txt
+          npx -y skills@1.7.2 add . --list > list.txt
           cat list.txt
           for s in illustrate user-manual user-manual-api-docs user-manual-release-docs user-manual-ui-screenshots user-manual-preview-publishing delegate-task; do
             grep -q "$s" list.txt || { echo "missing $s"; exit 1; }
