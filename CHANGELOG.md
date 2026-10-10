@@ -3,6 +3,15 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
+## 2026-10-10 — illustration-tools 3.3.0: animated SVG export
+
+- `export_diagram.py --animated` writes `<name>.animated.svg` from a motion figure: each step fades in
+  once on the figure's own clock, as CSS inside the SVG, with no script and no remote fonts, so it
+  plays as a README image on GitHub. Reduced motion shows the complete figure, and the last frame is
+  that same figure; a rendered test enforces it.
+- Fix: exported SVGs gave HTML-style valueless attributes (`data-motion-item`) no value, which is not
+  XML, so browsers opening the `.svg` by itself showed a parse error. Every export now parses as XML.
+
 ## 2026-10-10 — notices only where they apply
 
 - `dev-tools` 1.1.1 and `agent-tools` 1.1.3 no longer carry `THIRD_PARTY_NOTICES.md`: neither bundle
