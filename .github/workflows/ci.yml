@@ -30,6 +30,9 @@ jobs:
               if not any(bundle.glob('skills/*/SKILL.md')):
                   sys.exit(f'{bundle}: no skills/<name>/SKILL.md')
           PY
+      - name: Claude Code validates each plugin bundle
+        run: for b in skills/*/; do npx -y @anthropic-ai/claude-code plugin validate "$b"; done
+
       - name: Skills CLI discovers every skill
         run: |
           npx -y skills@1.7.2 add . --list > list.txt
