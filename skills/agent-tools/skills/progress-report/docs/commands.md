@@ -152,9 +152,10 @@ too) is a task. A heading of level 2 or deeper names the phase of the items belo
 report title. Fenced code blocks and inline code spans are ignored, so an item or id quoted in prose or in a code
 example is not a task.
 
-**Ids.** An item that starts with an id keeps it: `T001`, `T-12`, `US3`, `**T001**: title`, `T001) title`. A bare id
-needs a space or `:` `.` `)` after it and two digits or more (or the prefix `T`/`US`); a bold id may be any form. So MP3,
-GPT-4, Q3, A4 and ES6 are text. A second item with an id that is already taken becomes an auto item and a line goes to the
+**Ids.** An item that starts with an id keeps it: `T001`, `US3`, `**T001**: title`, `T-12: title`, `T001) title`. Rule:
+an id with no bold and no `:` `.` `)` after it must be a `T`, `US` or `P` prefix followed by digits and no dash (`T001 title`,
+`US12 title`); any other form needs a delimiter (`X11: title`, with two digits or more, or a `T`/`US` prefix) or bold. So
+MP3, GPT-4, Q3, A4, ES6, X11, H264, ES2015, RFC-7231 and CVE-2024 followed by a space are text. A second item with an id that is already taken becomes an auto item and a line goes to the
 diagnostics log. Every other item gets an auto id `P001`, `P002`, ... The tracked `plan.json` stores, per auto id, a
 truncated SHA-256 fingerprint of the normalised text and never the text; the text itself is kept in the git-ignored
 `.host/plan-keys.json`. The map is applied on every refresh, in this order:
@@ -175,8 +176,10 @@ self references are dropped. `[P]` marks an item parallel. Annotations are remov
 **Where it lives.** The default report directory is `.progress/<name>/`; `--dir` puts it elsewhere in the repository and
 records it in the tracked `.progress/plans.json` so `--plan NAME` finds it. `facts.jsonl` and `plan.json` are tracked;
 `.view/` and `.host/` are git-ignored through `.git/info/exclude`, with glob characters in `--dir` escaped (a `--dir
-"reports/[review]"` works). `init` checks with `git check-ignore` and fails with `PROGRESS_EXCLUDE_FAILED` before writing
-anything local if the exclusion does not take effect. It also refuses (`PROGRESS_DIR_CONFLICT`) a `--dir` whose
+"reports/[review]"` works). `init` runs `git check-ignore` on the actual local-only files (`.host/plan-keys.json`,
+`.host/plan-source.json`, a host snapshot and every `.view/` file) and fails with `PROGRESS_EXCLUDE_FAILED` if any would be
+tracked, for example because a `.gitignore` re-includes one. The check runs before the directory is registered in
+`.progress/plans.json` or created, so a refused `init` leaves `git status` unchanged. It also refuses (`PROGRESS_DIR_CONFLICT`) a `--dir` whose
 `plan.json` or `facts.jsonl` is not a Progress plan report, before any write.
 
 **The plan file.** Progress never writes it. Whoever owns the plan checks items off, and the next refresh follows. A plan
@@ -476,9 +479,11 @@ Each entry has this shape and a 10 second timeout. The `--managed-by=progress-re
 - **Two scopes.** When this installer's entries exist in the other scope of the same host, `install` exits 3
   (`PROGRESS_HOOKS_DUPLICATE`) because the host would run both; `--force-both` overrides. A file in the other scope that
   cannot be read does not stop an install and shows as `unreadable` in `status`; only the file being written must parse.
-- **Concurrent edits.** The file is edited under a lock file next to it (`<file>.progress-lock`) and written only if its
-  bytes are unchanged since they were read. A change in between is re-read and the edit applied once more; a second
-  change, or a lock held by another installer, exits 3 with `PROGRESS_HOOKS_CONFLICT`. A settings file that is a symlink
+- **Concurrent edits.** Installs run under one OS-held lock per host (`settings.json.progress-lock` or `hooks.json.progress-lock`
+  next to the user-scope file), released by the operating system if the process dies; it is never taken over by age. The Spec Kit
+  and other-scope checks run inside the lock on every attempt, so two concurrent installs in different scopes cannot both
+  succeed without `--force-both`. The file is written only if its bytes are unchanged since they were read. A change in
+  between is re-read and the checks and the edit applied once more; a second change, or a lock held by another installer, exits 3 with `PROGRESS_HOOKS_CONFLICT`. A settings file that is a symlink
   (a dotfiles setup) is refused with `PROGRESS_UNSAFE_TARGET`.
 - **Binding.** When exactly one report already exists, `install` appends `bind=<nonce>` to its line so the new hooks bind
   the session on the next tool call. Install hooks before `init` and the `init` line carries the nonce as usual.

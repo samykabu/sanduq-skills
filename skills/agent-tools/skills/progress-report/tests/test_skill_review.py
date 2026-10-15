@@ -12,6 +12,7 @@ import helpers
 from helpers import PlanProject
 from sanduq_progress import hooks_install, paths
 from sanduq_progress.collect import plan as plancol
+from sanduq_progress.lock import Lock
 from test_hooks_install import UNRELATED, HooksCase
 
 
@@ -126,7 +127,7 @@ class PlanIds(unittest.TestCase):
             self.assertEqual(self.ids(f'- [ ] {word}\n'), [('P001', word)], word)
 
     def test_documented_id_forms_are_ids(self):
-        got = self.ids('- [ ] T001 a\n- [ ] T-12 b\n- [ ] P003 c\n- [ ] **US3**: d\n- [ ] T4: e\n- [ ] T005) f\n- [ ] AB12. g\n')
+        got = self.ids('- [ ] T001 a\n- [ ] T-12: b\n- [ ] P003 c\n- [ ] **US3**: d\n- [ ] T4: e\n- [ ] T005) f\n- [ ] AB12. g\n')
         self.assertEqual([i for i, _ in got], ['T001', 'T-12', 'P003', 'US3', 'T4', 'T005', 'AB12'])
 
     def test_same_words_are_not_dropped_as_duplicates(self):
@@ -231,11 +232,11 @@ class Installer(HooksCase):
     def test_a_held_lock_is_refused_in_one_line(self):
         path = self.path('claude', 'project')
         path.parent.mkdir(parents=True, exist_ok=True)
-        Path(str(path) + '.progress-lock').write_text('', encoding='utf-8')
         real = hooks_install.LOCK_WAIT
         hooks_install.LOCK_WAIT = 0.2
         self.addCleanup(setattr, hooks_install, 'LOCK_WAIT', real)
-        code, line = self.cli('hooks', 'install', '--host', 'claude')
+        with Lock(hooks_install.install_lock_path(self.root, 'claude')):
+            code, line = self.cli('hooks', 'install', '--host', 'claude')
         self.assertEqual((code, line.split()[2]), (3, 'PROGRESS_HOOKS_CONFLICT'), line)
 
     def test_f11_a_python_command_with_spaces_or_shell_characters_is_refused(self):

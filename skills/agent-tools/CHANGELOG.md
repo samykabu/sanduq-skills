@@ -10,12 +10,12 @@
   stable `P001`... ids (equal text first, then 60 percent similar text, then the next number; numbers are
   never reused), and `(depends on …)` / `(after …)` annotations become edges. The plan is only read. The
   tracked `plan.json` stores ids and one-way text fingerprints, never item text (the text used for fuzzy
-  matching lives in the git-ignored `.host/`). A bare id needs a delimiter and two digits (or `T`/`US`), so
-  MP3, GPT-4, Q3 and ES6 are text; a repeated id becomes an automatic one. A plan outside the repository is
+  matching lives in the git-ignored `.host/`). An id with no bold and no `:` `.` `)` must be `T`, `US` or `P`
+  plus digits, so MP3, GPT-4, Q3, ES6, X11, H264 and RFC-7231 are text; a repeated id becomes an automatic one. A plan outside the repository is
   stored as `external:<name>`; its absolute path and a path fingerprint stay in a git-ignored file, and a
   different file of the same name is refused unless `--rebind`.
 - Plan report safety: glob characters in `--dir` are escaped in the git exclusions and `init` verifies them
-  with `git check-ignore` (`PROGRESS_EXCLUDE_FAILED`); a `--dir` that holds another tool's `plan.json` is
+  with `git check-ignore` (`PROGRESS_EXCLUDE_FAILED`) on the actual local-only files, before anything is registered or created; a `--dir` that holds another tool's `plan.json` is
   refused before any write (`PROGRESS_DIR_CONFLICT`); nothing under `specs/` is a report directory; the plan
   is read once per refresh.
 - Target resolution for every verb: `--plan NAME|PATH` or `--feature DIR`; with exactly one active report no

@@ -18,9 +18,9 @@ import json
 import os
 import re
 import sys
-import time
 from pathlib import Path
 
+from .lock import Lock, LockBusy
 from .paths import inside
 from .util import ProgressError, atomic_write
 
@@ -38,7 +38,6 @@ EVENTS = {'claude': CLAUDE_EVENTS, 'codex': CODEX_EVENTS}
 
 
 LOCK_WAIT = 3.0  # seconds to wait for another installer
-LOCK_STALE = 30.0  # a lock file older than this is a crashed installer's
 UNSAFE_PYTHON = re.compile(r'[\s"\'`$&|;<>()*?]')
 
 
@@ -201,35 +200,30 @@ def strip_own(data):
     return removed
 
 
-class SettingsLock:
-    """A lock file next to the settings file, so two installers never interleave. Removed on exit."""
+def install_lock_path(root, host):
+    """One lock file per host for every install and uninstall: it sits next to the user-scope settings, so a project-scope
+    and a user-scope installer (which look at each other's registrations) serialise on the same file."""
+    path = settings_path(root, host, 'user')
+    return Path(str(path) + '.progress-lock')
+
+
+class InstallLock:
+    """The package's OS-backed `Lock`: released by the operating system when its owner dies, never taken over by age and
+    never removed by anyone else, so a live installer that is merely slow keeps it."""
 
     def __init__(self, path):
-        self.path = Path(str(path) + '.progress-lock')
+        self.lock = Lock(path, retries=max(0, int(LOCK_WAIT / 0.05)), delay=0.05)
 
     def __enter__(self):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        deadline = time.time() + LOCK_WAIT
-        while True:
-            try:
-                os.close(os.open(str(self.path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
-                return self
-            except FileExistsError:
-                try:
-                    if time.time() - self.path.stat().st_mtime > LOCK_STALE:
-                        self.path.unlink()
-                        continue
-                except OSError:
-                    pass
-                if time.time() >= deadline:
-                    raise refused('PROGRESS_HOOKS_CONFLICT', f'another installer holds {self.path.name}; retry') from None
-                time.sleep(0.05)
+        try:
+            return self.lock.acquire()
+        except LockBusy:
+            raise refused('PROGRESS_HOOKS_CONFLICT', f'another installer holds {self.lock.path.name}; retry') from None
+        except OSError as exc:
+            raise refused('PROGRESS_HOOKS_CONFLICT', f'cannot take {self.lock.path.name}: {type(exc).__name__}') from None
 
     def __exit__(self, *exc):
-        try:
-            self.path.unlink()
-        except OSError:
-            pass
+        self.lock.release()
         return False
 
 
@@ -237,11 +231,12 @@ def before_replace(path):
     """Seam between computing the new document and replacing the file (tests change the file here)."""
 
 
-def edit(path, mutate):
+def edit(path, mutate, lock_path=None):
     """Read, `mutate(document)`, write, under a lock and only if the file is unchanged since it was read. A change in
-    between (the host or the user editing the settings) is re-read and the edit re-applied once; a second change refuses."""
+    between (the host or the user editing the settings) is re-read and the edit re-applied once; a second change refuses.
+    `mutate` runs again on every attempt, so checks inside it see what is on disk now."""
     path = Path(path)
-    with SettingsLock(path):
+    with InstallLock(lock_path or Path(str(path) + '.progress-lock')):
         for attempt in (1, 2):
             raw = read_raw(path)
             data = parse(path, raw)
@@ -255,18 +250,24 @@ def edit(path, mutate):
         raise refused('PROGRESS_HOOKS_CONFLICT', f'{path.name} changed while it was being edited; nothing written, retry')
 
 
-def install(root, host, scope, python, force_both=False):
-    path = settings_path(root, host, scope)
+def check_registrations(root, host, scope, target_data, force_both=False):
+    """Refuse when Spec Kit registers Progress hooks in either scope, or when the other scope already has ours (unless
+    --force-both). `target_data` is the document being edited, so the file that is written is judged as it is now."""
     for other in ('project', 'user'):
         found = settings_path(root, host, other)
-        data, ok = load_quiet(found)
+        data, ok = (target_data, True) if other == scope else load_quiet(found)
         if ok and has_speckit(data):
             raise refused('PROGRESS_HOOKS_SPECKIT', f'Spec Kit already registers Progress hooks in {shown(root, found)}; remove them or keep using the extension')
         if ok and other != scope and own_count(data) and not force_both:
             raise refused('PROGRESS_HOOKS_DUPLICATE', f'hooks are already installed in {shown(root, found)}; uninstall them there first, or pass --force-both')
+
+
+def install(root, host, scope, python, force_both=False):
+    path = settings_path(root, host, scope)
     commands = [command_for(root, host, scope, event, python) for _, event, _ in EVENTS[host]]
 
     def mutate(data):
+        check_registrations(root, host, scope, data, force_both)  # on every attempt, inside the lock
         strip_own(data)
         hooks = data.setdefault('hooks', {})
         for (name, _, matcher), command in zip(EVENTS[host], commands):
@@ -278,7 +279,7 @@ def install(root, host, scope, python, force_both=False):
             hooks[name].append(group)
         return True
 
-    edit(path, mutate)
+    edit(path, mutate, install_lock_path(root, host))
     note = ' (Codex hooks are experimental: enable the codex_hooks feature)' if host == 'codex' else ''
     return f'progress: hooks installed {host} {scope} {len(EVENTS[host])} entries in {shown(root, path)}{note}'
 
@@ -287,7 +288,7 @@ def uninstall(root, host, scope):
     path = settings_path(root, host, scope)
     if not path.is_file():
         return f'progress: hooks removed {host} {scope} 0 entries'
-    removed = edit(path, lambda data: strip_own(data) or False)
+    removed = edit(path, lambda data: strip_own(data) or False, install_lock_path(root, host))
     return f'progress: hooks removed {host} {scope} {removed or 0} entries from {shown(root, path)}'
 
 

@@ -36,13 +36,13 @@ def glob_escape(path):
     return re.sub(r'(\s)$', r'\\\1', text)
 
 
-def default_excludes(root):
+def default_excludes(root, extra_dirs=()):
     base = project_dir(root).relative_to(Path(root)).as_posix()
     patterns = ['specs/*/progress/.view/', 'specs/*/progress/.host/', PLAN_ROOT + '/*/.view/', PLAN_ROOT + '/*/.host/',
                 base + '/bindings.json', base + '/*.lock', base + '/diagnostics.log*']
     if base.startswith(PLAN_ROOT + '/'):
         patterns.append(base + '/config.json')  # local statusline state; without Spec Kit nothing else shares it
-    for directory in registry_dirs(root):
+    for directory in (*registry_dirs(root), *extra_dirs):
         patterns += [glob_escape(directory) + '/.view/', glob_escape(directory) + '/.host/']
     return tuple(dict.fromkeys(patterns))
 
@@ -358,19 +358,36 @@ def git_exclude(root, patterns=None):
         return False
 
 
+# Local-only files a report writes (names under `.host/` and `.view/`). A sample snapshot name stands for the hashed
+# per-session files; the check is of the files themselves, so a rule that re-includes one of them is caught.
+LOCAL_FILES = {'.host': ('plan-keys.json', 'plan-source.json', 'session-snapshot.json'),
+               '.view': ('state.json', 'report.json', 'data.js', 'lock', 'diagnostics.log', 'index.html', 'base.css',
+                         'blocks.js', 'theme.css', 'layout.js')}
+
+
+def local_only_paths(directory):
+    """Repo-relative paths of every local-only file a report in `directory` (its progress directory) can write."""
+    return [f'{directory}/{leaf}/{name}' for leaf, names in LOCAL_FILES.items() for name in names]
+
+
 def check_excluded(root, directory):
-    """Fail with one line unless git ignores the report's local-only paths (`.view/`, `.host/`) in this repository. Skipped
-    when git or the repository is not there: nothing can be committed then."""
+    """Fail with one line, before anything is written, unless git ignores every local-only file the report at `directory`
+    (its progress directory, repo-relative) will write. Skipped when git or the repository is not there: nothing can be
+    committed then."""
     import subprocess
     root = Path(root)
     if git_dir(root) is None:
         return
-    for leaf in ('.host', '.view'):
-        try:
-            out = subprocess.run(['git', 'check-ignore', '-q', '--', f'{directory}/{leaf}/x'], cwd=str(root),
-                                 capture_output=True, timeout=10)
-        except (OSError, subprocess.SubprocessError):
-            return  # git is not usable here
-        if out.returncode == 1:
-            raise ProgressError('PROGRESS_EXCLUDE_FAILED', f'git does not ignore {directory}/{leaf}; pick another --dir '
-                                '(local-only files would be committed)', 3)
+    wanted = local_only_paths(directory)
+    try:
+        out = subprocess.run(['git', 'check-ignore', '--stdin', '-z'], cwd=str(root), capture_output=True, timeout=20,
+                             input=chr(0).join(wanted).encode('utf-8'))
+    except (OSError, subprocess.SubprocessError):
+        return  # git is not usable here
+    if out.returncode not in (0, 1):
+        return
+    ignored = {item.decode('utf-8', errors='replace') for item in out.stdout.split(b'\x00') if item}
+    loose = [p for p in wanted if p not in ignored]
+    if loose:
+        raise ProgressError('PROGRESS_EXCLUDE_FAILED', f'git does not ignore {loose[0]}; pick another --dir '
+                            '(local-only files would be committed)', 3)

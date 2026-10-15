@@ -31,8 +31,9 @@ ITEM = re.compile(r'^\s*[-*+]\s+\[([ xX])\]\s+(.*)$')
 HEADING = re.compile(r'^(#{1,6})\s+(.*?)\s*#*\s*$')
 FENCE = re.compile(r'^\s*(```|~~~)')
 SPAN = re.compile(r'(`+)(.+?)\1')
-LEAD_ID = re.compile(r'^(?:(\*\*|__)(' + TASK_REF + r')(?:\*\*|__)|(' + TASK_REF + r'))(?:[:.)]|\s|$)\s*(.*)$')
-BARE_PREFIXES = ('T', 'US')  # a one-digit bare id is an id only with one of these prefixes (T7, US3)
+LEAD_ID = re.compile(r'^(?:(\*\*|__)(' + TASK_REF + r')(?:\*\*|__)|(' + TASK_REF + r'))([:.)]|\s|$)\s*(.*)$')
+BARE_ID = re.compile(r'(?:T|US|P)\d+')  # an id with no bold and no `:` `.` `)` after it: T001, US12, P003; X11, H264, RFC-7231 are text
+BARE_PREFIXES = ('T', 'US')  # a one-digit delimited id is an id only with one of these prefixes (T7, US3)
 DEPENDS = re.compile(r'\((?:depends on|after)\s+([^)]*)\)', re.I)
 PARALLEL = re.compile(r'(?<![\w`])\[P\](?![\w`])')
 REF = re.compile(r'(?<![\w-])' + TASK_REF + r'(?![\w-])')
@@ -60,9 +61,11 @@ def explicit_id(body):
     lead = LEAD_ID.match(body)
     if not lead:
         return None, body
-    bold, ident, bare, rest = lead.group(1), lead.group(2), lead.group(3), lead.group(4)
+    bold, ident, bare, delimiter, rest = lead.groups()
     ident = (ident or bare).upper()
     if RESERVED_ID.fullmatch(ident):
+        return None, body
+    if not bold and delimiter not in (':', '.', ')') and not BARE_ID.fullmatch(ident):
         return None, body
     if not bold:
         digits = re.search(r'\d+$', ident).group(0)
@@ -129,12 +132,16 @@ def assign(items, stored, floor=0):
     highest = max([floor, *(_number(s['id']) for s in previous), *(_number(e) for e in explicit)] or [0])
     taken = {}
     free = list(range(len(previous)))
-    for index, item in enumerate(autos):  # 1. exact text
-        for slot in free:
-            if _fp(previous[slot]) == fingerprint(item['key']):
-                taken[index] = previous[slot]['id']
-                free.remove(slot)
-                break
+    by_fp = {}  # fingerprint -> previous slots in stored order, so equal texts keep their order
+    for slot in free:
+        by_fp.setdefault(_fp(previous[slot]), []).append(slot)
+    prints = [fingerprint(item['key']) for item in autos]  # once per item
+    for index in range(len(autos)):  # 1. exact text
+        slots = by_fp.get(prints[index])
+        if slots:
+            slot = slots.pop(0)
+            taken[index] = previous[slot]['id']
+            free.remove(slot)
     pairs = []
     for index, item in enumerate(autos):  # 2. similar text, best first
         if index in taken:
@@ -158,7 +165,7 @@ def assign(items, stored, floor=0):
             taken[index] = f'P{highest:03d}'
     for index, item in enumerate(autos):
         item['id'] = taken[index]
-    return [{'id': i['id'], 'fp': fingerprint(i['key']), 'key': i['key']} for i in autos], highest
+    return [{'id': i['id'], 'fp': prints[n], 'key': i['key']} for n, i in enumerate(autos)], highest
 
 
 def _read(ctx):

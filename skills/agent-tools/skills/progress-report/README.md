@@ -94,8 +94,8 @@ Plan mode needs no Spec Kit. Any Markdown checklist is a plan: a file you wrote,
 the phase of the items under it, and the first level-1 heading is the title. `(depends on T001, P002)` and `(after T001)`
 add dependencies; `[P]` marks a parallel item. Fenced code blocks and inline code spans are ignored.
 
-**Ids.** An item that starts with an id keeps it (`T001`, `T-12`, `US3`, `**T001**: title`); words such as MP3, GPT-4,
-Q3 and ES6 are text, and a repeated id makes the later item an automatic one. Every other item gets `P001`,
+**Ids.** An item that starts with an id keeps it (`T001`, `US3`, `T-12: title`, `**T001**: title`); words such as MP3, GPT-4,
+Q3, ES6, X11, H264 and RFC-7231 are text, and a repeated id makes the later item an automatic one. Every other item gets `P001`,
 `P002`, ... in plan order the first time, and keeps that id afterwards: the tracked `plan.json` stores each id with a
 one-way fingerprint of its text (never the text), and an edit is matched by equal text first, then by text at least 60
 percent similar (using the text kept in the git-ignored `.host/plan-keys.json`), and only then gets a new number. Reordering, checking off and small rewordings change nothing; numbers are never reused. The full rule is in

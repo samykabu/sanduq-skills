@@ -115,7 +115,7 @@ candidates when any exist).
 has a command containing `hook.py` and the argument `--managed-by=progress-report`; an entry is "ours" if and only if
 both appear. Entries registered by Spec Kit's dispatcher contain `speckit.progress.hook`; when one exists in a file of
 the target host the installer writes nothing and exits 3. Commands end in `; exit 0` and use `${CLAUDE_PROJECT_DIR}` (braced)
-for Claude project scope. Writes happen under `<file>.progress-lock`, only when the file bytes are unchanged since they were
+for Claude project scope. Installs run under one OS-held lock (`<user settings file>.progress-lock`, never taken over by age) that also covers the Spec Kit and other-scope checks, which repeat on every attempt. Writes happen only when the file bytes are unchanged since they were
 read (one re-read, then `PROGRESS_HOOKS_CONFLICT`). Entries of this installer in the other scope are refused
 (`PROGRESS_HOOKS_DUPLICATE`) unless `--force-both`.
 
