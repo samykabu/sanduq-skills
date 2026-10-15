@@ -19,7 +19,7 @@ entries are present. The command reference lists the files, paths and exit codes
 | --- | --- |
 | Claude Code reads `hooks` from `.claude/settings.json` and `~/.claude/settings.json`: `{"hooks": {"PostToolUse": [{"matcher": "...", "hooks": [{"type": "command", "command": "...", "timeout": N}]}]}}` | **Verified** from the Claude Code hooks documentation |
 | Claude event names `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, `SessionEnd`; an omitted matcher matches every tool | **Verified** from the documentation |
-| `$CLAUDE_PROJECT_DIR` is set for hook commands, so a project-scope command can be repo-relative | **Verified** from the documentation |
+| `${CLAUDE_PROJECT_DIR}` is set for hook commands and rewritten in the command (only the braced form; the bare form is `$null` in PowerShell), so a project-scope command can be repo-relative | **Verified** from the documentation |
 | Codex reads `hooks.json` from `.codex/` (project) and `~/.codex/` or `$CODEX_HOME` (user) with the same shape | **Unverified** against a running Codex; written from the documented schema |
 | Codex hooks need the experimental `codex_hooks` feature turned on | **Unverified**; the installer does not edit Codex's config |
 | Codex has no session end event; `Stop` stands in for it | **Unverified**: none is documented |
@@ -67,7 +67,7 @@ events:
 ```
 
 Each template contains `scripts:\n  py: scripts/hook.py <event>`, a standard-library entry that returns before importing Progress for an unbound
-session (about 30 ms, the interpreter start-up) and otherwise runs the same handler as `progress.py hook <event>`.
+session (interpreter start-up, roughly 30 to 100 ms by platform) and otherwise runs the same handler as `progress.py hook <event>`.
 
 ## Claude Code payloads (verified from docs)
 

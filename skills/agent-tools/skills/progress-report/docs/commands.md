@@ -71,8 +71,8 @@ the line and do not elaborate.
 **Error lines** read `progress: error CODE message`. The codes are `PROGRESS_USAGE`, `PROGRESS_NO_FEATURE`,
 `PROGRESS_NOT_INITIALIZED`, `PROGRESS_NOT_FOUND`, `PROGRESS_THEME_INVALID`, `PROGRESS_THEME_UNAVAILABLE`,
 `PROGRESS_DECISION_AUTHORITY`, `PROGRESS_FORBIDDEN_CONTENT`, `PROGRESS_UNSAFE_TARGET`, `PROGRESS_LOCK_BUSY`, and in plan
-mode `PROGRESS_PLAN_MISSING`, `PROGRESS_PLAN_EXISTS`, and for `hooks` `PROGRESS_HOOKS_SPECKIT`, `PROGRESS_HOOKS_SETTINGS`
-and `PROGRESS_HOOKS_PATH`. The [README table](../README.md#error-codes) gives the cause and fix of each.
+mode `PROGRESS_PLAN_MISSING`, `PROGRESS_PLAN_EXISTS`, and for `hooks` `PROGRESS_HOOKS_SPECKIT`, `PROGRESS_HOOKS_SETTINGS`,
+`PROGRESS_HOOKS_PATH`, `PROGRESS_HOOKS_DUPLICATE`, `PROGRESS_HOOKS_CONFLICT`, `PROGRESS_DIR_CONFLICT` and `PROGRESS_EXCLUDE_FAILED`. The [README table](../README.md#error-codes) gives the cause and fix of each.
 
 **Environment.**
 
@@ -111,7 +111,8 @@ kept, and the report files are copied afresh (run it again after an upgrade).
 | --- | --- | --- |
 | `--plan PATH` | none | Plan mode. Any Markdown checklist file. Read, never written. See [plan mode](#plan-mode) |
 | `--name NAME` | the plan file name without extension, slugified | Plan mode. The report name: lowercase letters, digits, `.`, `-`, `_`, 64 characters at most |
-| `--dir DIR` | `.progress/<name>` | Plan mode. A report directory inside the repository. Refused when it has `.` or `..` components, is the repository root, is under `.git`, is a `specs/<dir>` slot, or reaches outside through a symlink |
+| `--rebind` | off | Plan mode. Let an existing report follow a different plan file (without it a different file is refused with `PROGRESS_PLAN_EXISTS`) |
+| `--dir DIR` | `.progress/<name>` | Plan mode. A report directory inside the repository. Refused when it has `.` or `..` components, is the repository root, is under `.git` or anywhere under `specs/`, or reaches outside through a symlink |
 | `--statusline` | `no` | `yes` also installs the [status line wrapper](#status-line-wrapper) |
 | `--theme` | none | A preset name, applied like [`theme --preset`](#theme-verb-and-theme-file) |
 
@@ -137,7 +138,7 @@ progress: error PROGRESS_THEME_INVALID unknown preset nope
 
 Errors: `PROGRESS_THEME_INVALID` (2), `PROGRESS_NO_FEATURE` (2), `PROGRESS_USAGE` (2: `--name` or `--dir` without
 `--plan`, bad name or directory, `--plan` with `--feature`), `PROGRESS_PLAN_MISSING` (2), `PROGRESS_PLAN_EXISTS` (3: the
-report already follows another plan; pass `--name` or `--dir`), `PROGRESS_UNSAFE_TARGET` (3), `PROGRESS_LOCK_BUSY` (4).
+report already follows another plan; pass `--name`, `--dir` or `--rebind`), `PROGRESS_DIR_CONFLICT` (3), `PROGRESS_EXCLUDE_FAILED` (3), `PROGRESS_UNSAFE_TARGET` (3), `PROGRESS_LOCK_BUSY` (4).
 
 #### Plan mode
 
@@ -151,13 +152,17 @@ too) is a task. A heading of level 2 or deeper names the phase of the items belo
 report title. Fenced code blocks and inline code spans are ignored, so an item or id quoted in prose or in a code
 example is not a task.
 
-**Ids.** An item that starts with an id keeps it: `T001`, `US3`, `**T001**: title`, `T001) title`. Every other item gets an
-auto id `P001`, `P002`, ... The map from item text to auto id is stored in the tracked `plan.json` and applied on every
-refresh, in this order:
+**Ids.** An item that starts with an id keeps it: `T001`, `T-12`, `US3`, `**T001**: title`, `T001) title`. A bare id
+needs a space or `:` `.` `)` after it and two digits or more (or the prefix `T`/`US`); a bold id may be any form. So MP3,
+GPT-4, Q3, A4 and ES6 are text. A second item with an id that is already taken becomes an auto item and a line goes to the
+diagnostics log. Every other item gets an auto id `P001`, `P002`, ... The tracked `plan.json` stores, per auto id, a
+truncated SHA-256 fingerprint of the normalised text and never the text; the text itself is kept in the git-ignored
+`.host/plan-keys.json`. The map is applied on every refresh, in this order:
 
-1. an item whose normalised text (case, spacing and emphasis ignored) equals a stored one reuses its id, first unused
-   match in plan order;
-2. an item at least 60 percent similar to a stored, unmatched text reuses that id, best match first;
+1. an item whose normalised text (case, spacing and emphasis ignored) has the stored fingerprint reuses its id, first
+   unused match in plan order;
+2. an item at least 60 percent similar to a stored, unmatched text (known locally) reuses that id, best match first. A
+   fresh clone has the fingerprints only, so rewording there gives a new id;
 3. any other item takes the next number. Numbers are never reused, even after the item is deleted.
 
 So reordering items, checking them off and small rewordings keep their ids; adding an item never shifts the others. A
@@ -169,12 +174,16 @@ self references are dropped. `[P]` marks an item parallel. Annotations are remov
 
 **Where it lives.** The default report directory is `.progress/<name>/`; `--dir` puts it elsewhere in the repository and
 records it in the tracked `.progress/plans.json` so `--plan NAME` finds it. `facts.jsonl` and `plan.json` are tracked;
-`.view/` and `.host/` are git-ignored through `.git/info/exclude`.
+`.view/` and `.host/` are git-ignored through `.git/info/exclude`, with glob characters in `--dir` escaped (a `--dir
+"reports/[review]"` works). `init` checks with `git check-ignore` and fails with `PROGRESS_EXCLUDE_FAILED` before writing
+anything local if the exclusion does not take effect. It also refuses (`PROGRESS_DIR_CONFLICT`) a `--dir` whose
+`plan.json` or `facts.jsonl` is not a Progress plan report, before any write.
 
 **The plan file.** Progress never writes it. Whoever owns the plan checks items off, and the next refresh follows. A plan
 inside the repository is stored as a repo-relative path. A plan outside it (for example `~/.claude/plans/x.md`) is read
 in place; `plan.json` stores only `external:<file name>`, and the absolute path stays in the git-ignored
-`.host/plan-source.json`. A fresh clone has the facts but not that path: run `progress init --plan PATH` again to point
+`.host/plan-source.json` together with a fingerprint of the full path; `init` with another file of the same name is
+refused unless `--rebind` is given. A fresh clone has the facts but not that path: run `progress init --plan PATH` again to point
 the report at the file. While the source is missing the report shows no tasks.
 
 ### bind
@@ -424,7 +433,7 @@ progress statusline [run|install|uninstall]
 ### hooks
 
 ```text
-progress hooks install   --host claude|codex [--scope project|user] [--python CMD]
+progress hooks install   --host claude|codex [--scope project|user] [--python CMD] [--force-both]
 progress hooks uninstall --host claude|codex [--scope project|user]
 progress hooks status    [--host claude|codex]
 ```
@@ -442,7 +451,7 @@ Each entry has this shape and a 10 second timeout. The `--managed-by=progress-re
 
 ```json
 {"matcher": "Task|Agent|spawn_agent", "hooks": [{"type": "command", "timeout": 10,
-  "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/progress-report/scripts/hook.py\" pre_tool_use --managed-by=progress-report"}]}
+  "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/skills/progress-report/scripts/hook.py\" pre_tool_use --managed-by=progress-report; exit 0"}]}
 ```
 
 - **Preserving settings.** The file is read as JSON and only the `hooks` entries carrying the tag are touched. Other
@@ -451,12 +460,28 @@ Each entry has this shape and a 10 second timeout. The `--managed-by=progress-re
   key or `hooks` key left empty. A file that is not valid JSON, or whose `hooks` is not an object, is never overwritten
   (`PROGRESS_HOOKS_SETTINGS`, exit 3).
 - **Paths.** Project scope never writes an absolute path into a file you commit: the command is repo-relative, as
-  `$CLAUDE_PROJECT_DIR/<path>` for Claude and `<path>` for Codex (Codex runs hooks in the session's working directory;
+  `${CLAUDE_PROJECT_DIR}/<path>` for Claude (the braced form is the one Claude Code rewrites in both bash and PowerShell) and `<path>` for Codex (Codex runs hooks in the session's working directory;
   **unverified**, so start Codex at the repository root). When the skill lives outside the repository (a plugin install),
   project scope is refused with `PROGRESS_HOOKS_PATH`; use `--scope user`, which writes the absolute path, or copy the
   skill into the repository.
 - **Interpreter.** `--python CMD` sets the command; the default is `python` on Windows and `python3` elsewhere, chosen when
-  you run `install`. Pass it when a shared project file must work on both.
+  you run `install`. Pass it when a shared project file must work on both. It must be one word without spaces or shell
+  characters (`PROGRESS_USAGE`, exit 2); put the interpreter on PATH instead of quoting a path with spaces.
+- **A vanished script.** Every command ends in `; exit 0`, which bash and PowerShell (the two shells Claude Code uses; on
+  Windows PowerShell is the fallback when Git Bash is absent) both accept. If the script path disappears, for example a
+  plugin cache directory that was updated or pruned, the hook ends quietly instead of returning Python's exit code 2.
+  `hooks status` shows `(N script missing)` for such entries. Run `hooks uninstall --scope user` before updating or
+  removing the plugin, then install again. Claude Code's exec form (`args`) and `async` hooks are documented but
+  version dependent, so they are future work; `Stop` and `SessionEnd` must stay synchronous.
+- **Two scopes.** When this installer's entries exist in the other scope of the same host, `install` exits 3
+  (`PROGRESS_HOOKS_DUPLICATE`) because the host would run both; `--force-both` overrides. A file in the other scope that
+  cannot be read does not stop an install and shows as `unreadable` in `status`; only the file being written must parse.
+- **Concurrent edits.** The file is edited under a lock file next to it (`<file>.progress-lock`) and written only if its
+  bytes are unchanged since they were read. A change in between is re-read and the edit applied once more; a second
+  change, or a lock held by another installer, exits 3 with `PROGRESS_HOOKS_CONFLICT`. A settings file that is a symlink
+  (a dotfiles setup) is refused with `PROGRESS_UNSAFE_TARGET`.
+- **Binding.** When exactly one report already exists, `install` appends `bind=<nonce>` to its line so the new hooks bind
+  the session on the next tool call. Install hooks before `init` and the `init` line carries the nonce as usual.
 - **Spec Kit.** The Sanduq extension registers the same events through Spec Kit's dispatcher
   (`speckit.progress.hook-*` commands). When such an entry exists in the project or user file of that host, `install`
   prints `progress: error PROGRESS_HOOKS_SPECKIT ...`, changes nothing and exits 3, so no event is recorded twice.
@@ -473,8 +498,9 @@ progress: hooks removed claude project 5 entries from .claude/settings.json
 ```
 
 `status` counts tagged entries against the number written for that host, per scope, and says whether Spec Kit's Progress
-hooks are present. Errors: `PROGRESS_USAGE` (2: no `--host`), `PROGRESS_HOOKS_SPECKIT`, `PROGRESS_HOOKS_SETTINGS`,
-`PROGRESS_HOOKS_PATH` (all 3).
+hooks are present. Errors: `PROGRESS_USAGE` (2: no `--host`, unsafe `--python`), `PROGRESS_HOOKS_SPECKIT`,
+`PROGRESS_HOOKS_SETTINGS`, `PROGRESS_HOOKS_PATH`, `PROGRESS_HOOKS_DUPLICATE`, `PROGRESS_HOOKS_CONFLICT`,
+`PROGRESS_UNSAFE_TARGET` (all 3).
 
 ## Hook entry
 
@@ -508,7 +534,7 @@ unbound session, a busy lock, an exception. The host forwards a hook's stdout to
 would cost tokens and a non-zero exit would be shown as a failure. The reason for a dropped event goes to a
 [diagnostics log](../README.md#diagnostics-logs). A project where Progress was never initialised gets nothing
 written. `hook.py` uses only the standard library and returns before importing Progress for a session it can already
-tell is unbound (about 30 ms).
+tell is unbound (interpreter start-up, roughly 30 to 100 ms by platform).
 
 ## Status line wrapper
 

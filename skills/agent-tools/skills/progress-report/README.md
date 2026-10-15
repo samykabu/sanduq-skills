@@ -51,7 +51,15 @@ The skill writes nothing to a project until you run `init`.
 Plan mode needs no Spec Kit. Any Markdown checklist is a plan: a file you wrote, or a plan your agent saved, for example
 `~/.claude/plans/refactor.md`.
 
-1. Create the report.
+1. Install the hooks once, so the report learns the model, effort, context and child agents ([details](#hooks)).
+
+   ```bash
+   progress hooks install --host claude        # or --host codex; add --scope user for a plugin install
+   ```
+
+   Without hooks the report still follows the plan and your recorded facts. Hooks first, because a bind needs a hook to
+   complete it.
+2. Create the report.
 
    ```bash
    progress init --plan docs/plan.md
@@ -62,14 +70,8 @@ Plan mode needs no Spec Kit. Any Markdown checklist is a plan: a file you wrote,
    ```
 
    The report lives in `.progress/plan/` (`--name` and `--dir` change that). The `bind=` value binds the current session:
-   the host's next hook for that shell call completes it.
-2. Install the hooks once, so the report learns the model, effort, context and child agents ([details](#hooks)).
-
-   ```bash
-   progress hooks install --host claude        # or --host codex
-   ```
-
-   Without hooks the report still follows the plan and your recorded facts.
+   the host's next hook for that shell call completes it. Created the report first? Run `hooks install` afterwards: it
+   prints a fresh `bind=` for the one existing report, and the next tool call completes it.
 3. Open `.progress/plan/.view/index.html` in a browser. It works from `file://`, needs no server and polls for new data
    every 3 seconds.
 4. Assign work. Items show the ids the plan gives them (`T001`) or the stable ones Progress adds (`P001`):
@@ -92,10 +94,11 @@ Plan mode needs no Spec Kit. Any Markdown checklist is a plan: a file you wrote,
 the phase of the items under it, and the first level-1 heading is the title. `(depends on T001, P002)` and `(after T001)`
 add dependencies; `[P]` marks a parallel item. Fenced code blocks and inline code spans are ignored.
 
-**Ids.** An item that starts with an id keeps it (`T001`, `US3`, `**T001**: title`). Every other item gets `P001`,
-`P002`, ... in plan order the first time, and keeps that id afterwards: the text-to-id map is stored in the tracked
-`plan.json`, and an edit is matched by equal text first, then by text at least 60 percent similar, and only then gets a
-new number. Reordering, checking off and small rewordings change nothing; numbers are never reused. The full rule is in
+**Ids.** An item that starts with an id keeps it (`T001`, `T-12`, `US3`, `**T001**: title`); words such as MP3, GPT-4,
+Q3 and ES6 are text, and a repeated id makes the later item an automatic one. Every other item gets `P001`,
+`P002`, ... in plan order the first time, and keeps that id afterwards: the tracked `plan.json` stores each id with a
+one-way fingerprint of its text (never the text), and an edit is matched by equal text first, then by text at least 60
+percent similar (using the text kept in the git-ignored `.host/plan-keys.json`), and only then gets a new number. Reordering, checking off and small rewordings change nothing; numbers are never reused. The full rule is in
 [commands](docs/commands.md#plan-mode).
 
 **Which plan.** When one plan or feature is active, no flag is needed. Otherwise pass `--plan NAME|PATH` (a name, a
@@ -103,7 +106,8 @@ report directory or the plan file) or `--feature DIR`; without one the verb prin
 `progress: error PROGRESS_NO_FEATURE pass --plan NAME or --feature DIR (candidates: plan:launch, specs/001-demo)`.
 
 **A plan outside the repository** is read in place. The tracked files store `external:<file name>`, never the absolute
-path, which stays in the git-ignored `.progress/<name>/.host/plan-source.json`.
+path, which stays in the git-ignored `.progress/<name>/.host/plan-source.json` with a fingerprint of the full path. Running
+`init` with a different file of the same name is refused; pass `--rebind` to follow it.
 
 ## Quick start: Spec Kit mode
 
@@ -146,6 +150,13 @@ subagent launches), `post_tool_use`, `stop` and `session_end`, each calling `scr
   only those.
 - Project scope writes a repo-relative command, never an absolute path. If the skill is outside the repository (a plugin
   install), use `--scope user`.
+- Every command ends in `; exit 0`, so a script that vanished (a plugin updated or pruned) cannot block the host.
+  `status` flags such entries (`user 5/5 (5 script missing)`). Run `hooks uninstall --scope user` before updating or
+  removing the plugin, then install again.
+- Installing in the other scope when this installer's entries already exist there is refused; pass `--force-both`.
+- `--python` takes one command word; a value with spaces is refused (put the interpreter on PATH).
+- The hook file is edited under a lock and only if it did not change meanwhile: a change is re-read once, a second one
+  refuses with `PROGRESS_HOOKS_CONFLICT`. A symlinked settings file is refused with `PROGRESS_UNSAFE_TARGET`.
 - Nothing is written for a host you do not name. `status` only reads.
 - Codex hooks are experimental and the `hooks.json` shape for Codex is **unverified** against a running host; see
   [hosts](docs/hosts.md).
@@ -234,8 +245,8 @@ report by an explicit handshake, so hooks never attach an observation to a guess
 ```text
 .progress/<name>/                  plan report (default; --dir picks another directory inside the repository)
   facts.jsonl      tracked in git: lanes, blockers, decisions, notes, legacy attempts
-  plan.json        tracked: name, plan reference (repo-relative or external:<name>), stable item ids
-  .host/           git-ignored, durable: host snapshots; plan-source.json for a plan outside the repository
+  plan.json        tracked: name, plan reference (repo-relative or external:<name>), stable item ids with text fingerprints
+  .host/           git-ignored, durable: host snapshots; plan-source.json (external plan path), plan-keys.json (item text)
   .view/           git-ignored, disposable: the report (index.html, data.js, report.json, theme.css, state.json, lock)
 specs/<feature>/progress/          Spec Kit report: facts.jsonl, .host/, .view/ (tasks come from ../tasks.md)
 .progress/plans.json               tracked, only when a --dir outside .progress/ is used
@@ -302,7 +313,7 @@ Work through these in order.
    running `progress init` or `progress bind` through the shell tool in that session; the next tool call completes the
    bind within 120 seconds. `progress bind --session ID` binds directly when you know the id.
 4. **Check the hooks are installed.** `progress hooks status` shows the count per host and scope. Install with
-   `progress hooks install --host claude`. In a Spec Kit project the hooks come from the Sanduq extension and status says
+   `progress hooks install --host claude` (it prints a fresh `bind=` when a report exists). In a Spec Kit project the hooks come from the Sanduq extension and status says
    `spec-kit yes`.
 5. **Check the host trusts them.** Hosts ask you to review project hooks before running them. If you declined, or the
    prompt never showed, they do not run. Claude Code's `disableAllHooks: true` switches them all off. Codex hooks sit
@@ -339,10 +350,15 @@ Every verb error is one line, `progress: error CODE message`, and the exit code 
 | `PROGRESS_DECISION_AUTHORITY` | 3 | Workflow owns decisions for this feature. Answer in Workflow |
 | `PROGRESS_FORBIDDEN_CONTENT` | 3 | The text looks like a secret, holds an absolute path outside the repository, or the `--actor` is not `user`, `hook`, `legacy` or `agent:<id>` |
 | `PROGRESS_UNSAFE_TARGET` | 3 | A symbolic link or junction sits where Progress would write. Remove it |
-| `PROGRESS_PLAN_EXISTS` | 3 | The report directory already follows a different plan. Pass `--name` or `--dir` |
+| `PROGRESS_PLAN_EXISTS` | 3 | The report directory already follows a different plan (or a different file of the same name). Pass `--name` or `--dir`, or `--rebind` |
+| `PROGRESS_DIR_CONFLICT` | 3 | `--dir` holds a `plan.json` or `facts.jsonl` that is not a Progress plan report. Pick another directory; nothing was written |
+| `PROGRESS_EXCLUDE_FAILED` | 3 | git does not ignore the report's `.view/` and `.host/` after `init` wrote the exclusions. Pick another `--dir` |
 | `PROGRESS_HOOKS_SPECKIT` | 3 | Spec Kit already registers Progress hooks for that host. Keep using them, or remove them first |
 | `PROGRESS_HOOKS_SETTINGS` | 3 | The host's hook file is not valid JSON or has an unexpected shape. Fix it; it was not touched |
 | `PROGRESS_HOOKS_PATH` | 3 | Project scope needs the skill inside the repository. Use `--scope user` or copy the skill in |
+| `PROGRESS_HOOKS_DUPLICATE` | 3 | This installer's entries already exist in the other scope. Uninstall there, or pass `--force-both` |
+| `PROGRESS_HOOKS_CONFLICT` | 3 | The hook file changed twice while it was edited, or another installer holds its lock. Retry |
+| `PROGRESS_UNSAFE_TARGET` (hooks) | 3 | The hook file is a symlink (common with dotfiles). Install into the real file's directory or replace the link |
 | `PROGRESS_LOCK_BUSY` | 4 | Another Progress process holds the report lock after 3 tries 200 ms apart. Retry once |
 
 Hooks and the status line never fail: they drop the event, log it and exit 0.

@@ -7,7 +7,7 @@ Error lines start with `progress: error CODE`. The full contract is `docs/contra
 
 | Verb | Writes | Notes |
 | --- | --- | --- |
-| `init --plan PATH [--name N] [--dir D] [--statusline yes\|no] [--theme PRESET]` | `.progress/<name>/` (`facts.jsonl`, `plan.json`, `.view/`), project config, pending bind | Plan mode. Reads any Markdown checklist, never writes it. Prints `progress: ready <report path> bind=<nonce>`. The next host hook for that shell call completes the bind. A plan outside the repo is stored as `external:<name>`. |
+| `init --plan PATH [--name N] [--dir D] [--rebind] [--statusline yes\|no] [--theme PRESET]` | `.progress/<name>/` (`facts.jsonl`, `plan.json`, `.view/`), project config, pending bind | Plan mode. Reads any Markdown checklist, never writes it. Prints `progress: ready <report path> bind=<nonce>`. The next host hook for that shell call completes the bind. A plan outside the repo is stored as `external:<name>`. |
 | `init [--feature DIR] [--statusline yes\|no] [--theme PRESET]` | `specs/<feature>/progress/`, project config, pending bind | Spec Kit mode. Same output line. |
 | `bind [--session ID]` (prints `progress: pending bind=<nonce>` without `--session`) | project `bindings.json` | Needed again only when `init` was not run in this session. `--session` binds directly where hooks are absent. |
 | `refresh` | `.view/`, `plan.json` ids | Silent on success. `--verbose` prints one line. |
@@ -20,7 +20,7 @@ Error lines start with `progress: error CODE`. The full contract is `docs/contra
 | `note "text" [--target P005]` | `facts.jsonl` | Retries and failures worth a human's attention. |
 | `attempt record (--lane L1 \| --overhead LABEL) --run ID --status S [--started T] [--ended T] [--usage-json PATH]` | `facts.jsonl` | Integration verb for the Workflow legacy shim. Writes a `kind:"attempt"` fact with origin `legacy`; it never overrides a producer's attempt or lane status. |
 | `runs [--json] [--runs-dir DIR]...` | nothing | `progress.runs.v1`: normalized `.delegate/runs` projections for other tools. Needs no initialised report. |
-| `hooks install\|uninstall --host claude\|codex [--scope project\|user] [--python CMD]` | the host's hook file | Tagged entries only; other settings kept. Refuses (exit 3) when Spec Kit's Progress hooks are registered, when the file is not valid JSON, or when project scope would need an absolute path. |
+| `hooks install\|uninstall --host claude\|codex [--scope project\|user] [--python CMD] [--force-both]` | the host's hook file | Tagged entries only; other settings kept. Commands end in `; exit 0`. Refuses (exit 3): Spec Kit's Progress hooks registered (`PROGRESS_HOOKS_SPECKIT`), target file not valid JSON (`_SETTINGS`), project scope needing an absolute path (`_PATH`), entries already in the other scope unless `--force-both` (`_DUPLICATE`), a file changing twice or locked (`_CONFLICT`), a symlinked settings file (`PROGRESS_UNSAFE_TARGET`). Appends `bind=<nonce>` when one report exists. |
 | `hooks status [--host claude\|codex]` | nothing | One line: tagged entries per host and scope, and whether Spec Kit's hooks exist. |
 | `statusline [install\|uninstall\|run]` | Claude `settings.json` | Chains the previous status line command and restores it on uninstall. |
 | `theme --preset sanduq\|cobalt\|emerald\|classic \| --from-illustrate \| --file theme.json \| --show` | project `theme.json` | |

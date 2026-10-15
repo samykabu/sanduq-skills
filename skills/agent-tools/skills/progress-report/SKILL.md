@@ -10,21 +10,21 @@ Record only missing assignment, decision or blocker facts.
 
 Run the CLI from the repository root: `progress` below stands for `python <skill dir>/scripts/progress.py`
 (`.claude/skills/progress-report`, `.agents/skills/progress-report`, or `$CLAUDE_PLUGIN_ROOT/skills/progress-report`).
-Type the full command each time; shell state may not persist. Verbs print one line (`refresh` prints nothing); relay it.
+Type the full command each time. Verbs print one line (`refresh` prints nothing); relay it.
 
 ## When to use it
 
-- A plan file (any Markdown with `- [ ]` / `- [x]` items) drives the work: use **plan mode**, no Spec Kit needed.
-- A Spec Kit feature has `specs/<feature>/tasks.md`: use **feature mode**; Workflow files are collected when present.
+- A plan file (Markdown with `- [ ]` / `- [x]` items) drives the work: **plan mode**, no Spec Kit needed.
+- A Spec Kit feature has `specs/<feature>/tasks.md`: **feature mode**; Workflow files are collected when present.
 
 ## Plan mode quick start
 
-1. `progress init --plan docs/plan.md` creates `.progress/plan/` (use `--name`, `--dir` to change it). It prints `bind=<nonce>`; the next hook completes the bind.
-2. `progress hooks install --host claude` (or `codex`) once, to collect model, effort, context and child agents. Skip it and the report still tracks tasks.
-3. Check items off in the plan file. The report follows; the plan is never written by Progress.
-4. `progress status` for the one-line state; open `.progress/plan/.view/index.html` for the view.
+1. `progress hooks install --host claude` (or `codex`; add `--scope user` for a plugin install) once, for model, effort, context and child agents. Skip it and tasks are still tracked.
+2. `progress init --plan docs/plan.md` creates `.progress/plan/` (see `--name`, `--dir`) and prints `bind=<nonce>`; the next hook binds (`hooks install` prints one if a report exists).
+3. Check items off in the plan file; the report follows. Progress never writes the plan.
+4. `progress status` gives the one-line state; the view is `.progress/plan/.view/index.html`.
 
-Items keep an id written in the plan (`T001`); others get stable `P001`... ids shown in the view. With one plan or feature active, no target flag is needed; otherwise pass `--plan NAME` or `--feature DIR`.
+Items keep a written id (`T001`); others get stable `P001`... ids. With one plan or feature active no target flag is needed; otherwise pass `--plan NAME` or `--feature DIR`.
 
 ## Verbs
 
@@ -42,9 +42,9 @@ Items keep an id written in the plan (`T001`); others get stable `P001`... ids s
 
 ## Rules
 
-1. Record a lane when you assign work (`L#`; host children `C#` appear on their own). Task start, completion and retries need no command.
-2. Never put secrets, absolute paths or transcript text in a note. Text is capped at 200 characters.
+1. Record a lane when you assign work (`L#`; host children `C#` appear on their own). Starts, completions and retries need no command.
+2. Never put secrets, absolute paths or transcript text in a note (200 characters at most).
 3. Unknown values stay unknown. Do not estimate model, effort, context or time.
-4. Errors read `progress: error CODE`. Fix the cause named; do not retry in a loop.
+4. Errors read `progress: error CODE`; fix the cause, do not retry in a loop.
 
-Details: `references/verbs.md`; the full contract in `docs/contracts.md`; every flag in `docs/commands.md`.
+Details: `references/verbs.md`; contract `docs/contracts.md`; flags `docs/commands.md`.

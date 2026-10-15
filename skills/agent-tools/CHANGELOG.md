@@ -8,8 +8,16 @@
 - Plan mode: `progress init --plan PATH [--name NAME] [--dir DIR]` turns any `- [ ]` / `- [x]` file into a
   report in `.progress/<name>/`. Headings become phases, ids such as `T001` are kept, other items get
   stable `P001`... ids (equal text first, then 60 percent similar text, then the next number; numbers are
-  never reused), and `(depends on …)` / `(after …)` annotations become edges. The plan is only read. A plan
-  outside the repository is stored as `external:<name>`; its absolute path stays in a git-ignored file.
+  never reused), and `(depends on …)` / `(after …)` annotations become edges. The plan is only read. The
+  tracked `plan.json` stores ids and one-way text fingerprints, never item text (the text used for fuzzy
+  matching lives in the git-ignored `.host/`). A bare id needs a delimiter and two digits (or `T`/`US`), so
+  MP3, GPT-4, Q3 and ES6 are text; a repeated id becomes an automatic one. A plan outside the repository is
+  stored as `external:<name>`; its absolute path and a path fingerprint stay in a git-ignored file, and a
+  different file of the same name is refused unless `--rebind`.
+- Plan report safety: glob characters in `--dir` are escaped in the git exclusions and `init` verifies them
+  with `git check-ignore` (`PROGRESS_EXCLUDE_FAILED`); a `--dir` that holds another tool's `plan.json` is
+  refused before any write (`PROGRESS_DIR_CONFLICT`); nothing under `specs/` is a report directory; the plan
+  is read once per refresh.
 - Target resolution for every verb: `--plan NAME|PATH` or `--feature DIR`; with exactly one active report no
   flag is needed, otherwise `PROGRESS_NO_FEATURE` lists the candidates on one line.
 - Works with no Spec Kit: project state lives in `.progress/.project/` when there is no `.specify/`.
@@ -17,9 +25,14 @@
 - `progress hooks install|uninstall|status --host claude|codex [--scope project|user]` writes tagged native
   hook entries (`.claude/settings.json`, `.codex/hooks.json`), preserves all other settings, removes only its
   own entries, and refuses (exit 3) when Spec Kit's Progress hooks are already registered. The Codex file
-  shape is unverified against a running host.
+  shape is unverified against a running host. Commands use the braced `${CLAUDE_PROJECT_DIR}` and end in
+  `; exit 0` so a vanished plugin path cannot block the host (`hooks status` flags it; uninstall before
+  updating the plugin). Settings are edited under a lock and only if unchanged since read; entries in the
+  other scope are refused unless `--force-both`; an unreadable other-scope file does not stop an install;
+  `--python` with spaces is refused; `install` prints `bind=<nonce>` when a report exists, so hooks can be
+  installed before or after `init`.
 - UI: a plan report shows its plan file in the header instead of the Workflow stage.
-- 299 tests (stdlib unittest, 76 of them new for plan mode and the hook installer); browser tests skip without Playwright.
+- 323 tests (stdlib unittest, 100 of them new for plan mode, the hook installer and the review fixes); browser tests skip without Playwright.
 
 ## 1.1.3 — 2026-10-10
 

@@ -68,10 +68,11 @@ candidates when any exist).
 ## Plan mode
 
 ```
-.progress/<name>/            or the --dir directory: any directory inside the repository, never `specs/<dir>`
+.progress/<name>/            or the --dir directory: any directory inside the repository, never under `specs/`
   facts.jsonl                tracked, identical to feature mode
-  plan.json                  tracked, progress.plan.v1: {"schema", "name", "source", "ids": [{"id", "key"}], "next"}
-  .host/                     git-ignored; also holds plan-source.json {"path": "<absolute>"} for an external plan
+  plan.json                  tracked, progress.plan.v1: {"schema", "name", "source", "ids": [{"id", "fp"}], "next"}; `fp` is the first 16 hex digits of SHA-256 of the normalised item text. No item text is ever tracked
+  .host/                     git-ignored; also holds plan-source.json {"path": "<absolute>", "fingerprint"} for an external
+                             plan and plan-keys.json {"<id>": "<normalised text>"}, the only place item text is kept
   .view/                     git-ignored and disposable, identical to feature mode
 .progress/plans.json         tracked; {"dirs": [...]}, only when a --dir outside .progress/ is used
 .progress/.project/          project state when there is no .specify/progress: config.json, theme.json, bindings.json,
@@ -84,18 +85,23 @@ candidates when any exist).
   `.specify/progress` when `.specify/` exists, else `.progress/.project`. The standard-library hook entry applies the
   same rule.
 - **Confinement.** The plan report directory has no `.`/`..` components, is not the repository root, is not under `.git`,
-  is not a `specs/<dir>` slot, and (links resolved) lies inside the repository, as do its `.view/` and `.host/`.
+  is not under `specs/`, and (links resolved) lies inside the repository, as do its `.view/` and `.host/`.
   Otherwise `PROGRESS_NO_FEATURE` (hooks drop the event).
 - **Source reference.** `plan.json` `source` is a repo-relative posix path, or `external:<file name>` for a plan outside
-  the repository. Tracked files never hold an absolute path; the absolute path of an external plan is only in
-  `.host/plan-source.json`. The plan file is only read (at most 1 MiB).
+  the repository. Tracked files never hold an absolute path or item text (so nothing in them needs a secret scan); the
+  absolute path of an external plan and its path fingerprint are only in `.host/plan-source.json`. Another external file
+  with the same name is refused unless `--rebind`. The plan file is only read (at most 1 MiB). `init` writes into a
+  `--dir` only when its `plan.json` is absent or `progress.plan.v1`, and only after `git check-ignore` confirms that
+  `.view/` and `.host/` are ignored.
 - **Items.** A list item `- [ ]`/`- [x]` (markers `-`, `*`, `+`; any indent) outside fenced blocks. Phase: the nearest
   preceding heading of level 2 or deeper. Title: the first level-1 heading. Explicit id: at the start of the item,
   optionally bold, followed by `:`, `.`, `)` or a space; one to three capital letters, an optional dash, digits, and not a
-  lane, blocker, decision or note id shape (`L`, `W`, `C`, `B`, `D`, `N`, `SD` plus digits). `(depends on …)` and
+  lane, blocker, decision or note id shape (`L`, `W`, `C`, `B`, `D`, `N`, `SD` plus digits). Unless bold, the id needs two
+  digits or more, or the prefix `T` or `US` (so `MP3`, `GPT-4`, `Q3`, `A4`, `ES6` are text). An id already used by an earlier
+  item turns the later item into an auto item and writes one diagnostics line. `(depends on …)` and
   `(after …)` list task ids; `[P]` marks a parallel item.
-- **Auto ids.** `P<nnn>` (three digits or more), assigned from `plan.json` `ids` in three steps: equal normalised text,
-  then text at least 60 percent similar (difflib ratio, best first), then `next + 1`. `next` only grows. Normalised text
+- **Auto ids.** `P<nnn>` (three digits or more), assigned from `plan.json` `ids` in three steps: equal fingerprint,
+  then text at least 60 percent similar to the local `.host/plan-keys.json` text (difflib ratio, best first), then `next + 1`. `next` only grows. Normalised text
   is lower-cased, without `*`, `_`, backticks and `~`, whitespace collapsed, 120 characters at most. `plan.json` is
   rewritten under the report lock on a refresh, and only when the map changed; read-only verbs compute the same ids
   without writing.
@@ -108,7 +114,10 @@ candidates when any exist).
 `progress hooks install|uninstall|status` edits the host's hook file (see the commands reference). Every entry it writes
 has a command containing `hook.py` and the argument `--managed-by=progress-report`; an entry is "ours" if and only if
 both appear. Entries registered by Spec Kit's dispatcher contain `speckit.progress.hook`; when one exists in a file of
-the target host the installer writes nothing and exits 3.
+the target host the installer writes nothing and exits 3. Commands end in `; exit 0` and use `${CLAUDE_PROJECT_DIR}` (braced)
+for Claude project scope. Writes happen under `<file>.progress-lock`, only when the file bytes are unchanged since they were
+read (one re-read, then `PROGRESS_HOOKS_CONFLICT`). Entries of this installer in the other scope are refused
+(`PROGRESS_HOOKS_DUPLICATE`) unless `--force-both`.
 
 ## facts.jsonl (`progress.facts.v1`)
 
@@ -298,7 +307,7 @@ progress export [--format md|json] [--out PATH]                         -> deter
 progress attempt record (--lane L1 | --overhead LABEL) --run ID --status S [--started T] [--ended T] [--usage-json PATH]
 progress runs [--json] [--runs-dir DIR]... [--now T] [--stall-seconds N]  -> progress.runs.v1
 progress hook <event>                                                   -> reads host JSON on stdin; never prints on success
-progress hooks install|uninstall --host claude|codex [--scope project|user] [--python CMD]   -> one line
+progress hooks install|uninstall --host claude|codex [--scope project|user] [--python CMD] [--force-both]   -> one line
 progress hooks status [--host claude|codex]                              -> one line
 ```
 
