@@ -27,6 +27,15 @@ EXCLUDES = ('specs/*/progress/.view/', 'specs/*/progress/.host/', '.specify/prog
             '.specify/progress/*.lock', '.specify/progress/diagnostics.log*')  # the Spec Kit set; see default_excludes
 
 
+def glob_escape(path):
+    """A literal repo-relative path as a git ignore pattern: glob metacharacters, a leading `#` or `!` and trailing spaces
+    are escaped, so a directory like `reports/[review]` excludes itself and nothing else."""
+    text = re.sub(r'([\\*?\[\]])', r'\\\1', path)
+    if text[:1] in ('#', '!'):
+        text = '\\' + text
+    return re.sub(r'(\s)$', r'\\\1', text)
+
+
 def default_excludes(root):
     base = project_dir(root).relative_to(Path(root)).as_posix()
     patterns = ['specs/*/progress/.view/', 'specs/*/progress/.host/', PLAN_ROOT + '/*/.view/', PLAN_ROOT + '/*/.host/',
@@ -34,7 +43,7 @@ def default_excludes(root):
     if base.startswith(PLAN_ROOT + '/'):
         patterns.append(base + '/config.json')  # local statusline state; without Spec Kit nothing else shares it
     for directory in registry_dirs(root):
-        patterns += [directory + '/.view/', directory + '/.host/']
+        patterns += [glob_escape(directory) + '/.view/', glob_escape(directory) + '/.host/']
     return tuple(dict.fromkeys(patterns))
 
 
@@ -137,7 +146,7 @@ def slugify(text):
 
 
 def normalise_plan_dir(root, value):
-    """Repo-relative posix path for a plan report directory: no dot components, not under .git, not a `specs/<dir>` slot,
+    """Repo-relative posix path for a plan report directory: no dot components, not under .git, nothing under `specs/`,
     and (symlinks resolved) strictly inside the repository. None when the value is not acceptable."""
     root = Path(root)
     text = str(value).replace('\\', '/')
@@ -148,7 +157,7 @@ def normalise_plan_dir(root, value):
             return None
     text = text.strip('/')
     parts = text.split('/')
-    if not text or any(p in ('', '.', '..') for p in parts) or parts[0] == '.git' or feature_mode(text):
+    if not text or any(p in ('', '.', '..') for p in parts) or parts[0] == '.git' or parts[0].lower() == 'specs':
         return None
     try:
         target = Path(os.path.realpath(str(root / text)))
@@ -347,3 +356,21 @@ def git_exclude(root, patterns=None):
         return True
     except (OSError, subprocess.SubprocessError):
         return False
+
+
+def check_excluded(root, directory):
+    """Fail with one line unless git ignores the report's local-only paths (`.view/`, `.host/`) in this repository. Skipped
+    when git or the repository is not there: nothing can be committed then."""
+    import subprocess
+    root = Path(root)
+    if git_dir(root) is None:
+        return
+    for leaf in ('.host', '.view'):
+        try:
+            out = subprocess.run(['git', 'check-ignore', '-q', '--', f'{directory}/{leaf}/x'], cwd=str(root),
+                                 capture_output=True, timeout=10)
+        except (OSError, subprocess.SubprocessError):
+            return  # git is not usable here
+        if out.returncode == 1:
+            raise ProgressError('PROGRESS_EXCLUDE_FAILED', f'git does not ignore {directory}/{leaf}; pick another --dir '
+                                '(local-only files would be committed)', 3)

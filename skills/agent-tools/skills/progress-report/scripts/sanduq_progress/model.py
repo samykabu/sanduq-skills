@@ -127,11 +127,11 @@ def _child_numbers(child):
     return [n for n in [child.get('lane_no'), *(child.get('lane_aliases') or [])] if isinstance(n, int) and not isinstance(n, bool)]
 
 
-def build(ctx, now, rev=1, state=None):
+def build(ctx, now, rev=1, state=None, plan=None):
     state = {} if state is None else state
     cfg = ctx.config_data()
     stale_after = int(cfg.get('stale_after_seconds') or 600)
-    tk = plancol.collect(ctx) if ctx.is_plan else taskscol.collect(ctx.feature_dir)
+    tk = (plan or plancol.collect(ctx)) if ctx.is_plan else taskscol.collect(ctx.feature_dir)
     cp = wf.checkpoint(ctx.feature_dir)
     attempts = wf.attempts(ctx.feature_dir)
     wf_decisions_exist, wf_decisions = wf.decisions(ctx.feature_dir)

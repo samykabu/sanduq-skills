@@ -51,8 +51,9 @@ class ParsePlan(unittest.TestCase):
         got = ids(plancol.parse('* [ ] **US3**: Bold id\n+ [x] T7) Paren id\n- [ ] L1 reserved shape\n  - [ ] nested item\n'))
         self.assertEqual([i for i, _ in got], ['US3', 'T7', 'P001', 'P002'])
 
-    def test_duplicate_explicit_ids_keep_the_first(self):
-        self.assertEqual([t['id'] for t in self.collect('- [ ] T1 a\n- [ ] T1 b\n')['tasks']], ['T1'])
+    def test_duplicate_explicit_ids_keep_the_first_and_the_rest_become_auto_items(self):
+        got = self.collect('- [ ] T1 a\n- [ ] T1 b\n')['tasks']
+        self.assertEqual([(t['id'], t['title']) for t in got], [('T1', 'a'), ('P001', 'T1 b')])
 
     def collect(self, text):
         parsed = plancol.parse(text)

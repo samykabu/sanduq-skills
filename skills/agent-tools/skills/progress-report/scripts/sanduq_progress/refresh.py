@@ -19,10 +19,11 @@ def refresh(ctx, now=None):
     state['dirty'] = False
     state.pop('dirty_published', None)
     state.setdefault('started_at', iso(now))
+    collected = None
     if ctx.is_plan:
         from .collect import plan
-        plan.persist(ctx)
-    report = model.build(ctx, now, state['rev'], state)
+        collected = plan.persist(ctx)  # the plan is read once; the projection reuses it
+    report = model.build(ctx, now, state['rev'], state, plan=collected)
     render_data.write(ctx, report)
     state['last_refresh_ts'] = time.time()
     state['last_refresh_at'] = iso(now)

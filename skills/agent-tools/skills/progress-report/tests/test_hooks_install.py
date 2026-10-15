@@ -68,7 +68,8 @@ class RoundTrip(HooksCase):
         self.assertEqual(sorted(e[0] for e in events), sorted(['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionEnd']))
         self.assertEqual({e[0]: e[1] for e in events}['PreToolUse'], 'Task|Agent|spawn_agent')
         for name, _, command in events:
-            self.assertIn('$CLAUDE_PROJECT_DIR/.claude/skills/progress-report/scripts/hook.py', command)
+            self.assertIn('"${CLAUDE_PROJECT_DIR}/.claude/skills/progress-report/scripts/hook.py"', command)
+            self.assertTrue(command.endswith('; exit 0'), command)
             self.assertIn(f' {hooks_install.CLAUDE_EVENTS[[e[0] for e in hooks_install.CLAUDE_EVENTS].index(name)][1]} ', command)
         self.assertEqual(data['permissions'], UNRELATED['permissions'])
         self.assertEqual(data['env'], UNRELATED['env'])

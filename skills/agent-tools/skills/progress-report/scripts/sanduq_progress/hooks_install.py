@@ -5,6 +5,10 @@ Claude Code reads `.claude/settings.json` (project) or `~/.claude/settings.json`
 
     {"hooks": {"<Event>": [{"matcher": "<regex, optional>", "hooks": [{"type": "command", "command": "...", "timeout": 10}]}]}}
 
+Every command ends in `; exit 0` (valid in bash and PowerShell): if the script path disappears (a plugin cache that was
+updated or pruned) the hook ends quietly instead of blocking the host with Python's exit code 2. `hooks status` flags such
+entries. Uninstall before updating or removing the plugin.
+
 Every entry written here carries the argument `--managed-by=progress-report` in its command. That tag is how uninstall
 finds exactly its own entries and nothing else; the rest of the file is preserved (key order, other hooks, other
 settings). Spec Kit registers Progress through its own event dispatcher (`speckit.progress.hook-*`); when such hooks are
@@ -12,7 +16,9 @@ present this installer refuses, so one event is never recorded twice.
 """
 import json
 import os
+import re
 import sys
+import time
 from pathlib import Path
 
 from .paths import inside
@@ -29,6 +35,11 @@ CLAUDE_EVENTS = (('SessionStart', 'session_start', None), ('PreToolUse', 'pre_to
                  ('PostToolUse', 'post_tool_use', None), ('Stop', 'stop', None), ('SessionEnd', 'session_end', None))
 CODEX_EVENTS = tuple(e for e in CLAUDE_EVENTS if e[0] != 'SessionEnd')
 EVENTS = {'claude': CLAUDE_EVENTS, 'codex': CODEX_EVENTS}
+
+
+LOCK_WAIT = 3.0  # seconds to wait for another installer
+LOCK_STALE = 30.0  # a lock file older than this is a crashed installer's
+UNSAFE_PYTHON = re.compile(r'[\s"\'`$&|;<>()*?]')
 
 
 def refused(code, message):
@@ -61,23 +72,39 @@ def shown(root, path):
         return path.name
 
 
-def load(path):
-    """The settings document, {} when the file does not exist. A file that is not a JSON object is never overwritten."""
+def read_raw(path):
+    """The file's bytes, or None when it does not exist."""
     try:
-        text = Path(path).read_text(encoding='utf-8')
+        return Path(path).read_bytes()
     except FileNotFoundError:
-        return {}
+        return None
     except OSError as exc:
         raise refused('PROGRESS_HOOKS_SETTINGS', f'cannot read {Path(path).name}: {type(exc).__name__}') from None
-    if not text.strip():
+
+
+def parse(path, raw):
+    """The settings document from its bytes ({} when missing or empty). A file that is not a JSON object is never overwritten."""
+    if raw is None or not raw.strip():
         return {}
     try:
-        data = json.loads(text)
+        data = json.loads(raw.decode('utf-8-sig'))
     except ValueError:
         raise refused('PROGRESS_HOOKS_SETTINGS', f'{Path(path).name} is not valid JSON; fix it first') from None
     if not isinstance(data, dict) or not isinstance(data.get('hooks', {}), dict):
         raise refused('PROGRESS_HOOKS_SETTINGS', f'{Path(path).name} has an unexpected "hooks" shape; not touching it')
     return data
+
+
+def load(path):
+    return parse(path, read_raw(path))
+
+
+def load_quiet(path):
+    """(document, True), or ({}, False) when the file cannot be read: only the file an install writes may stop it."""
+    try:
+        return load(path), True
+    except ProgressError:
+        return {}, False
 
 
 def strings(value):
@@ -109,7 +136,30 @@ def own_count(data):
 
 
 def python_command(override):
+    if override and UNSAFE_PYTHON.search(override):
+        raise ProgressError('PROGRESS_USAGE', '--python takes one command word without spaces or shell characters '
+                            '(put the interpreter on PATH, or use a short path)', 2)
     return override or ('python' if sys.platform == 'win32' else 'python3')
+
+
+def script_of(command):
+    m = re.search(r'"([^"]*hook\.py)"', command) or re.search(r'(\S*hook\.py)', command)
+    return m.group(1) if m else None
+
+
+def missing_scripts(root, data):
+    """How many of our entries point at a hook script that no longer exists."""
+    count = 0
+    for groups in data.get('hooks', {}).values():
+        for group in groups if isinstance(groups, list) else []:
+            for h in group.get('hooks', []) if isinstance(group, dict) and isinstance(group.get('hooks'), list) else []:
+                if not is_ours(h):
+                    continue
+                script = script_of(h['command'])
+                if script:
+                    script = re.sub(r'^\$\{?CLAUDE_PROJECT_DIR\}?', str(Path(root).as_posix()), script)
+                    count += 0 if (Path(root) / script).exists() else 1
+    return count
 
 
 def command_for(root, host, scope, event, python):
@@ -118,10 +168,10 @@ def command_for(root, host, scope, event, python):
         if not inside(script, root):
             raise ProgressError('PROGRESS_HOOKS_PATH', 'the skill is outside this repository; use --scope user or copy the skill into the repo', 3)
         relative = script.relative_to(Path(root).resolve()).as_posix()
-        path = f'$CLAUDE_PROJECT_DIR/{relative}' if host == 'claude' else relative
+        path = f'${{CLAUDE_PROJECT_DIR}}/{relative}' if host == 'claude' else relative
     else:
         path = script.as_posix()
-    return f'{python} "{path}" {event} {TAG}'
+    return f'{python} "{path}" {event} {TAG}; exit 0'
 
 
 def strip_own(data):
@@ -151,30 +201,84 @@ def strip_own(data):
     return removed
 
 
-def write(path, data):
+class SettingsLock:
+    """A lock file next to the settings file, so two installers never interleave. Removed on exit."""
+
+    def __init__(self, path):
+        self.path = Path(str(path) + '.progress-lock')
+
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        deadline = time.time() + LOCK_WAIT
+        while True:
+            try:
+                os.close(os.open(str(self.path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
+                return self
+            except FileExistsError:
+                try:
+                    if time.time() - self.path.stat().st_mtime > LOCK_STALE:
+                        self.path.unlink()
+                        continue
+                except OSError:
+                    pass
+                if time.time() >= deadline:
+                    raise refused('PROGRESS_HOOKS_CONFLICT', f'another installer holds {self.path.name}; retry') from None
+                time.sleep(0.05)
+
+    def __exit__(self, *exc):
+        try:
+            self.path.unlink()
+        except OSError:
+            pass
+        return False
+
+
+def before_replace(path):
+    """Seam between computing the new document and replacing the file (tests change the file here)."""
+
+
+def edit(path, mutate):
+    """Read, `mutate(document)`, write, under a lock and only if the file is unchanged since it was read. A change in
+    between (the host or the user editing the settings) is re-read and the edit re-applied once; a second change refuses."""
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write(path, json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+    with SettingsLock(path):
+        for attempt in (1, 2):
+            raw = read_raw(path)
+            data = parse(path, raw)
+            result = mutate(data)
+            if result is False:  # nothing to write
+                return result
+            before_replace(path)
+            if read_raw(path) == raw:
+                atomic_write(path, json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+                return result
+        raise refused('PROGRESS_HOOKS_CONFLICT', f'{path.name} changed while it was being edited; nothing written, retry')
 
 
-def install(root, host, scope, python):
+def install(root, host, scope, python, force_both=False):
     path = settings_path(root, host, scope)
     for other in ('project', 'user'):
         found = settings_path(root, host, other)
-        if has_speckit(load(found)):
+        data, ok = load_quiet(found)
+        if ok and has_speckit(data):
             raise refused('PROGRESS_HOOKS_SPECKIT', f'Spec Kit already registers Progress hooks in {shown(root, found)}; remove them or keep using the extension')
-    data = load(path)
-    strip_own(data)
+        if ok and other != scope and own_count(data) and not force_both:
+            raise refused('PROGRESS_HOOKS_DUPLICATE', f'hooks are already installed in {shown(root, found)}; uninstall them there first, or pass --force-both')
     commands = [command_for(root, host, scope, event, python) for _, event, _ in EVENTS[host]]
-    hooks = data.setdefault('hooks', {})
-    for (name, _, matcher), command in zip(EVENTS[host], commands):
-        group = {'matcher': matcher} if matcher else {}
-        group['hooks'] = [{'type': 'command', 'command': command, 'timeout': TIMEOUT}]
-        hooks.setdefault(name, [])
-        if not isinstance(hooks[name], list):
-            raise refused('PROGRESS_HOOKS_SETTINGS', f'{path.name} hooks.{name} is not a list; not touching it')
-        hooks[name].append(group)
-    write(path, data)
+
+    def mutate(data):
+        strip_own(data)
+        hooks = data.setdefault('hooks', {})
+        for (name, _, matcher), command in zip(EVENTS[host], commands):
+            group = {'matcher': matcher} if matcher else {}
+            group['hooks'] = [{'type': 'command', 'command': command, 'timeout': TIMEOUT}]
+            hooks.setdefault(name, [])
+            if not isinstance(hooks[name], list):
+                raise refused('PROGRESS_HOOKS_SETTINGS', f'{path.name} hooks.{name} is not a list; not touching it')
+            hooks[name].append(group)
+        return True
+
+    edit(path, mutate)
     note = ' (Codex hooks are experimental: enable the codex_hooks feature)' if host == 'codex' else ''
     return f'progress: hooks installed {host} {scope} {len(EVENTS[host])} entries in {shown(root, path)}{note}'
 
@@ -183,11 +287,8 @@ def uninstall(root, host, scope):
     path = settings_path(root, host, scope)
     if not path.is_file():
         return f'progress: hooks removed {host} {scope} 0 entries'
-    data = load(path)
-    removed = strip_own(data)
-    if removed:
-        write(path, data)
-    return f'progress: hooks removed {host} {scope} {removed} entries from {shown(root, path)}'
+    removed = edit(path, lambda data: strip_own(data) or False)
+    return f'progress: hooks removed {host} {scope} {removed or 0} entries from {shown(root, path)}'
 
 
 def status(root, hosts):
@@ -195,23 +296,29 @@ def status(root, hosts):
     for host in hosts:
         cells = []
         for scope in ('project', 'user'):
-            data = load(settings_path(root, host, scope))
+            data, ok = load_quiet(settings_path(root, host, scope))
+            if not ok:
+                cells.append(f'{scope} unreadable')
+                continue
             speckit = speckit or has_speckit(data)
-            cells.append(f'{scope} {own_count(data)}/{len(EVENTS[host])}')
+            gone = missing_scripts(root, data)
+            cells.append(f'{scope} {own_count(data)}/{len(EVENTS[host])}' + (f' ({gone} script missing)' if gone else ''))
         parts.append(f'{host} ' + ' '.join(cells))
     return 'progress: hooks ' + '; '.join(parts) + f"; spec-kit {'yes' if speckit else 'no'}"
 
 
-def run(a, root):
-    """Entry from progress.py. Never touches a host unless asked: install and uninstall need --host."""
+def execute(a, root):
+    """The result line of a hooks verb. Never touches a host unless asked: install and uninstall need --host."""
     root = Path(root)
     if a.action == 'status':
-        print(status(root, (a.host,) if a.host else ('claude', 'codex')))
-        return 0
+        return status(root, (a.host,) if a.host else ('claude', 'codex'))
     if not a.host:
         raise ProgressError('PROGRESS_USAGE', f'hooks {a.action} needs --host claude|codex', 2)
     if a.action == 'install':
-        print(install(root, a.host, a.scope, python_command(a.python)))
-    else:
-        print(uninstall(root, a.host, a.scope))
+        return install(root, a.host, a.scope, python_command(a.python), a.force_both)
+    return uninstall(root, a.host, a.scope)
+
+
+def run(a, root):
+    print(execute(a, root))
     return 0

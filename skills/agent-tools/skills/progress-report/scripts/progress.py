@@ -62,6 +62,7 @@ def build_parser():
     s.add_argument('--theme')
     s.add_argument('--name', help='plan mode: report name (default: the plan file name, slugified)')
     s.add_argument('--dir', help='plan mode: report directory inside the repository (default .progress/<name>)')
+    s.add_argument('--rebind', action='store_true', help='plan mode: let an existing report follow a different plan file')
     s = verb('bind')
     s.add_argument('--session')
     s.add_argument('--host', choices=('claude', 'codex'), default='claude')
@@ -127,6 +128,7 @@ def build_parser():
     s.add_argument('action', choices=('install', 'uninstall', 'status'))
     s.add_argument('--host', choices=('claude', 'codex'))
     s.add_argument('--scope', choices=('project', 'user'), default='project')
+    s.add_argument('--force-both', action='store_true', help='install even when this installer already registered the hooks in the other scope')
     s.add_argument('--python', help='interpreter command written into the hook (default: python on Windows, python3 elsewhere)')
     return p
 
@@ -225,15 +227,43 @@ def init_plan(a, root):
     if a.dir is not None:
         directory = normalise_plan_dir(root, a.dir)
         if not directory or directory == PLAN_ROOT or directory.startswith(PLAN_ROOT + '/.'):
-            raise ProgressError('PROGRESS_USAGE', '--dir must be a directory inside the repository (not .git, not specs/<dir>)', 2)
+            raise ProgressError('PROGRESS_USAGE', '--dir must be a directory inside the repository (not .git, nothing under specs/)', 2)
     else:
         directory = f'{PLAN_ROOT}/{name}'
     ctx = Ctx(root, directory)
+    check_plan_dir(ctx)
     existing = plan_info(root, directory)
-    if existing.get('source') and existing['source'] != source:
-        raise ProgressError('PROGRESS_PLAN_EXISTS', f"{directory} already reports {existing['source'][:60]}; pass --name or --dir", 3)
-    return ctx, {'schema': 'progress.plan.v1', 'name': existing.get('name') or name, 'source': source,
+    if existing.get('source') and not a.rebind:
+        if existing['source'] != source or (absolute and known_external_identity(ctx) not in (None, source_identity(absolute))):
+            raise ProgressError('PROGRESS_PLAN_EXISTS', f"{directory} already reports {existing['source'][:60]}; pass --name or --dir, or --rebind to follow this plan", 3)
+    return ctx, {'schema': PLAN_SCHEMA, 'name': existing.get('name') or name, 'source': source,
                  'ids': existing.get('ids') or [], 'next': existing.get('next') or 0}, absolute
+
+
+PLAN_SCHEMA = 'progress.plan.v1'
+
+
+def source_identity(absolute):
+    """Fingerprint of a resolved plan path: what tells two plan files with the same name apart."""
+    import hashlib
+    return hashlib.sha256(os.path.normcase(os.path.realpath(str(absolute))).encode('utf-8')).hexdigest()[:16]
+
+
+def known_external_identity(ctx):
+    data = read_json(ctx.plan_source_file, {})
+    if not isinstance(data, dict):
+        return None
+    return data.get('fingerprint') or (source_identity(data['path']) if isinstance(data.get('path'), str) else None)
+
+
+def check_plan_dir(ctx):
+    """Refuse, before any write, a report directory that holds something that is not a Progress plan report."""
+    if ctx.plan_file.exists() or ctx.plan_file.is_symlink():
+        data = read_json(ctx.plan_file, None)
+        if not (isinstance(data, dict) and data.get('schema') == PLAN_SCHEMA):
+            raise ProgressError('PROGRESS_DIR_CONFLICT', f'{ctx.feature}/plan.json is not a Progress plan report; pick another --dir', 3)
+    elif ctx.facts.exists() or ctx.dir.is_file():
+        raise ProgressError('PROGRESS_DIR_CONFLICT', f'{ctx.feature} already holds other files of its own; pick another --dir', 3)
 
 
 def plancol_find(root, value):
@@ -259,11 +289,13 @@ def cmd_init(a, root):
     ctx.view.mkdir(parents=True, exist_ok=True)
     ctx.cfg_dir.mkdir(parents=True, exist_ok=True)
     if plan_doc is not None:
+        register_plan_dir(root, feature)
+        git_exclude(root)
+        check_plan_excluded(root, feature)  # before any local-only file is written
         write_json(ctx.plan_file, plan_doc)
         if absolute:
             ctx.host_dir.mkdir(parents=True, exist_ok=True)
-            write_json(ctx.plan_source_file, {'path': absolute})
-        register_plan_dir(root, feature)
+            write_json(ctx.plan_source_file, {'path': absolute, 'fingerprint': source_identity(absolute)})
     if not ctx.config.exists():
         write_json(ctx.config, ctx.config_data())
     if not ctx.facts.exists():
@@ -283,6 +315,11 @@ def cmd_init(a, root):
     nonce = snapshot.create_pending(ctx, now())
     print(f'progress: ready {ctx.feature}{"" if ctx.is_plan else "/progress"}/.view/index.html bind={nonce}')
     return 0
+
+
+def check_plan_excluded(root, directory):
+    from sanduq_progress.paths import check_excluded
+    check_excluded(root, directory)
 
 
 def check_theme_preset(name):
@@ -615,7 +652,23 @@ def cmd_hook(a, root):
 
 def cmd_hooks(a, root):
     from sanduq_progress import hooks_install
-    return hooks_install.run(a, root)
+    line = hooks_install.execute(a, root)
+    if a.action == 'install':
+        line += pending_bind(root)
+    print(line)
+    return 0
+
+
+def pending_bind(root):
+    """When exactly one report exists already, open a bind for it: the hooks just installed complete it on the next tool call,
+    so installing hooks after `init` needs no separate `bind` step. Empty when there is nothing to bind."""
+    try:
+        ctx = Ctx(root, resolve_target(root))
+        if not ctx.dir.is_dir() or not ctx.facts.exists():
+            return ''
+        return f' bind={snapshot.create_pending(ctx, now())}'
+    except (ProgressError, OSError):
+        return ''
 
 
 def cmd_statusline(a, root):
