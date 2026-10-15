@@ -1,10 +1,11 @@
 # agent-tools
 
-Skills for driving *other* agent CLIs from inside one — without Spec Kit.
+Skills for driving *other* agent CLIs from inside one, and for keeping a live progress report of the work — without Spec Kit.
 
 | Skill | Use it for |
 | --- | --- |
 | `delegate-task` | Hand one task to Claude Code, OpenAI Codex, OpenCode, GitHub Copilot, or Pi; run it in the background; get back a status with its provenance, the file changes git actually measured, and normalised token counts. |
+| `progress-report` | A live, deterministic progress report for a Markdown plan checklist or a Spec Kit feature: lanes, tasks, blockers, decisions, and the model, effort and context the hooks observe. Installs native Claude Code and Codex hooks; spends no agent tokens on upkeep. |
 
 Install the Claude Code plugin bundle:
 
@@ -13,13 +14,14 @@ Install the Claude Code plugin bundle:
 /plugin install agent-tools@sanduq
 ```
 
-Or install the skill on its own:
+Or install a skill on its own:
 
 ```bash
 npx skills add samykabu/sanduq-skills --skill delegate-task
+npx skills add samykabu/sanduq-skills --skill progress-report
 ```
 
-## After installing
+## After installing: delegate-task
 
 The driver is a dependency-free Node script (Node ≥ 18) that lives inside the skill, so where the
 skill was installed decides where the driver is. Resolve it once:
@@ -48,10 +50,29 @@ See the plugin [changelog](CHANGELOG.md) and the skill's [README](skills/delegat
 three normative contracts. The root [README](../../README.md) lists every sanduq skill and
 extension.
 
+## After installing: progress-report
+
+A standard-library Python script (3.11 or newer) that lives inside the skill. Resolve it once, from the repository root:
+
+```bash
+# plugin install
+PROGRESS="python $CLAUDE_PLUGIN_ROOT/skills/progress-report/scripts/progress.py"
+# npx skills install, or a copy committed into the repository
+PROGRESS="python .claude/skills/progress-report/scripts/progress.py"
+
+$PROGRESS init --plan docs/plan.md        # any Markdown checklist; creates .progress/plan/
+$PROGRESS hooks install --host claude     # optional: model, effort, context, child agents
+$PROGRESS status
+```
+
+Plan mode needs no Spec Kit; Spec Kit projects use `init --feature specs/<dir>`. See the skill's
+[README](skills/progress-report/README.md) for the quick starts, every command and the error codes.
+
 ## Tests
 
 ```bash
 cd skills/delegate-task && node test/run.mjs
+python -m unittest discover -s skills/progress-report/tests -q    # standard library; browser tests skip without Playwright
 ```
 
 173 cases. They drive a fake harness through `DELEGATE_BIN_<HARNESS>`, so the suite spends no

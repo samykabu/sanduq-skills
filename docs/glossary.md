@@ -74,6 +74,12 @@ The agent application you run a skill in: Codex, Claude Code, or Claude Desktop.
 how you install and call skills and in what local tools they can run.
 Where it matters: every skill page, the README's support table.
 
+### Lane
+
+One unit of assignment in a progress report: a worker, a delegated run or a host subagent that owns a
+list of tasks. You record lanes (`L1`); host child agents appear on their own (`C1`).
+Where it matters: [progress-report](skills/progress-report.md).
+
 ### Marketplace
 
 A catalog of Claude Code plugins that you add once and then install plugins from. The Sanduq
@@ -93,6 +99,12 @@ module has an id, a name, a description, a status, its interfaces, its audiences
 paths. New areas start as `proposed` until you approve them.
 Where it matters: [user-manual](skills/user-manual.md).
 
+### Plan
+
+Any Markdown file with `- [ ]` and `- [x]` items. `progress-report` reads it as a task list, never
+writes it, and gives items without an id a stable one (`P001`).
+Where it matters: [progress-report](skills/progress-report.md).
+
 ### Plugin
 
 The Claude Code packaging of a bundle. Installing the `dev-tools` plugin, for example, gives you all
@@ -103,6 +115,11 @@ five manual skills. Where it matters: installing in Claude Code.
 A private build of the manual for a pull request, so reviewers can read the change before merge.
 It is always a private CI artifact first, and optionally a hosted preview on an approved provider.
 Where it matters: [user-manual-preview-publishing](skills/user-manual-preview-publishing.md).
+
+### Projection
+
+A report rebuilt from its sources (the plan, host hooks, recorded facts) on every refresh, so deleting
+it loses nothing. Where it matters: [progress-report](skills/progress-report.md).
 
 ### Provenance
 

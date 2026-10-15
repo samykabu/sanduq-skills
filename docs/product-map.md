@@ -1,9 +1,9 @@
 # Product map
 
-Sanduq Skills ships seven [skills](glossary.md#skill) in three [bundles](glossary.md#bundle). Each
+Sanduq Skills ships eight [skills](glossary.md#skill) in three [bundles](glossary.md#bundle). Each
 bundle installs as one Claude Code [plugin](glossary.md#plugin) and has its own version.
 
-![Product map. The dev-tools bundle holds the user-manual core skill, with four skills that extend it: API docs, release docs, UI screenshots, and preview publishing. A dashed arrow shows user-manual using illustrate, from the illustration-tools bundle, for diagrams. The agent-tools bundle holds delegate-task on its own.](media/product-map.animated.svg)
+![Product map. The dev-tools bundle holds the user-manual core skill, with four skills that extend it: API docs, release docs, UI screenshots, and preview publishing. A dashed arrow shows user-manual using illustrate, from the illustration-tools bundle, for diagrams. The agent-tools bundle holds delegate-task on its own (progress-report, added in 1.2.0, is described below and not yet drawn).](media/product-map.animated.svg)
 
 Editable source: [product-map.html](media/product-map.html). Still version:
 [product-map.svg](media/product-map.svg).
@@ -14,7 +14,7 @@ Editable source: [product-map.html](media/product-map.html). Still version:
 | --- | --- | --- | --- |
 | `illustration-tools` | 3.4.0 | [illustrate](skills/illustrate.md) | Diagrams and charts as editable HTML, with SVG, PNG, animated SVG, and GIF export. |
 | `dev-tools` | 1.1.1 | [user-manual](skills/user-manual.md) and four extensions | Application manuals for end users, administrators, and technical readers. |
-| `agent-tools` | 1.1.3 | [delegate-task](skills/delegate-task.md) | Handing a task to another agent CLI and measuring what it did. |
+| `agent-tools` | 1.2.0 | [delegate-task](skills/delegate-task.md) and [progress-report](skills/progress-report.md) | Handing a task to another agent CLI and measuring what it did; keeping a live progress report of a plan or feature. |
 
 ## What each skill does
 
@@ -33,6 +33,9 @@ Editable source: [product-map.html](media/product-map.html). Still version:
   request [previews](glossary.md#preview) and release publishing.
 - **[delegate-task](skills/delegate-task.md)** runs one task on another agent CLI, the
   [harness](glossary.md#harness), and reports a measured result.
+- **[progress-report](skills/progress-report.md)** keeps a live report of a Markdown [plan](glossary.md#plan) or a
+  Spec Kit feature: tasks, [lanes](glossary.md#lane), blockers, decisions, and what the Claude Code and Codex hooks
+  observe. It is a [projection](glossary.md#projection), so no agent is spent on upkeep.
 
 ## How they relate
 
@@ -42,7 +45,9 @@ Editable source: [product-map.html](media/product-map.html). Still version:
 - **user-manual uses illustrate when it is installed.** Its rules say to generate diagrams with
   the illustrate skill when it is available, including ER diagrams for the data reference.
   Illustrate does not depend on user-manual.
-- **delegate-task stands alone.** No other skill here calls it, and it calls none of them.
+- **delegate-task and progress-report stand alone.** No other skill here calls them. They fit together:
+  `progress runs` can read the runs that delegate-task writes to `.delegate/runs`, and a lane can name the harness and
+  model you delegated to.
 - **Every skill works on its own.** None needs Spec Kit. You can install only the ones you need.
 
 ## Where to start
@@ -53,6 +58,7 @@ Editable source: [product-map.html](media/product-map.html). Still version:
 | Document an application | [user-manual](skills/user-manual.md) |
 | Add API, release, screenshot, or preview work to a manual | the matching extension page above |
 | Get a second agent to do or check a task | [delegate-task](skills/delegate-task.md) |
+| Watch progress on a plan or feature, and see which agent does what | [progress-report](skills/progress-report.md) |
 
 ## Related
 

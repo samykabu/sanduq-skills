@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.0 — 2026-10-15
+
+- New skill `progress-report`: a live, deterministic progress report for a Markdown plan checklist or a
+  Spec Kit feature. It is the portable home of the Sanduq Progress extension (1.0.1), under MIT; the
+  extension will vendor it from here.
+- Plan mode: `progress init --plan PATH [--name NAME] [--dir DIR]` turns any `- [ ]` / `- [x]` file into a
+  report in `.progress/<name>/`. Headings become phases, ids such as `T001` are kept, other items get
+  stable `P001`... ids (equal text first, then 60 percent similar text, then the next number; numbers are
+  never reused), and `(depends on …)` / `(after …)` annotations become edges. The plan is only read. A plan
+  outside the repository is stored as `external:<name>`; its absolute path stays in a git-ignored file.
+- Target resolution for every verb: `--plan NAME|PATH` or `--feature DIR`; with exactly one active report no
+  flag is needed, otherwise `PROGRESS_NO_FEATURE` lists the candidates on one line.
+- Works with no Spec Kit: project state lives in `.progress/.project/` when there is no `.specify/`.
+  Feature mode, Workflow collection and every 1.0.1 behaviour are unchanged.
+- `progress hooks install|uninstall|status --host claude|codex [--scope project|user]` writes tagged native
+  hook entries (`.claude/settings.json`, `.codex/hooks.json`), preserves all other settings, removes only its
+  own entries, and refuses (exit 3) when Spec Kit's Progress hooks are already registered. The Codex file
+  shape is unverified against a running host.
+- UI: a plan report shows its plan file in the header instead of the Workflow stage.
+- 299 tests (stdlib unittest, 76 of them new for plan mode and the hook installer); browser tests skip without Playwright.
+
 ## 1.1.3 — 2026-10-10
 
 - Remove a third-party notices file that did not apply: this bundle contains no third-party material.
