@@ -9,6 +9,9 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
   checklist (plan mode, no Spec Kit) or a Spec Kit feature, with `progress hooks install|uninstall|status`
   for Claude Code and Codex. It is the portable source of the Sanduq Progress extension, relicensed MIT.
   Details in the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+- `progress-report`: `.host/` and `.view/` now carry a nested `.gitignore` holding a single `*`, so a parent
+  re-include rule (for example `!claude-*.json`) cannot expose host-named snapshots. Default `.progress/<name>`
+  directories no longer add redundant exclude lines.
 
 ## 2026-10-11 — illustration-tools 3.4.1: exports keep the page styles
 

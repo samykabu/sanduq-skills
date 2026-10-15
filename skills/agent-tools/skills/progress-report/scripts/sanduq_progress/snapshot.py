@@ -67,6 +67,11 @@ def migrate_host_dir(ctx):
         diag(ctx.diag, f'host snapshot migration pending: {type(exc).__name__}')
         return False
     from .paths import git_exclude
+    from .util import ensure_local_dir
+    try:
+        ensure_local_dir(ctx.host_dir)  # the moved directory keeps a nested .gitignore
+    except Exception:
+        return False
     git_exclude(ctx.root)  # the new directory must be ignored even if `init` is not re-run after an upgrade
     return True
 

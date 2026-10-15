@@ -27,6 +27,10 @@ EXCLUDES = ('specs/*/progress/.view/', 'specs/*/progress/.host/', '.specify/prog
             '.specify/progress/*.lock', '.specify/progress/diagnostics.log*')  # the Spec Kit set; see default_excludes
 
 
+def is_default_plan_dir(directory):
+    return directory.startswith(PLAN_ROOT + '/') and directory.count('/') == 1
+
+
 def glob_escape(path):
     """A literal repo-relative path as a git ignore pattern: glob metacharacters, a leading `#` or `!` and trailing spaces
     are escaped, so a directory like `reports/[review]` excludes itself and nothing else."""

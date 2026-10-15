@@ -25,8 +25,11 @@ contracts below; only the places named in this section and in "Plan mode" differ
 specs/<feature>/progress/
   facts.jsonl            tracked in git (owner decision D4)
   .host/                 git-ignored, NOT disposable: host snapshots (progress.host.v1), the durable home of child identity
+    .gitignore           a single `*` line, written atomically with the directory (git applies the closest .gitignore first,
+                         so a parent rule such as `!claude-*.json` cannot expose a snapshot; the `*` ignores this file too)
     <host>-<session>.json   (older versions kept them in .view/host; the first access moves them here)
-  .view/                 git-ignored and disposable (Progress writes `specs/*/progress/.view/` and `.host/` to .git/info/exclude at init)
+  .view/                 git-ignored and disposable (Progress writes `specs/*/progress/.view/` and `.host/` to .git/info/exclude at init;
+                         it also carries the same single-`*` .gitignore; a link at either path is refused)
     report.json          projection, schema sanduq.progress.v2
     data.js              window.__SANDUQ_PROGRESS__ = <report.json>;   (file:// safe)
     index.html           static shell, copied from assets/ui at init/upgrade, never templated with data
@@ -73,7 +76,8 @@ candidates when any exist).
   plan.json                  tracked, progress.plan.v1: {"schema", "name", "source", "ids": [{"id", "fp"}], "next"}; `fp` is the first 16 hex digits of SHA-256 of the normalised item text. No item text is ever tracked
   .host/                     git-ignored; also holds plan-source.json {"path": "<absolute>", "fingerprint"} for an external
                              plan and plan-keys.json {"<id>": "<normalised text>"}, the only place item text is kept
-  .view/                     git-ignored and disposable, identical to feature mode
+  .view/                     git-ignored and disposable, identical to feature mode; `.host/` and `.view/` each hold a
+                             `.gitignore` with a single `*`. Default `.progress/<name>` needs no extra exclude lines (the wildcards cover it)
 .progress/plans.json         tracked; {"dirs": [...]}, only when a --dir outside .progress/ is used
 .progress/.project/          project state when there is no .specify/progress: config.json, theme.json, bindings.json,
                              bindings.lock, diagnostics.log[.1]. bindings, locks, the log and config.json are git-ignored

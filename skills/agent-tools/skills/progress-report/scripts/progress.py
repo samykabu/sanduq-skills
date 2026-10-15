@@ -17,9 +17,9 @@ from sanduq_progress import facts as factslib, hook as hooklib, model, refresh a
 from sanduq_progress import snapshot, statusline as statuslib  # noqa: E402
 from sanduq_progress.collect import plan as plancol, runs as runscol, tasks as taskscol  # noqa: E402
 from sanduq_progress.lock import Lock, LockBusy  # noqa: E402
-from sanduq_progress.paths import (ASSETS, NAME, PLAN_REGISTRY, PLAN_ROOT, RESERVED_ID, TASK_REF, Ctx, ProgressError, find_root,  # noqa: E402
+from sanduq_progress.paths import (ASSETS, NAME, PLAN_REGISTRY, PLAN_ROOT, RESERVED_ID, TASK_REF, Ctx, ProgressError, find_root, is_default_plan_dir,  # noqa: E402
                                    default_excludes, git_exclude, list_plans, normalise_plan_dir, plan_info, resolve_feature, resolve_target, slugify)
-from sanduq_progress.util import atomic_write, diag, iso, parse_time, read_json, refuse_link, utcnow, write_json  # noqa: E402
+from sanduq_progress.util import atomic_write, diag, ensure_local_dir, iso, parse_time, read_json, refuse_link, utcnow, write_json  # noqa: E402
 
 FALLBACK_CSS = (':root{--bg:#f6f7f4;--surface:#fff;--text:#1b2a24;--muted:#4e5d56;--line:#d5dcd7;--brand:#233c32;'
                 '--accent:#c65b36;--active:#dcebf7;--waiting:#e9ece9;--blocked:#f8e0d6;--done:#dcefe2;--failed:#f4c7c0}\n')
@@ -201,7 +201,7 @@ def plan_source_ref(root, path):
 
 def register_plan_dir(root, directory):
     """Record a report directory outside .progress/ in the tracked registry so --plan NAME finds it."""
-    if directory.startswith(PLAN_ROOT + '/') and directory.count('/') == 1:
+    if is_default_plan_dir(directory):
         return
     registry = Path(root) / PLAN_REGISTRY
     data = read_json(registry, {})
@@ -286,16 +286,17 @@ def cmd_init(a, root):
         feature = resolve_target(root, None, a.feature, creating=True)
         ctx = Ctx(root, feature)
     rel = ctx.dir.relative_to(Path(root)).as_posix()
-    git_exclude(root, default_excludes(root, (feature,) if plan_doc is not None else ()))
+    extra = (feature,) if plan_doc is not None and not is_default_plan_dir(feature) else ()  # `.progress/<name>` is covered by the wildcards
+    git_exclude(root, default_excludes(root, extra))
     check_plan_excluded(root, rel)  # before anything is registered, created or written
     ctx.dir.mkdir(parents=True, exist_ok=True)
-    ctx.view.mkdir(parents=True, exist_ok=True)
+    ensure_local_dir(ctx.view)
     ctx.cfg_dir.mkdir(parents=True, exist_ok=True)
     if plan_doc is not None:
         register_plan_dir(root, feature)
         write_json(ctx.plan_file, plan_doc)
         if absolute:
-            ctx.host_dir.mkdir(parents=True, exist_ok=True)
+            ensure_local_dir(ctx.host_dir)
             write_json(ctx.plan_source_file, {'path': absolute, 'fingerprint': source_identity(absolute)})
     if not ctx.config.exists():
         write_json(ctx.config, ctx.config_data())
