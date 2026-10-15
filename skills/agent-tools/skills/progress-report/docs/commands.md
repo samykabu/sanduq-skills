@@ -176,10 +176,10 @@ self references are dropped. `[P]` marks an item parallel. Annotations are remov
 **Where it lives.** The default report directory is `.progress/<name>/`; `--dir` puts it elsewhere in the repository and
 records it in the tracked `.progress/plans.json` so `--plan NAME` finds it. `facts.jsonl` and `plan.json` are tracked;
 `.view/` and `.host/` are git-ignored through `.git/info/exclude`, with glob characters in `--dir` escaped (a `--dir
-"reports/[review]"` works). `init` runs `git check-ignore` on the actual local-only files (`.host/plan-keys.json`,
+"reports/[review]"` works). `init` first creates `.host/` and `.view/` with a nested `.gitignore` holding `*` (every write there goes through it, so a parent rule that re-includes a file cannot expose it), then runs `git check-ignore` on the actual local-only files (`.host/plan-keys.json`,
 `.host/plan-source.json`, a host snapshot and every `.view/` file) and fails with `PROGRESS_EXCLUDE_FAILED` if any would be
 tracked, for example because a `.gitignore` re-includes one. The check runs before the directory is registered in
-`.progress/plans.json` or created, so a refused `init` leaves `git status` unchanged. It also refuses (`PROGRESS_DIR_CONFLICT`) a `--dir` whose
+`.progress/plans.json`, and a refusal removes the directories and nested files it created, so a refused `init` leaves `git status` unchanged. It also refuses (`PROGRESS_DIR_CONFLICT`) a `--dir` whose
 `plan.json` or `facts.jsonl` is not a Progress plan report, before any write.
 
 **The plan file.** Progress never writes it. Whoever owns the plan checks items off, and the next refresh follows. A plan

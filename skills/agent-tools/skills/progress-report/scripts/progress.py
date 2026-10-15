@@ -288,7 +288,7 @@ def cmd_init(a, root):
     rel = ctx.dir.relative_to(Path(root)).as_posix()
     extra = (feature,) if plan_doc is not None and not is_default_plan_dir(feature) else ()  # `.progress/<name>` is covered by the wildcards
     git_exclude(root, default_excludes(root, extra))
-    check_plan_excluded(root, rel)  # before anything is registered, created or written
+    preflight_local_dirs(ctx, root, rel)  # before anything is registered or written
     ctx.dir.mkdir(parents=True, exist_ok=True)
     ensure_local_dir(ctx.view)
     ctx.cfg_dir.mkdir(parents=True, exist_ok=True)
@@ -322,6 +322,33 @@ def cmd_init(a, root):
 def check_plan_excluded(root, directory):
     from sanduq_progress.paths import check_excluded
     check_excluded(root, directory)
+
+
+def preflight_local_dirs(ctx, root, directory):
+    """Create .host/ and .view/ with their nested `*` .gitignore, then check git ignores every local-only file, so the
+    check sees what git will really see (the nested file wins over parent re-include rules). A refused check removes
+    exactly what this call created: files, then directories, deepest first. Nothing is registered at this point."""
+    made = []
+    probe = ctx.dir
+    while not probe.exists() and probe != Path(root):
+        made.append(probe)
+        probe = probe.parent
+    for leaf in (ctx.host_dir, ctx.view):
+        if not leaf.exists():
+            made.append(leaf)
+        if not (leaf / '.gitignore').exists():
+            made.append(leaf / '.gitignore')
+    try:
+        ensure_local_dir(ctx.host_dir)
+        ensure_local_dir(ctx.view)
+        check_plan_excluded(root, directory)
+    except BaseException:
+        for item in sorted(set(made), key=lambda q: len(q.parts), reverse=True):
+            try:
+                item.unlink() if item.is_file() or item.is_symlink() else item.rmdir()
+            except OSError:
+                pass
+        raise
 
 
 def check_theme_preset(name):

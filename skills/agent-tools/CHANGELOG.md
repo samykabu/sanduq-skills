@@ -2,6 +2,9 @@
 
 ## 1.2.0 — 2026-10-15
 
+- `progress-report`: `.host/` and `.view/` each hold a nested `.gitignore` with `*`, so local-only files stay ignored
+  even when a parent `.gitignore` re-includes them; `init` creates them before its ignore preflight and rolls them
+  back if the preflight refuses.
 - New skill `progress-report`: a live, deterministic progress report for a Markdown plan checklist or a
   Spec Kit feature. It is the portable home of the Sanduq Progress extension (1.0.1), under MIT; the
   extension will vendor it from here.

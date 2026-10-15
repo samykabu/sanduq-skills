@@ -72,13 +72,15 @@ class GitExclusions(PlanProject):
         self.assertTrue(ignored(self.root, 'reports/[review]/.view/data.js'))
         self.assertFalse(ignored(self.root, 'reports/r/.view/data.js'))
 
-    def test_init_fails_in_one_line_and_writes_nothing_local_when_exclusions_do_not_take_effect(self):
+    def test_init_still_lists_no_local_file_when_the_exclusions_do_not_take_effect(self):
+        # the nested .gitignore inside .host/ and .view/ keeps them ignored even when info/exclude matches nothing
+        from test_skill_review_c3 import local_leaks
         real = paths.glob_escape
         paths.glob_escape = lambda path: path
         self.addCleanup(setattr, paths, 'glob_escape', real)
-        code, line = self.cli('init', '--plan', 'docs/plan.md', '--dir', 'reports/[review]')
-        self.assertEqual((code, line.count('\n'), line.split()[2]), (3, 0, 'PROGRESS_EXCLUDE_FAILED'), line)
-        self.assertFalse((self.root / 'reports' / '[review]' / '.host').exists())
+        self.init_plan('--dir', 'reports/[review]')
+        self.cli('refresh')
+        self.assertEqual(local_leaks(self.root), [])
 
     def test_nothing_under_specs_is_a_report_directory(self):
         for value in ('specs/001-x/progress', 'specs/x', 'Specs/y/z'):

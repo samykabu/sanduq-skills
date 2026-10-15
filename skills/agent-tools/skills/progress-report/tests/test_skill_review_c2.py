@@ -30,12 +30,17 @@ class ExactExclusions(PlanProject):
         (self.root / '.gitignore').write_text('reports/*/.host/*\n!reports/*/.host/\n!reports/*/.host/plan-keys.json\n', encoding='utf-8')
         commit_all(self.root, 'ignore rules')
 
-    def test_a1_a_reincluded_plan_keys_file_refuses_init_before_any_write(self):
+    def test_a1_a_reincluded_plan_keys_file_is_still_ignored_through_the_nested_gitignore(self):
+        from test_skill_review_c3 import local_leaks
         self.reinclude()
-        code, line = self.cli('init', '--plan', 'docs/plan.md', '--dir', 'reports/p')
-        self.assertEqual((code, line.split()[2]), (3, 'PROGRESS_EXCLUDE_FAILED'), line)
-        self.assertFalse((self.root / 'reports').exists())
-        self.assertEqual(git_status(self.root), '')
+        self.init_plan('--dir', 'reports/p')
+        self.cli('refresh')
+        (self.root / 'reports' / 'p' / '.host' / 'plan-keys.json').write_text('{}', encoding='utf-8')
+        self.assertEqual(local_leaks(self.root), [])
+        listed = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard'], cwd=self.root, capture_output=True,
+                                text=True).stdout
+        self.assertNotIn('.host/', listed)
+        self.assertNotIn('.view/', listed)
 
     def test_a1_every_actual_destination_is_checked(self):
         seen = []
@@ -66,11 +71,23 @@ class ExactExclusions(PlanProject):
         self.assertFalse((self.root / '.progress').exists())
         self.assertFalse((self.root / 'reports' / '[review]' / '.view').exists())
 
-    def test_f11_a_refused_init_registers_nothing(self):
-        self.reinclude()
-        self.cli('init', '--plan', 'docs/plan.md', '--dir', 'reports/p')
+    def test_f11_a_refused_preflight_registers_nothing_and_removes_what_it_created(self):
+        import progress
+        from sanduq_progress.util import ProgressError
+
+        def refuse(root, directory):
+            raise ProgressError('PROGRESS_EXCLUDE_FAILED', 'git does not ignore x', 3)
+
+        real = progress.check_plan_excluded
+        progress.check_plan_excluded = refuse
+        self.addCleanup(setattr, progress, 'check_plan_excluded', real)
+        before = git_status(self.root)
+        code, line = self.cli('init', '--plan', 'docs/plan.md', '--dir', 'reports/p')
+        self.assertEqual((code, line.split()[2]), (3, 'PROGRESS_EXCLUDE_FAILED'), line)
+        self.assertFalse((self.root / 'reports').exists())
         self.assertFalse((self.root / '.progress').exists())
         self.assertFalse((self.root / '.specify').exists())
+        self.assertEqual(git_status(self.root), before)
 
 
 class InstallerLocking(HooksCase):

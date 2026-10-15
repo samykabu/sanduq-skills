@@ -5,7 +5,10 @@ import unittest
 from helpers import PlanProject, Project
 from sanduq_progress import snapshot
 
-PARENT_RULES = '.host/*\n!claude-*.json\n.view/*\n!*.json\n!data.js\n'
+# The root .gitignore outranks info/exclude, so these re-include the runtime dirs and their files; only the nested
+# `*` .gitignore inside .host/ and .view/ (closer still) keeps them ignored. Patterns need `**/` to reach nested dirs.
+PARENT_RULES = ('!**/.host/\n!**/.view/\n**/.host/*\n!**/.host/claude-*.json\n'
+                '**/.view/*\n!**/.view/*.json\n!**/.view/data.js\n')
 
 
 def local_leaks(root):
@@ -72,7 +75,7 @@ class PlanNestedGitignore(PlanProject):
         self.init_plan('--dir', 'reports/p')
         exclude = (self.root / '.git' / 'info' / 'exclude').read_text(encoding='utf-8').splitlines()
         self.assertIn('reports/p/.host/', exclude)
-        self.assertEqual((self.root / 'reports' / 'p' / '.host' / '.gitignore').read_text(encoding='utf-8'), '*\n') if (self.root / 'reports' / 'p' / '.host').exists() else None
+        self.assertEqual((self.root / 'reports' / 'p' / '.view' / '.gitignore').read_text(encoding='utf-8'), '*\n')
 
 
 if __name__ == '__main__':
