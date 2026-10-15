@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.2.0 — 2026-10-15
+
+- `progress-report`: `.host/` and `.view/` each hold a nested `.gitignore` with `*`, so local-only files stay ignored
+  even when a parent `.gitignore` re-includes them; `init` creates them before its ignore preflight and rolls them
+  back if the preflight refuses.
+- New skill `progress-report`: a live, deterministic progress report for a Markdown plan checklist or a
+  Spec Kit feature. It is the portable home of the Sanduq Progress extension (1.0.1), under MIT; the
+  extension will vendor it from here.
+- Plan mode: `progress init --plan PATH [--name NAME] [--dir DIR]` turns any `- [ ]` / `- [x]` file into a
+  report in `.progress/<name>/`. Headings become phases, ids such as `T001` are kept, other items get
+  stable `P001`... ids (equal text first, then 60 percent similar text, then the next number; numbers are
+  never reused), and `(depends on …)` / `(after …)` annotations become edges. The plan is only read. The
+  tracked `plan.json` stores ids and one-way text fingerprints, never item text (the text used for fuzzy
+  matching lives in the git-ignored `.host/`). An id with no bold and no `:` `.` `)` must be `T`, `US` or `P`
+  plus digits, so MP3, GPT-4, Q3, ES6, X11, H264 and RFC-7231 are text; a repeated id becomes an automatic one. A plan outside the repository is
+  stored as `external:<name>`; its absolute path and a path fingerprint stay in a git-ignored file, and a
+  different file of the same name is refused unless `--rebind`.
+- Plan report safety: glob characters in `--dir` are escaped in the git exclusions and `init` verifies them
+  with `git check-ignore` (`PROGRESS_EXCLUDE_FAILED`) on the actual local-only files, before anything is registered or created; a `--dir` that holds another tool's `plan.json` is
+  refused before any write (`PROGRESS_DIR_CONFLICT`); nothing under `specs/` is a report directory; the plan
+  is read once per refresh.
+- Target resolution for every verb: `--plan NAME|PATH` or `--feature DIR`; with exactly one active report no
+  flag is needed, otherwise `PROGRESS_NO_FEATURE` lists the candidates on one line.
+- Works with no Spec Kit: project state lives in `.progress/.project/` when there is no `.specify/`.
+  Feature mode, Workflow collection and every 1.0.1 behaviour are unchanged.
+- `progress hooks install|uninstall|status --host claude|codex [--scope project|user]` writes tagged native
+  hook entries (`.claude/settings.json`, `.codex/hooks.json`), preserves all other settings, removes only its
+  own entries, and refuses (exit 3) when Spec Kit's Progress hooks are already registered. The Codex file
+  shape is unverified against a running host. Commands use the braced `${CLAUDE_PROJECT_DIR}` and end in
+  `; exit 0` so a vanished plugin path cannot block the host (`hooks status` flags it; uninstall before
+  updating the plugin). Settings are edited under a lock and only if unchanged since read; entries in the
+  other scope are refused unless `--force-both`; an unreadable other-scope file does not stop an install;
+  `--python` with spaces is refused; `install` prints `bind=<nonce>` when a report exists, so hooks can be
+  installed before or after `init`.
+- UI: a plan report shows its plan file in the header instead of the Workflow stage.
+- 323 tests (stdlib unittest, 100 of them new for plan mode, the hook installer and the review fixes); browser tests skip without Playwright.
+
 ## 1.1.3 — 2026-10-10
 
 - Remove a third-party notices file that did not apply: this bundle contains no third-party material.

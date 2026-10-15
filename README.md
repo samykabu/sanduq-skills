@@ -4,7 +4,7 @@ Portable agent skills for software delivery. Each skill does one job, works with
 runs in Codex, Claude Code, or Claude Desktop.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-233C32)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-7-C65B36)](#the-skills)
+[![Skills](https://img.shields.io/badge/skills-8-C65B36)](#the-skills)
 
 If you use [Spec Kit](https://github.com/github/spec-kit) and want these tools wired into its
 lifecycle (QA, manuals, pull requests, project memory, issue-to-PR orchestration), see the
@@ -21,6 +21,7 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 | [`user-manual-ui-screenshots`](docs/skills/user-manual-ui-screenshots.md) | Repeatable, redacted screenshots of web and mobile screens. | `dev-tools` |
 | [`user-manual-preview-publishing`](docs/skills/user-manual-preview-publishing.md) | Private previews of the manual for pull requests, and release builds. | `dev-tools` |
 | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
+| [`progress-report`](docs/skills/progress-report.md) | Keeps a live progress report for a Markdown plan checklist or a Spec Kit feature: tasks, lanes, blockers, decisions, and the model, effort and context the Claude Code and Codex hooks observe. Spends no agent tokens on upkeep. | `agent-tools` |
 
 The five `user-manual*` skills work together, but you can install only the ones you need.
 
@@ -31,8 +32,8 @@ The five `user-manual*` skills work together, but you can install only the ones 
   [user-manual-api-docs](docs/skills/user-manual-api-docs.md),
   [user-manual-release-docs](docs/skills/user-manual-release-docs.md),
   [user-manual-ui-screenshots](docs/skills/user-manual-ui-screenshots.md),
-  [user-manual-preview-publishing](docs/skills/user-manual-preview-publishing.md), and
-  [delegate-task](docs/skills/delegate-task.md).
+  [user-manual-preview-publishing](docs/skills/user-manual-preview-publishing.md),
+  [delegate-task](docs/skills/delegate-task.md), and [progress-report](docs/skills/progress-report.md).
 - [Glossary](docs/glossary.md): the terms these skills use.
 - [Animated examples](docs/examples.md): one diagram per arrow style, with the exact export command.
 
@@ -65,7 +66,7 @@ As plugins (recommended; updates arrive through the marketplace):
 ```
 
 Call them as `/illustration-tools:illustrate`, `/dev-tools:user-manual`, `/agent-tools:delegate-task`,
-or just describe the task. The marketplace is hosted in `samykabu/sanduq` and installs from this
+`/agent-tools:progress-report`, or just describe the task. The marketplace is hosted in `samykabu/sanduq` and installs from this
 repository.
 
 Or as plain skills: `npx skills add samykabu/sanduq-skills --skill illustrate -a claude-code`
@@ -82,8 +83,8 @@ Or as plain skills: `npx skills add samykabu/sanduq-skills --skill illustrate -a
 3. Ask for what you need in plain words, for example "draw a sequence diagram of our login flow".
 
 Claude Desktop runs skills in a sandbox. Generating HTML diagrams works there. Steps that need
-local tools (PNG export with a browser, MkDocs and PDF builds, and `delegate-task`, which drives
-CLIs on your machine) may not; see [support by host](#support-by-host).
+local tools (PNG export with a browser, MkDocs and PDF builds, `delegate-task`, which drives
+CLIs on your machine, and `progress-report`, which writes project files and host hooks) may not; see [support by host](#support-by-host).
 </details>
 
 ## Prerequisites
@@ -93,6 +94,7 @@ CLIs on your machine) may not; see [support by host](#support-by-host).
 | `illustrate` | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG: `pip install playwright && playwright install chromium`. |
 | `user-manual*` | Python 3.10+. For HTML: `pip install mkdocs-material` (or another MkDocs theme). For PDF: the PDF requirements listed in the skill's `references/publishing.md`, including system libraries. |
 | `delegate-task` | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
+| `progress-report` | Python 3.11+ and git. Standard library only; a browser to open the report. Spec Kit is optional. |
 | `npx skills` installs | Node 18+ and npm. |
 
 ## Support by host
@@ -102,6 +104,7 @@ CLIs on your machine) may not; see [support by host](#support-by-host).
 | `illustrate` | Yes | Yes | HTML yes; exports unverified |
 | `user-manual*` | Yes | Yes | Unverified |
 | `delegate-task` | Yes | Yes | No (needs local CLIs) |
+| `progress-report` | Yes (Codex hook file unverified) | Yes | No (needs local files and hooks) |
 
 "Unverified" means not yet tested on a clean install. Reports are welcome.
 
@@ -138,6 +141,7 @@ python -m pip install -r requirements-test.txt
 python -m unittest discover -s skills/illustration-tools/tests -q
 python -m unittest discover -s skills/dev-tools/skills/user-manual/tests -q
 node skills/agent-tools/skills/delegate-task/test/run.mjs
+python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
 ```
 
 ## License
