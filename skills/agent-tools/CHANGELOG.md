@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2 — 2026-10-16
+
+- `progress-report` docs: Spec Kit now runs every Progress event through one internal command, `speckit.progress.hook`
+  (not registered as an agent skill, so it no longer uses the host's skill budget); `commands.md` and `hosts.md` show
+  the new hook commands. Codex asks to re-approve the hooks once because their command strings changed.
+
 ## 1.2.1 — 2026-10-16
 
 - `progress-report`: Codex runs project hooks only when the project is trusted and each hook is approved in the user
