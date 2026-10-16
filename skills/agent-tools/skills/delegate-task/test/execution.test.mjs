@@ -46,6 +46,27 @@ test('overlapping and escaped secrets are replaced longest-first without rewriti
   assert.equal(redact('password="private-value"'), 'password=[redacted]');
   assert.equal(redact('alphaomega alpha', ['alpha', 'alphaomega']), '[redacted] [redacted]');
 });
+
+test('crossing secret overlaps redact the complete union without suffix leakage', () => {
+  assert.equal(redact('abcdef', ['abc', 'bcdef']), '[redacted]');
+  assert.equal(redact('abcdef', ['bcdef', 'abc', 'abc']), '[redacted]');
+});
+
+test('chained secret overlaps redact every covered character once', () => {
+  assert.equal(redact('abcdefghij', ['abc', 'cdef', 'efgh', 'hij']), '[redacted]');
+  assert.equal(redact('abcdefghij', ['hij', 'efgh', 'cdef', 'abc']), '[redacted]');
+});
+
+test('Unicode secret overlaps preserve surrounding text without leaking suffixes', () => {
+  assert.equal(redact('前😀界語文後', ['😀界', '界語', '語文']), '前[redacted]後');
+  assert.equal(redact('a+b(c)\n界', ['a+b', '+b(c)\n界']), '[redacted]');
+  assert.equal(redact('a+b(c)\\n界', ['a+b', '+b(c)\n界']), '[redacted]');
+});
+
+test('disjoint secret unions preserve every nonsecret gap', () => {
+  assert.equal(redact('abcdef / visible😀 / uvwxyz', ['abc', 'bcdef', 'uvw', 'wxyz']), '[redacted] / visible😀 / [redacted]');
+  assert.equal(redact('abc - bcdef', ['abc', 'bcdef']), '[redacted] - [redacted]');
+});
 test('validation, malformed input and launch diagnostics cannot expose explicit or inherited credentials', () => {
   const secret = 'unlabelled-alphaomega', inherited = 'inherited-private-credential';
   const f = path.join(tmp, 'secret-validation.json');
