@@ -1727,7 +1727,7 @@ t('CONTRACT a malformed heartbeat timestamp does not wedge a run as running', ()
 t('CONTRACT the skill runs from a copy with no repository around it', () => {
   const iso = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-iso-'));
   const skillSrc = path.join(HERE, '..');
-  for (const entry of ['delegate.mjs', 'bounded.mjs', 'check-runner.mjs', 'check-receipt.mjs', 'check-identity.mjs', 'process-tools.mjs', 'SKILL.md', 'README.md', 'contracts', 'references']) {
+  for (const entry of ['delegate.mjs', 'bounded.mjs', 'check-runner.mjs', 'check-receipt.mjs', 'check-identity.mjs', 'process-tools.mjs', 'containment.mjs', 'containment-windows.ps1', 'containment-linux.py', 'SKILL.md', 'README.md', 'contracts', 'references']) {
     fs.cpSync(path.join(skillSrc, entry), path.join(iso, entry), { recursive: true });
   }
   fs.mkdirSync(path.join(iso, 'test', 'fixtures'), { recursive: true });

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { runBatch, collectBatch, validatePlan } from '../check-runner.mjs';
-import { acquireBatchLock, alive } from '../process-tools.mjs';
+import { acquireBatchLock, alive, containmentClosed } from '../process-tools.mjs';
 import { excerptFile, projectResult, redact } from '../bounded.mjs';
 import { executionProgress } from '../delegate.mjs';
 import { encodeReceipt } from '../check-receipt.mjs';
@@ -20,6 +20,10 @@ const plan = (id, checks, extra = {}) => ({ batch_id: id, cwd: tmp, checks, ...e
 const check = (name, mode, ...args) => ({ name, argv: ['{{node}}', fixture, mode, ...args], timeout_s: 10 });
 const cli = (file, args, over = {}) => spawnSync(process.execPath, [file, ...args], { env: { ...env, ...over }, encoding: 'utf8', windowsHide: true, shell: false, timeout: 30000, maxBuffer: 4 * 1024 * 1024 });
 const delay = ms => new Promise(r => setTimeout(r, ms));
+function processLive(pid) {
+  if (!alive(pid)) return false;
+  try { return !fs.readFileSync(`/proc/${pid}/stat`, 'utf8').includes(') Z '); } catch { return true; }
+}
 async function until(fn) {
   const deadline = Date.now() + 10000;
   while (Date.now() < deadline) { const v = fn(); if (v) return v; await delay(20); }
@@ -32,6 +36,110 @@ function asyncCli(args) {
   return { child: p, done: new Promise((resolve, reject) => { p.on('error', reject); p.on('close', code => resolve({ code, stdout, stderr })); }) };
 }
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+test('overlapping and escaped secrets are replaced longest-first without rewriting replacement markers', () => {
+  const values = ['alpha', 'alphaomega', 'alpha', 'redacted', '界\n"alphaomega"', 'a+b', 'a+b(c)'];
+  const sample = 'alphaomega alpha a+b(c) a+b ' + '界\n"alphaomega"' + ' ' + JSON.stringify('界\n"alphaomega"') + ' [redacted]';
+  const hidden = redact(sample, values);
+  assert.ok(!hidden.includes('omega')); assert.ok(!hidden.includes('(c)')); assert.ok(!hidden.includes('界'));
+  assert.ok(!hidden.includes('[[redacted]]')); assert.equal(redact(hidden, values), hidden);
+  assert.equal(redact('password="private-value"'), 'password=[redacted]');
+  assert.equal(redact('alphaomega alpha', ['alpha', 'alphaomega']), '[redacted] [redacted]');
+});
+test('validation, malformed input and launch diagnostics cannot expose explicit or inherited credentials', () => {
+  const secret = 'unlabelled-alphaomega', inherited = 'inherited-private-credential';
+  const f = path.join(tmp, 'secret-validation.json');
+  for (const p of [
+    plan('invalid-secret-timeout', [{ ...check(secret, 'argv'), timeout_s: -1 }], { env: { CUSTOM: secret } }),
+    plan('invalid-inherited-timeout', [{ ...check(inherited, 'argv'), timeout_s: 0 }]),
+    plan('invalid-secret-cwd', [check('cwd input', 'argv')], { cwd: path.join(tmp, secret), env: { CUSTOM: secret } }),
+    { env: { CUSTOM: secret }, checks: [null], batch_id: secret, cwd: tmp },
+  ]) {
+    fs.writeFileSync(f, JSON.stringify(p), 'utf8');
+    const r = cli(runner, ['run', '--plan', f], { CHECK_API_KEY: inherited });
+    assert.equal(r.status, 2);
+    assert.ok(!r.stderr.includes(secret)); assert.ok(!r.stderr.includes(inherited));
+  }
+  fs.writeFileSync(f, '{"env":{"CUSTOM":"' + secret + '"},"broken":!}', 'utf8');
+  const malformed = cli(runner, ['run', '--plan', f]); assert.equal(malformed.status, 2); assert.ok(!malformed.stderr.includes(secret));
+  fs.writeFileSync(f, JSON.stringify(plan('secret-launch', [{ name: secret + ' ' + inherited, argv: [path.join(tmp, secret)], timeout_s: 1 }], { env: { CUSTOM: secret } })), 'utf8');
+  const launch = cli(runner, ['run', '--plan', f], { CHECK_API_KEY: inherited });
+  assert.equal(launch.status, 1); assert.ok(!launch.stdout.includes(secret)); assert.ok(!launch.stdout.includes(inherited));
+  assert.ok(!launch.stderr.includes(secret)); assert.ok(!launch.stderr.includes(inherited));
+  assert.equal(JSON.parse(launch.stdout).checks[0].status, 'launch_failed');
+  const invalidNative = path.join(tmp, secret + '.exe'); fs.writeFileSync(invalidNative, 'not an executable');
+  fs.writeFileSync(f, JSON.stringify(plan('secret-native-launch', [{ name: secret + ' ' + inherited, argv: [invalidNative], timeout_s: 1 }], { env: { CUSTOM: secret } })), 'utf8');
+  const native = cli(runner, ['run', '--plan', f], { CHECK_API_KEY: inherited });
+  assert.equal(native.status, 1); assert.equal(JSON.parse(native.stdout).checks[0].status, 'launch_failed');
+  assert.ok(!native.stdout.includes(secret)); assert.ok(!native.stdout.includes(inherited));
+  assert.ok(!native.stderr.includes(secret)); assert.ok(!native.stderr.includes(inherited));
+});
+test('prompt root failure retains detached-stdio descendant ownership until closure before next check or retry', async () => {
+  const marker = path.join(tmp, 'background-marker.json'), release = path.join(tmp, 'background-release'), next = path.join(tmp, 'background-next');
+  const p = plan('background', [check('background parent failure', 'background', marker, release, '17'), check('no overlap', 'assert-stopped', marker, next)]);
+  const f = path.join(tmp, 'background-plan.json'); fs.writeFileSync(f, JSON.stringify(p));
+  const run = asyncCli(['run', '--plan', f]);
+  try {
+    const data = await until(() => { try { return JSON.parse(fs.readFileSync(marker, 'utf8')); } catch { return null; } });
+    await until(() => !processLive(data.root_pid));
+    assert.equal(processLive(data.pid), true); assert.equal(fs.existsSync(next), false);
+    const attempt = fs.readdirSync(path.join(tmp, 'checks/background')).find(n => n.startsWith('attempt-'));
+    const blocked = cli(runner, ['run', '--plan', f, '--retry-of', attempt]); assert.equal(blocked.status, 3);
+    fs.writeFileSync(release, 'release');
+    const result = await run.done; assert.equal(result.code, 1, result.stderr);
+    const receipt = JSON.parse(result.stdout); assert.equal(receipt.checks[0].exit_code, 17);
+    assert.equal(receipt.checks[0].containment.state, 'closed'); assert.equal(receipt.checks[1].status, 'passed');
+    assert.equal(processLive(data.pid), false);
+    const again = cli(runner, ['run', '--plan', f, '--retry-of', receipt.attempt_id]);
+    assert.equal(again.status, 1, again.stderr); assert.notEqual(JSON.parse(again.stdout).attempt_id, receipt.attempt_id);
+  } finally { fs.writeFileSync(release, 'release'); await run.done; }
+});
+test('timeout after prompt root exit stops detached descendants before the next check', async () => {
+  const marker = path.join(tmp, 'background-timeout.json'), release = path.join(tmp, 'background-timeout-release'), next = path.join(tmp, 'background-timeout-next');
+  const r = await runBatch(plan('background-timeout', [{ ...check('background timeout', 'background', marker, release), timeout_s: 1.5 }, check('closed tree before next', 'assert-stopped', marker, next)]), tmp);
+  assert.equal(r.checks[0].status, 'timeout'); assert.equal(r.checks[0].exit_code, 0);
+  assert.equal(r.checks[0].containment.state, 'closed'); assert.equal(r.checks[1].status, 'passed');
+  const data = JSON.parse(fs.readFileSync(marker, 'utf8')); assert.equal(processLive(data.pid), false);
+});
+test('supervisor loss permits only proof-backed recovery and otherwise retains an unresolved lease', async () => {
+  const marker = path.join(tmp, 'owner-loss.json'), release = path.join(tmp, 'owner-loss-release'), next = path.join(tmp, 'owner-loss-next');
+  const f = path.join(tmp, 'owner-loss-plan.json'); fs.writeFileSync(f, JSON.stringify(plan('owner-loss', [check('owner loss', 'background', marker, release), check('next after ownership proof', 'assert-stopped', marker, next)])));
+  const run = asyncCli(['run', '--plan', f]);
+  try {
+    const data = await until(() => { try { return JSON.parse(fs.readFileSync(marker, 'utf8')); } catch { return null; } });
+    const batch = path.join(tmp, 'checks/owner-loss'), attempt = fs.readdirSync(batch).find(n => n.startsWith('attempt-'));
+    const started = JSON.parse(fs.readFileSync(path.join(batch, attempt, '001.started.json'), 'utf8'));
+    run.child.kill('SIGKILL'); await run.done;
+    await until(() => !processLive(started.pid));
+    assert.equal(fs.existsSync(next), false);
+    if (process.platform === 'win32') await until(() => !processLive(data.pid));
+    fs.writeFileSync(release, 'release');
+    const proven = containmentClosed(started.containment);
+    const retry = cli(runner, ['run', '--plan', f, '--retry-of', attempt]);
+    const collection = collectBatch(tmp, 'owner-loss'); assert.equal(collection.status_counts.incomplete, 1);
+    if (proven) {
+      assert.equal(processLive(data.pid), false); assert.equal(retry.status, 0, retry.stderr);
+      assert.equal(collection.status_counts.successful, 1);
+    } else {
+      assert.equal(retry.status, 3, retry.stderr);
+      assert.equal(fs.readdirSync(batch).filter(n => n.startsWith('attempt-')).length, 1);
+      assert.equal(collection.attempts[0].checks[0].containment.state, 'unresolved');
+      assert.equal(fs.existsSync(path.join(batch, 'execution.lock')), true);
+      if (process.platform === 'win32') assert.equal(processLive(data.pid), false);
+    }
+  } finally { fs.writeFileSync(release, 'release'); }
+});
+test('helper hard loss leaves an unresolved lease and skips later checks and all retries', async () => {
+  const marker = path.join(tmp, 'helper-loss.json'), release = path.join(tmp, 'helper-loss-release'), next = path.join(tmp, 'helper-loss-next');
+  const f = path.join(tmp, 'helper-loss-plan.json'); fs.writeFileSync(f, JSON.stringify(plan('helper-loss', [check('helper hard loss', 'kill-helper', marker, release), check('must stay skipped', 'once', next, '1')])));
+  try {
+    const result = cli(runner, ['run', '--plan', f]); assert.equal(result.status, 1, result.stderr);
+    const r = JSON.parse(result.stdout); assert.equal(r.status_provenance.primary, 'containment_unresolved');
+    assert.equal(r.checks[0].status, 'containment_unresolved'); assert.equal(r.checks[1].status, 'skipped'); assert.equal(fs.existsSync(next), false);
+    const retry = cli(runner, ['run', '--plan', f, '--retry-of', r.attempt_id]); assert.equal(retry.status, 3);
+    const collected = collectBatch(tmp, 'helper-loss'); assert.equal(collected.attempts[0].checks[0].containment.state, 'unresolved');
+  } finally { fs.writeFileSync(release, 'release'); }
+});
 
 function publicJson(result, budget = 16384, expectedExit = 0) {
   assert.equal(result.status, expectedExit, result.stderr);
@@ -223,6 +331,22 @@ test('lock recovery proves death; live and incomplete owners remain protected', 
   const child = spawn(process.execPath, ['-e', ''], { windowsHide: true });
   await new Promise(r => child.on('close', r));
   fs.mkdirSync(lock); fs.writeFileSync(path.join(lock, `${child.pid}-aabbcc`), JSON.stringify({ active_child: null }));
+  const recovered = acquireBatchLock(lock); assert.ok(recovered); recovered();
+});
+
+test('native closure proof is nonce-bound and required before releasing or recovering descendant ownership', async () => {
+  const lock = path.join(tmp, 'proof-lock'), proof = path.join(tmp, 'proof-closure.json');
+  const binding = { proof, nonce: 'expected-native-nonce' };
+  const owner = acquireBatchLock(lock); owner.child('launching', binding);
+  assert.throws(() => owner.child(null), /unproven/); owner(); assert.equal(fs.existsSync(lock), true);
+  fs.writeFileSync(proof, JSON.stringify({ nonce: 'wrong-nonce', state: 'closed', mechanism: 'windows_job' }));
+  assert.throws(() => owner.child(null), /unproven/);
+  fs.writeFileSync(proof, JSON.stringify({ nonce: binding.nonce, state: 'closed', mechanism: 'windows_job' }));
+  owner.child(null); owner(); assert.equal(fs.existsSync(lock), false);
+  const dead = spawn(process.execPath, ['-e', ''], { windowsHide: true });
+  await new Promise(r => dead.on('close', r));
+  fs.mkdirSync(lock);
+  fs.writeFileSync(path.join(lock, `${dead.pid}-aabbcc`), JSON.stringify({ active_child: dead.pid, containment: binding }));
   const recovered = acquireBatchLock(lock); assert.ok(recovered); recovered();
 });
 test('dead owner recovery refuses a still-active child and never terminates it', async () => {
