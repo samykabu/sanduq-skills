@@ -3,6 +3,10 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
+## 2026-10-16 — agent-tools 1.2.2: progress-report docs for the single Spec Kit hook command
+
+- See [agent-tools CHANGELOG](skills/agent-tools/CHANGELOG.md#122--2026-10-16).
+
 ## 2026-10-16 — agent-tools 1.2.1: progress-report Codex hook approval
 
 - `progress-report`: `hooks status --host codex` reports registered and approved hooks and project trust (Codex skips
