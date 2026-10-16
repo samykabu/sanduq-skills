@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — Unreleased
+
+- Add native argv check batches with immutable attempts, exclusive execution ownership and explicit retries.
+- Bound public collection by UTF-8 bytes while retaining complete raw evidence and omission metadata.
+- Add bounded delegate summaries and startup diagnostics with an optional deadline; preserve legacy result semantics.
+
 ## 1.2.2 — 2026-10-16
 
 - `progress-report` docs: Spec Kit now runs every Progress event through one internal command, `speckit.progress.hook`

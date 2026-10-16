@@ -1660,12 +1660,15 @@ t('AMENDMENT-4 resume restates the parent\'s original constraints', () => {
 
 t('CONTRACT resume refuses a harness-version change', () => {
   const first = e2e('vergate', { FAKE_STREAM: CODEX_OK, FAKE_EXIT: '0', FAKE_VERSION: '1.0.0' });
+  assert.equal(first.start.status, 0, first.start.stderr);
+  assert.equal(first.result?.harness_version, '1.0.0', 'fixture must report the parent version before testing the refusal');
   const r = spawnSync(process.execPath, [DRIVER, 'start',
     '--harness', 'codex', '--cwd', os.tmpdir(), '--timeout', '60',
     '--resume', first.runId, '--task', 'delta'], {
     encoding: 'utf8', timeout: 60_000,
     env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_CODEX: FAKE, FAKE_VERSION: '2.0.0' },
   });
+  assert.equal(r.error, undefined, `resume launch failed: ${r.error?.code || 'none'}; status=${r.status}; signal=${r.signal}`);
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /not portable across CLI versions/);
 });
@@ -1724,7 +1727,7 @@ t('CONTRACT a malformed heartbeat timestamp does not wedge a run as running', ()
 t('CONTRACT the skill runs from a copy with no repository around it', () => {
   const iso = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-iso-'));
   const skillSrc = path.join(HERE, '..');
-  for (const entry of ['delegate.mjs', 'SKILL.md', 'README.md', 'contracts', 'references']) {
+  for (const entry of ['delegate.mjs', 'bounded.mjs', 'check-runner.mjs', 'check-receipt.mjs', 'check-identity.mjs', 'process-tools.mjs', 'containment.mjs', 'containment-windows.ps1', 'containment-linux.py', 'SKILL.md', 'README.md', 'contracts', 'references']) {
     fs.cpSync(path.join(skillSrc, entry), path.join(iso, entry), { recursive: true });
   }
   fs.mkdirSync(path.join(iso, 'test', 'fixtures'), { recursive: true });

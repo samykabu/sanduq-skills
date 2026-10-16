@@ -2,6 +2,7 @@
 *.zip
 dist/
 node_modules/
+.delegate/
 __pycache__/
 *.py[cod]
 # editor / OS

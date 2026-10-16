@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — agent-tools 1.3.0
+
+- Native check batches, bounded collection, explicit retries and startup diagnostics. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
