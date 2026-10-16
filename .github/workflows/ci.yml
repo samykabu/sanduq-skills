@@ -87,4 +87,6 @@ jobs:
       - name: User Manual tests
         run: python -m unittest discover -s skills/dev-tools/skills/user-manual/tests -q
       - name: Delegate Task tests
-        run: node skills/agent-tools/skills/delegate-task/test/run.mjs
+        run: |
+          node skills/agent-tools/skills/delegate-task/test/run.mjs
+          node --test skills/agent-tools/skills/delegate-task/test/execution.test.mjs
