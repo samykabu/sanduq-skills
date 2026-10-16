@@ -318,6 +318,9 @@ Work through these in order.
 5. **Check the host trusts them.** Hosts ask you to review project hooks before running them. If you declined, or the
    prompt never showed, they do not run. Claude Code's `disableAllHooks: true` switches them all off. Codex hooks sit
    behind a feature flag in the Codex configuration.
+   **Codex also needs the project trusted and every hook approved** (including for `codex exec`); unapproved hooks are
+   skipped silently. `progress hooks status --host codex` shows `registered` and `approved` counts and `project
+   untrusted`; approve the hooks in Codex (an edited hook may need approving again). See [hosts](docs/hosts.md).
 6. **Check the plan.** Items are lines such as `- [ ] Title` or `- [ ] T001 Title`. An item or id inside a code span or
    fenced block is ignored, and dependencies come only from `(depends on T001)` or `(after T001)`. If the plan lives
    outside the repository and the report shows no tasks, run `progress init --plan PATH` again to restore the local path.
