@@ -3,6 +3,12 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
+## 2026-10-16 — agent-tools 1.2.1: progress-report Codex hook approval
+
+- `progress-report`: `hooks status --host codex` reports registered and approved hooks and project trust (Codex skips
+  unapproved hooks silently); `hooks install --host codex` and `progress status` point at the missing approval.
+  Details in the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-15 — agent-tools 1.2.0: progress-report
 
 - New skill `progress-report` in `agent-tools`: a live, deterministic progress report for any Markdown plan

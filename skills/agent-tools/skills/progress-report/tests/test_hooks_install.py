@@ -199,12 +199,109 @@ class Status(HooksCase):
         self.cli('hooks', 'install', '--host', 'claude')
         self.cli('hooks', 'install', '--host', 'codex', '--scope', 'user')
         code, line = self.cli('hooks', 'status')
-        self.assertEqual(line, 'progress: hooks claude project 5/5 user 0/5; codex project 0/4 user 4/4; spec-kit no')
+        self.assertEqual(line, 'progress: hooks claude project 5/5 user 0/5; codex project 0/4; user 4/4 registered, 0/4 approved '
+                               '(approve the hooks in Codex); spec-kit no')
         self.assertEqual(self.cli('hooks', 'status', '--host', 'claude')[1], 'progress: hooks claude project 5/5 user 0/5; spec-kit no')
 
     def test_status_reports_spec_kit_registration(self):
         self.write('claude', 'user', SPECKIT)
         self.assertTrue(self.cli('hooks', 'status')[1].endswith('spec-kit yes'))
+
+
+class CodexApproval(HooksCase):
+    EVENTS = ('session_start', 'pre_tool_use', 'post_tool_use', 'stop')
+
+    def setUp(self):
+        super().setUp()
+        self.codex_home = Path(self.home.name) / 'codexhome'
+        self.codex_home.mkdir()
+        os.environ['CODEX_HOME'] = str(self.codex_home)
+        self.addCleanup(os.environ.pop, 'CODEX_HOME', None)
+
+    def config(self, trusted=True, approve=(), path_style=None):
+        blocks = []
+        if trusted:
+            key = path_style(self.root.resolve().as_posix()) if path_style else self.root.resolve().as_posix().lower()
+            blocks.append(f'[projects."{key}"]\ntrust_level = "trusted"\n')
+        hooks_file = self.path('codex', 'project').resolve().as_posix()
+        for event in approve:
+            key = f'{hooks_file}:{event}:0:0'
+            key = path_style(key) if path_style else key
+            blocks.append(f'[hooks.state."{key}"]\ntrusted_hash = "sha256:abc"\n')
+        (self.codex_home / 'config.toml').write_text('\n'.join(blocks), encoding='utf-8')
+
+    def line(self):
+        return self.cli('hooks', 'status', '--host', 'codex')[1]
+
+    def test_unapproved_and_untrusted(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(trusted=False)
+        self.assertEqual(self.line(), 'progress: hooks codex project 4/4 registered, 0/4 approved, project untrusted; user 0/4 '
+                                      '(approve the hooks in Codex); spec-kit no')
+
+    def test_trusted_but_unapproved(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config()
+        self.assertIn('project 4/4 registered, 0/4 approved; user', self.line())
+        self.assertNotIn('untrusted', self.line())
+
+    def test_fully_approved_is_quiet(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(approve=self.EVENTS)
+        self.assertEqual(self.line(), 'progress: hooks codex project 4/4 registered, 4/4 approved; user 0/4; spec-kit no')
+
+    def test_partially_approved_and_empty_hash_does_not_count(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(approve=self.EVENTS[:2])
+        self.assertIn('2/4 approved', self.line())
+        path = self.codex_home / 'config.toml'
+        path.write_text(path.read_text(encoding='utf-8').replace('sha256:abc', ''), encoding='utf-8')
+        self.assertIn('0/4 approved', self.line())
+
+    def test_windows_style_paths_match_regardless_of_case_and_separators(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(approve=self.EVENTS, path_style=lambda p: p.upper().replace('/', chr(92) * 2))
+        self.assertIn('4/4 approved', self.line())
+        self.assertNotIn('untrusted', self.line())
+
+    def test_spec_kit_hooks_in_config_toml_are_counted(self):
+        config = self.root / '.codex' / 'config.toml'
+        config.parent.mkdir(parents=True)
+        blocks = []
+        for event in ('SessionStart', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionEnd'):
+            blocks.append(f'[[hooks.{event}]]\n[[hooks.{event}.hooks]]\ntype = "command"\n'
+                          f'command = "python .specify/events.py speckit.progress.hook-x"\n')
+        config.write_text('\n'.join(blocks), encoding='utf-8')
+        self.config()
+        key = f'{config.resolve().as_posix()}:pre_tool_use:0:0'
+        with open(self.codex_home / 'config.toml', 'a', encoding='utf-8') as f:
+            f.write(f'\n[hooks.state."{key}"]\ntrusted_hash = "sha256:x"\n')
+        line = self.line()
+        self.assertIn('project 5/5 registered, 1/5 approved', line)
+        self.assertTrue(line.endswith('spec-kit yes'))
+
+    def test_install_reminds_about_approval(self):
+        self.assertIn('approve each hook', self.cli('hooks', 'install', '--host', 'codex')[1])
+
+    def test_status_hints_when_nothing_binds(self):
+        self.init_plan()
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(trusted=False)
+        self.assertTrue(self.cli('status')[1].endswith('no bound session (codex hooks not approved?)'))
+        self.config(approve=self.EVENTS)
+        self.assertNotIn('no bound session', self.cli('status')[1])
+
+    def test_no_hint_without_codex_hooks(self):
+        self.init_plan()
+        self.assertNotIn('no bound session', self.cli('status')[1])
+
+    def test_user_trust_state_is_never_written(self):
+        self.cli('hooks', 'install', '--host', 'codex')
+        self.config(trusted=False)
+        before = (self.codex_home / 'config.toml').read_bytes()
+        self.line()
+        self.cli('status')
+        self.assertEqual((self.codex_home / 'config.toml').read_bytes(), before)
 
 
 if __name__ == '__main__':

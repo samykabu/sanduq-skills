@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1 — 2026-10-16
+
+- `progress-report`: Codex runs project hooks only when the project is trusted and each hook is approved in the user
+  config; unapproved hooks are skipped silently, so the session never binds. `progress hooks status --host codex` now
+  reports registered and approved counts per scope and whether the project is trusted, and counts Spec Kit's hooks in
+  `.codex/config.toml`. `hooks install --host codex` reminds you to approve the hooks, and `progress status` hints
+  `no bound session (codex hooks not approved?)`. Trust and approval state is read, never written.
+
 ## 1.2.0 — 2026-10-15
 
 - `progress-report`: `.host/` and `.view/` each hold a nested `.gitignore` with `*`, so local-only files stay ignored
