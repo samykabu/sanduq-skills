@@ -1,0 +1,166 @@
+{
+ "schema_version": 1,
+ "run_id": "run-842-fixture",
+ "branch": "842-versioned-workflow-graphs",
+ "feature": "specs/842-versioned-workflow-graphs",
+ "issue": "example-org/example-app#842",
+ "status": "in-progress",
+ "active": null,
+ "generation": 111,
+ "updated_at": "2026-10-17T13:58:28.393831+00:00",
+ "branch_history": [
+  {
+   "from": "",
+   "to": "842-versioned-workflow-graphs",
+   "at": "2026-10-16T18:11:35.338491+00:00"
+  }
+ ],
+ "pause": {
+  "reason": "QA Document completed and collected successfully, but expected generated-memory refresh was rejected by the upstream lineage contract; preserve outputs and terminal attempt, recover before reviewed tooling repair.",
+  "context": null,
+  "at": "2026-10-17T04:53:33.397894+00:00"
+ },
+ "target_branch": null,
+ "receipts": {
+  "scope": {
+   "stage": "scope",
+   "outcome": "passed",
+   "summary": "Native scope inspect and gate for example-org/example-app#842 passed. All prerequisites are Done, including #13 and #14. The published v2 leaf (score 13, unchanged prompt) has its retained #17 approval verified by the fresh-bound gate using the current feature, token and session with a consulted analysis. No pending decisions. No GitHub writes, bind or branch.",
+   "completed_at": "2026-10-16T18:02:51.191359+00:00"
+  },
+  "specify": {
+   "stage": "specify",
+   "outcome": "passed",
+   "candidate_only": true,
+   "summary": "Bounded Specify revalidation found no required Spec change. Fresh native Scope guard, binding/source checks, applied C1Q1=A and SD4=B reads, all 16 checklist items and research R7/R16 assessment passed. Frozen context proof is retained; dispatcher completion is not claimed.",
+   "completed_at": "2026-10-16T20:42:09.655936+00:00",
+   "created_at": "2026-10-16T20:40:54.901997+00:00",
+   "mode": "revalidate"
+  },
+  "clarify": {
+   "stage": "clarify",
+   "outcome": "passed",
+   "candidate_only": true,
+   "summary": "Read-only Clarify revalidation for example-org/example-app#842 after the Specify research revalidation, which changed no spec, checklist, source or answer. A fresh native inspect (GraphQL) is identical to the prior alignment snapshot in every field, including digest, comments and history (C1Q1=A selected on 6222010489; round-2 batch 9751125a9423517ed783 ready). Dependency hashes match the prior re",
+   "completed_at": "2026-10-16T20:46:11.584583+00:00",
+   "mode": "revalidate"
+  },
+  "plan": {
+   "stage": "plan",
+   "outcome": "passed",
+   "summary": "Bounded Plan revalidation after R5. The only Plan artifact changed since the last Plan receipt is contracts/workflow-consumers.md, and the change is exactly the R5 diff (the prior pinned hash equals blob 261f1da). The corrected signatures match IWorkflowGraphReader verbatim and the session-bound factory registered at Program.cs:80; research R14 and the data model already named the ID-only methods,",
+   "completed_at": "2026-10-17T01:05:32.381282+00:00",
+   "mode": "revalidate"
+  },
+  "tasks": {
+   "stage": "tasks",
+   "outcome": "passed",
+   "summary": "Revalidated the Tasks stage once with speckit.superspec.tasks under the fresh claim after the only drifted input, the installed workflow.py, moved to the reviewed Workflow 1.10.3 payload 49c5dc88 (source 9255afa, ZIP 1f6db2c3). The runtime delta changes only Run.complete's lineage exemption for QA Document generated memory; the task parser, required_inputs, receipt canonicalization, input-role val",
+   "completed_at": "2026-10-17T05:38:50.029114+00:00"
+  },
+  "qa_analyze": {
+   "stage": "qa_analyze",
+   "outcome": "passed",
+   "summary": "Revalidated QA Analyze once with speckit.assure.analyze under the fresh claim after the reviewed Workflow 1.10.3 runtime adoption (workflow.py 49c5dc88, source 9255afa, ZIP 1f6db2c3). The 58 prior inputs are unchanged apart from the accepted, unrefreshed generated memory snapshot and three evidence files committed later. The runtime still limits qa_analyze lineage to tasks.md. The 23 completed tas",
+   "completed_at": "2026-10-17T05:48:15.383288+00:00"
+  },
+  "manual_analyze": {
+   "stage": "manual_analyze",
+   "outcome": "passed",
+   "summary": "Revalidated Manual Analyze once with speckit.user-manual.analyze under claim 75c730c7 after the reviewed Workflow 1.10.3 runtime adoption (workflow.py 49c5dc88, source 9255afa, ZIP 1f6db2c3), which still limits manual_analyze lineage to tasks.md. The 63 prior inputs are byte-identical to a859eca apart from seven evidence files committed once in 0103826. User-Manual is unchanged since 339816f; the ",
+   "completed_at": "2026-10-17T05:55:51.578502+00:00"
+  },
+  "analyze": {
+   "stage": "analyze",
+   "outcome": "passed",
+   "summary": "Revalidated Analyze once with speckit.analyze under claim 2496fd96 after the reviewed Workflow 1.10.3 runtime adoption (workflow.py 49c5dc88; only Run.complete changed). All 96 accepted N1/N2 Analyze fingerprints are unchanged; staleness came from the re-completed Tasks/QA Analyze/Manual Analyze receipts, which made no task change. Spec, plan, tasks and contracts are byte-identical to 339816f; 44 ",
+   "completed_at": "2026-10-17T06:05:49.028450+00:00"
+  },
+  "taskstoissues": {
+   "stage": "taskstoissues",
+   "outcome": "passed",
+   "summary": "Revalidated Tasks-to-Issues for #842 under claim 50f9fd8f after the reviewed Workflow runtime update. The installed adapter dry run reused all 23 mapped issues (#884-#906) and would create none; its state dry run read each issue's native /parent as #842 and found 0 state changes. Live REST shows every child closed, with matching IDs, titles, managed body blocks and 46 Depends-on body references; #",
+   "completed_at": "2026-10-17T06:22:35.230093+00:00"
+  },
+  "execute": {
+   "stage": "execute",
+   "outcome": "passed",
+   "summary": "Revalidated the retained #842 execution under \u0001<id> after the Workflow 1.10.3 runtime (49c5dc88; source 9255afa, ZIP 1f6db2c3, reviewed 0 blocking) replaced the only drifted dependency. No code, tests or workers were needed. At pushed HEAD 1d63a04, src/tests/web are identical to tested 48bac36; 23 tasks are checked; #884-#906 are live CLOSED under #842 and match the revalidated Tasks map (44 cover",
+   "completed_at": "2026-10-17T06:29:51.953405+00:00"
+  },
+  "verify": {
+   "stage": "verify",
+   "outcome": "passed",
+   "summary": "Revalidated unchanged #842 product executions after exactly six historical artifact inventory additions. Current bounded consistency checks passed 76/76; native comparison matched 101 prior Verify dependencies, all ten current upstream receipts, accepted QA memory lineage and tested 48bac36 product identity. Reused real collector and accepted Verify/Review/QA/manual proof; no product checks reran.",
+   "completed_at": "2026-10-17T07:15:53.741433+00:00"
+  },
+  "review": {
+   "stage": "review",
+   "outcome": "passed",
+   "summary": "Bounded post-packaging Review revalidation passed 75/75 consistency checks: empty native source-key diff d8aa6c4..00a540b, exactly six inspected historical additions with no prior source drift, all 67 retained Review dependencies unchanged, all eleven upstream receipts current, unchanged tested 48bac36 source and independent N1/N2 closure. Native QA and Manual states are current with 32/72 unchang",
+   "completed_at": "2026-10-17T07:22:15.850715+00:00"
+  },
+  "qa_document": {
+   "stage": "qa_document",
+   "outcome": "passed",
+   "summary": "Executed speckit.assure.document once as bounded retained-evidence revalidation inside \u0001<id>. Fresh consistency checks passed 41/41: all twelve upstream receipts native-current, retained QA static validation 70/70, current Assure Analyze/Document and Manual statuses, exact 32 QA and 72 Manual outputs, accepted global memory 364db267 and native lineage unchanged, four approved tooling carriers exac",
+   "completed_at": "2026-10-17T07:27:48.692135+00:00"
+  },
+  "manual_update": {
+   "stage": "manual_update",
+   "outcome": "passed",
+   "summary": "Revalidated retained four local builds, 106 checks/1585 links, four archives/265 files and current 72-output Manual state; no content/state regeneration.",
+   "completed_at": "2026-10-17T07:32:11.947641+00:00"
+  },
+  "ready": {
+   "stage": "ready",
+   "outcome": "passed",
+   "candidate_only": true,
+   "summary": "Invoked native workflow:gates once inside the supplied Ready claim. Tasks, mapping and selected documentation gates passed; all fourteen accepted upstream receipts are native-current, all 23 task verdicts successful and the ledger trusted. Live REST/GraphQL confirmed closed #884-#906, 46 unchanged body dependency references, open #842 under #17 and protected In progress. Current document states an",
+   "completed_at": "2026-10-17T07:41:24.242568+00:00"
+  },
+  "pr": {
+   "stage": "pr",
+   "outcome": "passed",
+   "summary": "Created authorized PR #907 into develop using the unchanged linted final body. Authenticated REST verified exact remote body equality, three rendered images and all pinned blobs. Coordinator verified actual loading of all three inline images in authenticated Edge. Initial exact-head workflow-evidence passed; lightweight build/unit were still running in the retained observation. Final metadata pack",
+   "completed_at": "2026-10-17T13:58:28.393813+00:00"
+  }
+ },
+ "recoveries": [
+  {
+   "at": "2026-10-16T18:38:52.124776+00:00",
+   "reason": "C1Q1=A was applied and native clarification is Ready. Completion correctly refused changed Specify checklist and Project evidence; revalidate Specify against actual current artifacts before re-recording Clarify without duplicate publication.",
+   "stage": "clarify"
+  },
+  {
+   "at": "2026-10-16T19:22:52.166877+00:00",
+   "reason": "Completed Plan research found an unapproved draft-only forward reachability restriction. Aligned two Spec clauses with published Scope/SD4=B; revalidate changed upstream artifacts. No new owner decision or answer was invented; Plan artifacts retained.",
+   "stage": "plan"
+  },
+  {
+   "at": "2026-10-16T20:34:57.290995+00:00",
+   "reason": "Plan worker is terminal successful; completion rejected because Specify recorded mutable Plan research as a dependency. Revalidate Specify against the corrected research and approved source, then resume retained Plan.",
+   "stage": "plan"
+  },
+  {
+   "at": "2026-10-17T00:55:31.458065+00:00",
+   "reason": "All Execute workers and coordinator are terminal and collected. R5 was implemented and tested, then the coordinator restored the incorrect consumer contract to avoid dependency drift. Restore the real R5 correction, revalidate Plan and dependent stages, then validate retained completed execution under a fresh claim. Do not accept the pending-contract candidate as final.",
+   "stage": "execute"
+  },
+  {
+   "at": "2026-10-17T02:45:00.181574+00:00",
+   "reason": "Independent Review is terminal and collected. Preserve its two blocking findings N1/N2 and probes; reopen T018/T019 for one coherent repair and affected retest, then revalidate Verify and independently close the new findings. No passed Review receipt exists.",
+   "stage": "review"
+  },
+  {
+   "at": "2026-10-17T03:10:28.079374+00:00",
+   "reason": "Execute coordinator and all children are terminal/collected; N1/N2 source and real collection passed at48bac36, evidence commit a859eca is product-identical. Preserve actual work. Changed final-checks/review-repairs dependencies require genuine Tasks and downstream artifact revalidation; do not accept an Execute candidate against stale upstream receipts.",
+   "stage": "execute"
+  },
+  {
+   "at": "2026-10-17T04:53:33.397875+00:00",
+   "reason": "QA Document completed and collected successfully, but expected generated-memory refresh was rejected by the upstream lineage contract; preserve outputs and terminal attempt, recover before reviewed tooling repair.",
+   "stage": "qa_document"
+  }
+ ]
+}

@@ -6,6 +6,20 @@
 - Bound public collection by UTF-8 bytes while retaining complete raw evidence and omission metadata.
 - Add bounded delegate summaries and startup diagnostics with an optional deadline; preserve legacy result semantics.
 
+## 1.2.3 — 2026-10-17
+
+- `progress-report` correctness patch, found on a real 23-task run (frozen as `tests/fixtures/run-842`):
+  - The header names the stage from the latest accepted receipt when no claim is active (it was blank).
+  - A checkpoint `pause` that later stages superseded is no longer a blocker.
+  - Finished lanes stop at their last terminal evidence; a lane with attempts shows the sum of their own durations, and a
+    reused lane id restarts at its current owner (a 26-minute run no longer reads 13h 52m).
+  - A facts lane and the Workflow delegation for the same run are one lane, matched by durable ids and unambiguous
+    times, never by label: 77 lanes become 46 on the fixture, and the 39 that carry tasks or attempts are the table.
+  - UI: decisions and blockers come before lanes; no board for a lane with no tasks; done-only boards start closed; lanes
+    with nothing to read collapse into one line; events keep stage, failure and decision lines and filter by kind; a line
+    explains missing host hook data; "None made" now reads "No decisions recorded in Workflow decisions".
+  - The default block order changed; a project's own `theme.json` order is kept.
+
 ## 1.2.2 — 2026-10-16
 
 - `progress-report` docs: Spec Kit now runs every Progress event through one internal command, `speckit.progress.hook`

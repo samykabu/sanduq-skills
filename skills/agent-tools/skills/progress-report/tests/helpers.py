@@ -158,3 +158,29 @@ class PlanProject(Project):
 
     def write_plan(self, text, path=None):
         (path or self.plan_path).write_text(text, encoding='utf-8')
+
+
+RUN842 = FIXTURES / 'run-842'
+RUN842_FEATURE = 'specs/842-versioned-workflow-graphs'
+RUN842_NOW = '2026-10-17T14:00:00Z'  # after the last evidence in the frozen fixture (the final PR receipt is 13:58)
+
+
+def run842_ctx(base):
+    """Copy the frozen, sanitized #842 evidence (tests/fixtures/run-842) into `base` as a Spec Kit project and return its
+    Ctx. The fixture has no .host telemetry and no .delegate/runs, exactly as the real run did."""
+    base = Path(base)
+    (base / '.specify').mkdir(parents=True, exist_ok=True)
+    feature = base / RUN842_FEATURE
+    (feature / 'workflow').mkdir(parents=True, exist_ok=True)
+    (feature / 'progress').mkdir(parents=True, exist_ok=True)
+    for name in ('workflow/checkpoint.json', 'workflow/delegations.json', 'workflow/decisions.json', 'progress/facts.jsonl', 'tasks.md'):
+        shutil.copyfile(RUN842 / name, feature / name)
+    return Ctx(base, RUN842_FEATURE)
+
+
+def run842_report(base, now=RUN842_NOW):
+    """The projection model.build gives for the frozen #842 fixture, at a fixed clock."""
+    from datetime import datetime
+    from sanduq_progress import model
+    ctx = run842_ctx(base)
+    return model.build(ctx, datetime.fromisoformat(now.replace('Z', '+00:00')), 1, {}), ctx

@@ -218,7 +218,7 @@ Unbound or ambiguous observations are dropped and counted in diagnostics.
  "schema":"sanduq.progress.v2","rev":17,"generated_at":"…","stale_after_seconds":600,
  "collection":{"automatic":true,"hosts":["claude"],"dirty":false,"last_event_at":"…","diagnostics":0},
  "feature":{"id":"624-…","title":"…","dir":"specs/624-…","branch":"…","issue":{"number":624,"url":"…"}|null,
-            "stage":{"value":"execute","source":"workflow-checkpoint"}|null,"started_at":"…","workflow":true},
+            "stage":{"value":"execute","source":"workflow-checkpoint|workflow-receipts","status":"in-progress"}|null,"started_at":"…","workflow":true},
  "orchestrator":{"host":"claude","session_id":"…","model":M,"effort":M,"context":M,
                  "elapsed":M,"active":M,"since":"…"},
  "lanes":[{"id":"L1","label":"…","owner":"…","origin":"facts|workflow-delegation|host-child|coordinator",
@@ -232,7 +232,7 @@ Unbound or ambiguous observations are dropped and counted in diagnostics.
  "tasks":{"T001":{"title":"…(≤160)","phase":"…","done":true,"parallel":false,"depends_on":["T000"],"lane":"L1"}},
  "decisions":{"pending":[D],"made":[D]},          // D = {id, question, options, selected, decided_by, at, url, source}
  "blockers":[{"id":"B3","target":"T005","by":{"type":"lane","ref":"L2"},"since":"…","source":"facts|workflow-pause|delegation"}],
- "events":[{"at":"…","kind":"…","text":"…(≤120)"}],   // last 30, derived; notes included
+ "events":[{"at":"…","kind":"…","text":"…(≤120)"}],   // bounded (≤80), derived; stage, failure, decision, block and workflow lines keep their own budget
  "summary":{"tasks_total":40,"tasks_done":12,"lanes_active":2,"blocked":1,"decisions_pending":1}
 }
 ```
@@ -242,6 +242,30 @@ Unbound or ambiguous observations are dropped and counted in diagnostics.
 **Units.** Every duration in the projection (`orchestrator.elapsed`, `orchestrator.active`, `lanes[].elapsed`,
 `lanes[].active`) is a whole number of **seconds**; the UI formats them as `1h 2m` / `3m 4s` / `5s`. Host snapshots keep
 the host's own `*_ms` fields (`elapsed_ms`, `api_ms`) and the projection converts them. Timestamps are ISO-8601 strings.
+
+**Stage.** `feature.stage.value` is the stage of the active claim when there is one (`source: "workflow-checkpoint"`).
+With no claim it is the stage of the latest accepted receipt (`outcome: "passed"`, ordered by `completed_at`, then
+receipt order) with `source: "workflow-receipts"` and `status` copied from the checkpoint (`in-progress`, ...). Only a
+checkpoint without receipts falls back to a terminal checkpoint status; otherwise `stage` is null.
+
+**Pause.** A checkpoint `pause` becomes the `WP` blocker (`source: "workflow-pause"`) only while no accepted receipt was
+completed after it. Once a later stage was accepted the pause is history: no blocker, and the event reads
+`paused (resolved by a later accepted stage): ...`.
+
+**One run, one lane.** A facts lane and a Workflow delegation describe the same work when a durable id says so, and
+only then. In order: the lane `owner` is a delegation `identity`; the `owner` is a delegation `run_id`; a lane with
+no tasks was open when attempts of exactly one `stage:<name>` identity started (two stages in one window are not
+guessed); a lane with tasks was open when attempts of a single-task identity `T<n>` for one of its tasks started
+(each attempt goes to the tightest window). A lane owned by a run id the ledger does not hold is never matched by
+time. Facts lanes that end up holding attempts of one identity fold into one lane per identity: the lowest lane id
+survives, `owner` becomes the identity, and a blocker that targets a folded id resolves to the surviving lane. Labels
+are never compared. Every attempt appears in exactly one lane.
+
+**Lane time.** A lane with attempts reports `elapsed` as the sum of its attempts' own durations (start to end, or to
+now while one runs; a finished attempt with no end uses the harness-measured duration), never the span between the
+first start and the last end, so reuse gaps are not work. A facts lane with no attempts counts from the first record
+of its current owner (a reused lane id restarts) and stops at its close record, or at its merged children's last end;
+only an open lane runs to now.
 
 `elapsed` = wall time since start. `active` = sum of observed active intervals, and is unknown (`value:null`,
 `fidelity:"unknown"`) unless a producer supplies them: a delegation attempt may carry `active_intervals`

@@ -196,17 +196,18 @@ Every flag, output line, exit code and JSON schema is in [the command reference]
 
 ## What the report shows
 
-Each block can be hidden or reordered in [the theme file](#theming).
+Each block can be hidden or reordered in [the theme file](#theming). The default order puts what needs attention first:
+header, decisions, blockers, orchestrator, lanes, boards, events.
 
 | Block | Shows | Comes from |
 | --- | --- | --- |
 | Header | Title, id, plan file or issue link, branch, Workflow stage, a progress bar, and counts of tasks done, lanes active, blocked and decisions pending | The plan or `tasks.md` heading and checkboxes; git branch; the Workflow checkpoint |
-| Orchestrator | Host, model, effort, context used (gauge), elapsed time, session id | Host hooks and, on Claude Code, the status line. Each value shows its fidelity |
-| Lanes | One row per lane: owner, requested and observed model and effort, status, elapsed, active time, last observed, attempts. A filter narrows the boards to one lane | `lane` facts; Workflow delegation attempts; host child agents (`C1`, `C2`, ...) |
-| Boards | Tasks grouped as Active, Waiting, Blocked and Done, per lane, plus an Unassigned board | Plan or `tasks.md` checkboxes; open blockers; the lane that owns each task |
-| Decisions | Pending questions with their options, and made decisions with who decided and an evidence link | `decide` facts, or the Workflow ledger |
+| Orchestrator | Host, model, effort, context used (gauge), elapsed time, session id | Host hooks and, on Claude Code, the status line. Each value shows its fidelity. With no host data the block says so ("No host hook data: Codex worktree hooks not active?") instead of leaving blanks unexplained |
+| Lanes | One row per lane: owner, requested and observed model and effort, status, elapsed, active time, last observed, attempts. A facts lane and the Workflow delegation for the same run are one lane. Lanes with no tasks and no attempts collapse into one line. A filter narrows the boards to one lane | `lane` facts; Workflow delegation attempts; host child agents (`C1`, `C2`, ...) |
+| Boards | Tasks grouped as Active, Waiting, Blocked and Done, per lane that has tasks, plus an Unassigned board. A board with only finished work starts closed | Plan or `tasks.md` checkboxes; open blockers; the lane that owns each task |
+| Decisions | Pending questions with their options, and made decisions with who decided and an evidence link. "No decisions recorded in Workflow decisions" means that ledger is empty, not that nothing was decided elsewhere | `decide` facts, or the Workflow ledger |
 | Blockers | Id, blocked task or lane, what blocks it, since when, source | `block` facts; Workflow pauses; delegation state |
-| Events | The last 30 derived events: lane changes, attempts, notes, subagent starts | The other sources, in time order |
+| Events | A bounded list of derived events with a filter by kind. Stage acceptances, failures, decisions, blockers and pauses are kept ahead of delegation lines | The other sources, in time order |
 
 Lane status is one of `pending`, `active`, `waiting`, `blocked`, `done` or `failed`. A task is Active when it is the
 first unchecked, unblocked task of an active lane. Checking the box in the plan or `tasks.md` is the only thing that
