@@ -1,10 +1,29 @@
 # Changelog
 
-## 1.3.0 — Unreleased
+## 1.3.0 — 2026-10-17
 
 - Add native argv check batches with immutable attempts, exclusive execution ownership and explicit retries.
 - Bound public collection by UTF-8 bytes while retaining complete raw evidence and omission metadata.
 - Add bounded delegate summaries and startup diagnostics with an optional deadline; preserve legacy result semantics.
+
+- `progress-report` correctness patch, found on a real 23-task run (frozen as `tests/fixtures/run-842`):
+  - The header names the stage from the latest accepted receipt when no claim is active (it was blank).
+  - A checkpoint `pause` that later stages superseded is no longer a blocker.
+  - Finished lanes stop at their last terminal evidence; a lane with attempts shows the sum of their own durations, and a
+    reused lane id restarts at its current owner (a 26-minute run no longer reads 13h 52m).
+  - A facts lane and the Workflow delegation for the same run are one lane, matched only by durable ids (the lane owner
+    is the run id or the delegation identity), never by label, time window or requested model: on the fixture 77 lanes
+    become 72, and the 44 that carry tasks or attempts are the table.
+  - UI: decisions and blockers come before lanes; no board for a lane with no tasks; done-only boards start closed; lanes
+    with nothing to read collapse into one line; events keep stage, failure and decision lines and filter by kind; a line
+    explains missing host hook data; "None made" now reads "No decisions recorded in Workflow decisions".
+  - The default block order changed; a project's own `theme.json` order is kept.
+  - Review fixes: a closed lane that absorbs a newer running attempt is active; retired `W<n>` ids and folded ids keep
+    aliases (blocker targets, `by.ref`, lane references); a closed lane's closure yields to any attempt that started
+    after it closed (running, failed, blocked or unaccepted success); a pause is history once the status leaves `paused`
+    or a newer claim exists, and the event says why ("superseded: newer claim"); notes reach the
+    events list within their own bound; the header shows a stage status other than in-progress ("pr · paused"); board and
+    quiet-lane summaries keep keyboard focus across a refresh; the missing-telemetry note is host-neutral.
 
 ## 1.2.2 — 2026-10-16
 

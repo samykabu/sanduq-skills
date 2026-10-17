@@ -218,11 +218,17 @@ class SampleTests(BrowserTest):
         self.assertEqual(self.errors, [])
         self.assertEqual(p.inner_text("#banners").strip(), "")
 
-    def test_events_capped_at_30(self):
+    def test_events_capped_at_100_and_filterable_by_kind(self):
         proj = fresh(load("projection-sample.json"))
-        proj["events"] = [{"at": now_iso(-i), "kind": "note", "text": "e%d" % i} for i in range(45)]
+        proj["events"] = [{"at": now_iso(-i), "kind": "note" if i % 2 else "failure", "text": "e%d" % i} for i in range(130)]
         self.open(proj)
-        self.assertEqual(self.page.locator("#b-events li").count(), 30)
+        self.assertEqual(self.page.locator("#b-events li").count(), 100)
+        self.page.click("button[data-k='k-failure']")
+        self.assertEqual(self.page.locator("#b-events li").count(), 65)
+        self.assertEqual(self.page.locator("#b-events li .k:not(:text('failure'))").count(), 0)
+        self.assertIn("k=failure", self.page.evaluate("location.hash"))
+        self.page.click("button[data-k='k-failure']")
+        self.assertEqual(self.page.locator("#b-events li").count(), 100)
 
     def test_theme_layout_order_and_hidden(self):
         theme.write_assets(self.view, theme.resolve_doc({"blocks": ["events", "header"], "hidden": ["lanes"], "title": "Custom title"}))
@@ -342,6 +348,40 @@ class UpdateTests(BrowserTest):
         self.assertLessEqual(n, 1)
 
 
+class ReviewC1Tests(BrowserTest):
+    def test_a5_focus_on_a_board_summary_survives_a_refresh(self):
+        self.open()
+        self.page.focus("summary[data-k^='board-']")
+        key = self.page.evaluate("document.activeElement.getAttribute('data-k')")
+        self.assertTrue(key)
+        p = fresh(load("projection-sample.json"), rev=30)
+        p["feature"]["title"] = "Refreshed"
+        write_data(self.view, p)
+        self.wait_text("h1", "Refreshed")
+        self.assertEqual(self.page.evaluate("document.activeElement.getAttribute('data-k')"), key)
+
+    def test_f6_the_header_shows_a_stage_status_that_is_not_in_progress(self):
+        p = fresh(load("projection-sample.json"))
+        p["feature"]["stage"] = {"value": "pr", "source": "workflow-receipts", "status": "paused"}
+        self.open(p)
+        self.assertIn("pr " + chr(0xb7) + " paused", " ".join(self.text("header").split()))
+        p["feature"]["stage"]["status"] = "in-progress"
+        self.open(p)
+        self.assertNotIn("paused", self.text("header"))
+
+    def test_f9_missing_telemetry_note_names_codex_only_for_a_codex_host(self):
+        for host, codex in (("claude", False), (None, False), ("codex", True)):
+            p = fresh(load("projection-sample.json"))
+            p["orchestrator"].update(host=host, model={"value": None, "source": "unknown", "observed_at": None, "fidelity": "unknown"})
+            p["collection"]["automatic"] = False
+            self.open(p)
+            note = self.page.inner_text(".note.warn") if host != "claude" else ""
+            if host == "claude":
+                self.assertEqual(self.page.locator(".note.warn").count(), 0)  # a Claude host with no data is not flagged
+            else:
+                self.assertEqual("Codex" in note, codex, host)
+
+
 class OtherProjectionTests(BrowserTest):
     def test_minimal_shows_unknown(self):
         self.open(fresh(load("projection-minimal.json")))
@@ -396,6 +436,79 @@ class LightTests(BrowserTest):
     def test_light_tokens_applied(self):
         self.open()
         self.assertEqual(self.page.evaluate("getComputedStyle(document.body).backgroundColor"), "rgb(246, 247, 244)")
+
+
+class Run842BrowserTests(BrowserTest):
+    """The UI drawing the projection of the frozen real run (tests/fixtures/run-842): 46 lanes, a long delegation history,
+    no host telemetry and a feature that is past its last stage."""
+
+    def setUp(self):
+        super().setUp()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(helpers.remove_tree, tmp)
+        built, _ = helpers.run842_report(tmp.name)
+        self.proj = fresh(built)
+
+    def test_attention_comes_first_and_boards_only_exist_for_lanes_with_tasks(self):
+        self.open(self.proj)
+        ids = self.page.eval_on_selector_all("#app > *", "els=>els.map(e=>(e.querySelector('.body')||{}).id||e.tagName)")
+        self.assertEqual(ids, ["HEADER", "b-decisions", "b-blockers", "b-orchestrator", "b-lanes", "b-boards", "b-events"])
+        with_tasks = [l for l in self.proj["lanes"] if any(l["tasks"][k] for k in ("active", "waiting", "blocked", "done"))]
+        self.assertEqual(self.page.locator("#b-boards details.board").count(), len(with_tasks))
+        self.assertGreater(len(with_tasks), 0)
+        self.assertLess(len(with_tasks), len(self.proj["lanes"]))
+
+    def test_done_only_boards_start_collapsed_and_a_click_opens_one(self):
+        self.open(self.proj)
+        boards = self.page.locator("#b-boards details.board")
+        self.assertEqual(boards.count(), self.page.locator("#b-boards details.board:not([open])").count())  # all of this run is done
+        first = boards.first
+        first.locator("summary").click()
+        self.page.wait_for_function("location.hash.includes('bd%3A')")
+        self.assertTrue(first.evaluate("e=>e.open"))
+        self.assertIn("T0", first.inner_text())
+
+    def test_lanes_with_nothing_to_read_collapse_into_one_line(self):
+        self.open(self.proj)
+        quiet = self.page.locator("#b-lanes details.quiet")
+        self.assertEqual(quiet.count(), 1)
+        self.assertIn("lanes with no tasks or attempts", quiet.locator(":scope > summary").inner_text())
+        busy_rows = self.page.locator("#b-lanes > table tbody tr").count()
+        self.assertEqual(busy_rows, 44)
+        self.assertFalse(quiet.evaluate("e=>e.open"))
+
+    def test_stage_and_missing_telemetry_are_explained(self):
+        self.open(self.proj)
+        self.assertIn("pr", self.text("header .meta"))
+        self.assertIn("No host hook data", self.text("#b-orchestrator"))
+        self.assertNotIn("Codex", self.text("#b-orchestrator"))  # no host is named, so the note is host-neutral
+        self.assertIn("No open blockers.", self.text("#b-blockers"))
+        self.assertIn("No decisions recorded in Workflow decisions.", self.text("#b-decisions"))
+
+    def test_events_keep_failures_and_stage_lines_and_filter_by_kind(self):
+        self.open(self.proj)
+        kinds = self.page.eval_on_selector_all("#b-events .filter button", "els=>els.map(e=>e.textContent)")
+        for kind in ("All events", "stage", "failure", "delegation", "workflow"):
+            self.assertIn(kind, kinds)
+        self.page.click("button[data-k='k-failure']")
+        shown = self.page.locator("#b-events li").count()
+        self.assertEqual(shown, sum(1 for e in self.proj["events"] if e["kind"] == "failure"))
+        self.assertGreater(shown, 0)
+        self.page.click("button[data-k='k-stage']")
+        self.assertEqual(self.page.locator("#b-events li").count(), 16)
+        self.assertEqual(self.errors, [])
+
+    def test_the_first_lane_shows_its_run_not_the_whole_day(self):
+        self.open(self.proj)
+        row = self.page.locator("#b-lanes tbody tr", has_text="Published scope verification").first
+        text = row.inner_text()
+        self.assertNotIn("13h", text)
+        self.assertIn("26m", text)
+
+    def test_360px_has_no_horizontal_scroll(self):
+        self.page.set_viewport_size({"width": 360, "height": 800})
+        self.open(self.proj)
+        self.assertLessEqual(self.page.evaluate("document.documentElement.scrollWidth"), 360)
 
 
 class ThemeSwapTests(BrowserTest):
