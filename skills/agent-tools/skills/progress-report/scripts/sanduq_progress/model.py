@@ -137,28 +137,17 @@ def _child_numbers(child):
     return [n for n in [child.get('lane_no'), *(child.get('lane_aliases') or [])] if isinstance(n, int) and not isinstance(n, bool)]
 
 
-LINK_SLACK = timedelta(seconds=60)  # a lane is recorded within seconds of its run's dispatch
 STAGE_IDENTITY = re.compile(r'/stage:[a-z_]+$')
-RUN_ID = re.compile(r'[a-z][a-z0-9]*-\d{8,14}-[0-9a-f]{4,}')
 TASK_IDENTITY = re.compile(r'/(T\d+)$')
-
-
-def _same_request(lane, row):
-    """The lane and the attempt asked for the same harness and model: a durable signal that they describe one run."""
-    want = lane.get('requested') or {}
-    return bool(want.get('harness') and want.get('model') and want.get('harness') == row.get('requested_harness')
-                and want.get('model') == row.get('requested_model'))
 
 
 def link_attempts(lanes, grouped, now):
     """Attach delegation attempts to the facts lane that describes the same run, so one run is one lane.
 
-    Only durable ids and unambiguous times link them, never labels (a run starts after its lane opens and before it closes):
+    Only durable ids link them, never labels, time windows or matching model requests:
       1. the lane owner is a delegation identity            -> all of that identity's attempts
       2. the lane owner is a delegation run id              -> that attempt
-      3. a lane (not owned by an unknown run id) with no tasks was open while attempts of exactly one `stage:<x>` identity started in its window
-      4. a lane with tasks was open while attempts of the single-task identity `T<n>` (n among its tasks) started
-    Linked attempts leave `grouped`; the rest become their own lanes. An attempt is never in two lanes and never lost."""
+    A run no lane names keeps its own `W<n>` lane. An attempt is never in two lanes and never lost."""
     facts = [l for l in lanes if l['origin'] == 'facts']
     by_run = {str(a['run_id']): (identity, a) for identity, rows in grouped.items() for a in rows if a.get('run_id')}
 
@@ -177,47 +166,6 @@ def link_attempts(lanes, grouped, now):
             identity, row = by_run[owner]
             if any(r is row for r in grouped.get(identity, [])):
                 take(lane, identity, row)
-
-    def window(lane):
-        if not lane['since']:
-            return None
-        end = lane['ended'] or now  # an open lane stays open: a run dispatched after it was recorded still falls inside
-        return lane['since'] - LINK_SLACK, end
-
-    # Rules 3 and 4. Timing alone never links: a run links only when exactly one lane qualifies and that lane's requested
-    # harness and model equal the attempt's (a durable signal). Several qualifying lanes (adjacent lanes, a long
-    # orchestrator lane, identical windows) are ambiguous, so the run stays its own lane. A task-less lane that would end
-    # up with two different stages gets none of them.
-    chosen = {}
-    for lane in facts:
-        span = window(lane)
-        if lane.get('rows') or span is None:
-            continue
-        if RUN_ID.fullmatch(str(lane['owner'] or '')):
-            continue  # owned by a run the ledger does not hold: other work, never a lifecycle run seen twice
-        for identity, rows in grouped.items():
-            if lane['tasks']:
-                match = TASK_IDENTITY.search(identity)
-                ok = bool(match and match.group(1) in lane['tasks'])
-            else:
-                ok = bool(STAGE_IDENTITY.search(identity))
-            if not ok:
-                continue
-            for row in rows:
-                begun = parse_time(row.get('started_at'))
-                if begun and span[0] <= begun <= span[1] and _same_request(lane, row):
-                    chosen.setdefault(id(row), (identity, row, []))[2].append(lane)
-    wins = {}
-    for identity, row, options in chosen.values():
-        if len(options) != 1:
-            continue
-        lane = options[0]
-        wins.setdefault(lane['id'], (lane, []))[1].append((identity, row))
-    for lane, picks in wins.values():
-        if not lane['tasks'] and len({identity for identity, _ in picks}) > 1:
-            continue
-        for identity, row in picks:
-            take(lane, identity, row)
 
 
 KEEP_KINDS = ('stage', 'failure', 'decision', 'block', 'workflow')
@@ -498,6 +446,11 @@ def build(ctx, now, rev=1, state=None, plan=None):
         lane_blockers.setdefault(b['target'], []).append(b)
     report_lanes, unassigned = [], {'active': [], 'waiting': [], 'blocked': [], 'done': []}
 
+    def _newer_attempt(lane):
+        if not lane['ended']:
+            return False
+        return any((parse_time(r.get('started_at')) or lane['ended']) > lane['ended'] for r in lane.get('rows') or [])
+
     def status_of(lane):
         todo = [t for t in lane['tasks'] if not tmap[t]['done']]
         if lane['origin'] == 'host-child':
@@ -510,8 +463,8 @@ def build(ctx, now, rev=1, state=None, plan=None):
         if lane['origin'] == 'coordinator':
             recent = main and (parse_time(main.get('last_observed_at')) or now) + timedelta(seconds=stale_after) >= now
             return 'active' if recent else ('pending' if not lane['tasks'] else 'waiting')
-        if lane['closed'] and not (lane['_derived'] and lane['_derived']['running']):
-            return 'done'  # historical closure never outranks a newer running attempt
+        if lane['closed'] and not _newer_attempt(lane):
+            return 'done'  # historical closure never outranks an attempt that started after the lane closed
         if lane_blockers.get(lane['id']):  # an open blocker outranks terminal child evidence
             return 'blocked'
         ended = None if lane['_derived'] else _child_end(lane)
@@ -598,7 +551,7 @@ def build(ctx, now, rev=1, state=None, plan=None):
         if child.get('ended_at'):
             events.append({'at': child['ended_at'], 'kind': 'subagent', 'text': clean(f"{label} {child.get('status')}", 120)})
     if cp and cp.get('pause') and cp['pause'].get('at'):
-        resolved = ' (resolved by a later accepted stage)' if cp['pause'].get('superseded') else ''
+        resolved = f" (superseded: {cp['pause']['superseded']})" if cp['pause'].get('superseded') else ''
         events.append({'at': cp['pause']['at'], 'kind': 'workflow', 'text': clean('paused' + resolved + ': ' + cp['pause']['reason'], 120)})
     for receipt in (cp or {}).get('receipts') or []:
         events.append({'at': receipt['at'], 'kind': 'stage', 'text': clean(f"{receipt['stage']} accepted", 120)})

@@ -232,7 +232,7 @@ Unbound or ambiguous observations are dropped and counted in diagnostics.
  "tasks":{"T001":{"title":"…(≤160)","phase":"…","done":true,"parallel":false,"depends_on":["T000"],"lane":"L1"}},
  "decisions":{"pending":[D],"made":[D]},          // D = {id, question, options, selected, decided_by, at, url, source}
  "blockers":[{"id":"B3","target":"T005","by":{"type":"lane","ref":"L2"},"since":"…","source":"facts|workflow-pause|delegation"}],
- "events":[{"at":"…","kind":"…","text":"…(≤120)"}],   // bounded (≤80), derived; stage, failure, decision, block and workflow lines keep their own budget
+ "events":[{"at":"…","kind":"…","text":"…(≤120)"}],   // bounded (≤95), derived; stage, failure, decision, block and workflow lines (50), notes (`NOTE_LIMIT`, 15) and all other lines (30) each keep their own budget
  "summary":{"tasks_total":40,"tasks_done":12,"lanes_active":2,"blocked":1,"decisions_pending":1}
 }
 ```
@@ -251,17 +251,15 @@ checkpoint without receipts falls back to a terminal checkpoint status; otherwis
 **Pause.** A checkpoint `pause` becomes the `WP` blocker (`source: "workflow-pause"`) only while it is the latest word: the
 checkpoint status is still `paused`, no new claim (`active.claimed_at`) is newer than the pause, and no accepted receipt
 was completed after it. Workflow's `claim` moves the status off `paused` but never clears `pause`, so any of the three
-makes the pause history: no blocker, and the event reads `paused (resolved by a later accepted stage): ...`.
+makes the pause history: no blocker, and the event reads `paused (superseded: <reason>): ...` with the real reason (`status is <x>`, `newer claim` or
+`later accepted receipt`).
 
 **One run, one lane.** A facts lane and a Workflow delegation describe the same work when a durable id says so, and
-only then. In order: the lane `owner` is a delegation `identity`; the `owner` is a delegation `run_id`; a lane with
-no tasks was open when attempts of exactly one `stage:<name>` identity started (two stages in one window are not
-guessed); a lane with tasks was open when attempts of a single-task identity `T<n>` for one of its tasks started.
-Timing alone never links: the last two rules need exactly one qualifying lane for the attempt and a durable signal that
-agrees (the lane's requested harness and model equal the attempt's); several qualifying lanes, or none that agree, leave
-the run as its own lane. An open lane's window runs to now, so a lane recorded just before its run dispatches links it
-at once. A lane owned by a run id the ledger does not hold is never matched by time. A lane's status comes from its
-current attempts: a folded lane that was closed but absorbed a running attempt is `active`. Facts lanes that end up holding attempts of one identity fold into one lane per identity: the lowest lane id
+only then. Two rules: the lane `owner` is a delegation `identity`, or the `owner` is a delegation `run_id`. Time
+windows and matching requested harness or model never link a lane and a run; a run no lane names by id keeps its own
+`W<n>` lane. A lane's status comes from its attempts: a closed lane's closure counts only while no absorbed attempt
+started after the lane closed; a newer attempt decides instead (running: `active`, failed: `failed`, blocked:
+`blocked`, successful but not yet accepted: `waiting`, or the derived status). Facts lanes that end up holding attempts of one identity fold into one lane per identity: the lowest lane id
 survives, `owner` becomes the identity, and a blocker that targets a folded id, or a retired `W<n>` id, resolves to the surviving lane (blocker targets,
 `by.ref` and lane references all go through the alias). Labels are never compared. Every attempt appears in exactly one
 lane; an identity named in a multi-identity workstream lane keeps its share there and is not also folded elsewhere

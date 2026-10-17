@@ -77,7 +77,8 @@ class Run842(unittest.TestCase):
         self.assertEqual(self.report['summary']['blocked'], 0)
         paused = [e for e in self.report['events'] if e['kind'] == 'workflow']
         self.assertEqual(len(paused), 1)
-        self.assertIn('resolved by a later accepted stage', paused[0]['text'])
+        self.assertIn('superseded: ', paused[0]['text'])
+        self.assertNotIn('accepted stage', paused[0]['text'])
 
     def test_a_pause_newer_than_every_receipt_is_still_a_blocker(self):
         def edit(feature_dir):
@@ -124,32 +125,35 @@ class Run842(unittest.TestCase):
 
     # ---- 4. duplicate lanes -----------------------------------------------------------------------------------------
     def test_lane_count_drops_and_no_attempt_is_lost_or_duplicated(self):
-        # Exact on the frozen fixture: 48 lanes (the baseline was 77). Timing alone no longer links a lane to a run, so
-        # two facts lanes stay beside their runs; a deliberate change to linking should change this number on purpose.
-        self.assertEqual(len(self.report['lanes']), 48)
+        # Exact on the frozen fixture: 72 lanes (the baseline was 77). A facts lane and a run are linked only by durable
+        # ids (owner equal to the run id or the delegation identity); time windows and matching model requests never
+        # link them. Of the 38 facts lanes only 5 are owned by an id the ledger holds (L1, L2, L20, L21, L22); the other
+        # 33 are owned by worker names, so they stay as empty lanes beside the 34 W lanes their runs get (5 + 33 + 34).
+        # A deliberate change to linking should change this number on purpose.
+        self.assertEqual(len(self.report['lanes']), 72)
         shown = [a['run_id'] for lane in self.report['lanes'] for a in lane['attempts']]
         self.assertEqual(len(shown), len(self.ledger))
         self.assertEqual(sorted(shown), sorted(a['run_id'] for a in self.ledger))
 
     def test_lanes_with_something_to_read_fit_the_budget(self):
         busy = [l for l in self.report['lanes'] if l['attempts'] or any(l['tasks'][k] for k in ('active', 'waiting', 'blocked', 'done'))]
-        self.assertEqual(len(busy), 39)  # exact on the frozen fixture; a new lane with something to read should be a decision
+        self.assertEqual(len(busy), 44)  # exact on the frozen fixture (the 34 W lanes, 5 id-linked facts lanes and 5 with tasks); a new lane with something to read should be a decision
 
-    def test_stage_mirror_lanes_fold_into_one_lane_per_stage(self):
-        clarify = self.lanes['L3']  # L3, L4, L6, L9 and L12 all described clarify runs
-        self.assertEqual(clarify['owner'], 'specs/842-versioned-workflow-graphs/stage:clarify')
+    def test_stage_runs_keep_one_lane_per_stage_and_worker_name_lanes_are_not_guessed_onto_them(self):
+        clarify = next(l for l in self.report['lanes'] if l['owner'] == 'specs/842-versioned-workflow-graphs/stage:clarify')
+        self.assertEqual(clarify['origin'], 'workflow-delegation')
         self.assertEqual(len(clarify['attempts']), 5)
-        for gone in ('L4', 'L6', 'L9', 'L12'):
-            self.assertNotIn(gone, self.lanes)
+        for lane_id in ('L3', 'L4', 'L6', 'L9', 'L12'):  # worker-name lanes of clarify runs: no durable id, so no link
+            self.assertEqual(self.lanes[lane_id]['attempts'], [], lane_id)
 
-    def test_a_blocker_on_a_folded_lane_id_resolves_to_the_surviving_lane(self):
+    def test_a_blocker_on_a_facts_lane_id_stays_on_that_lane(self):
         def edit(feature_dir):
             line = json.dumps({'v': 1, 'ts': '2026-10-17T13:00:00Z', 'kind': 'block', 'id': 'B9', 'actor': 'agent:coordinator', 'source': 'cli',
                                'target': 'L4', 'by': {'type': 'external', 'ref': 'waiting on owner'}, 'state': 'open', 'resolved_at': None})
             with open(feature_dir / 'progress' / 'facts.jsonl', 'a', encoding='utf-8') as stream:
                 stream.write(line + '\n')
         report = self.rebuild(edit=edit)
-        self.assertEqual([(b['id'], b['target']) for b in report['blockers']], [('B9', 'L3')])
+        self.assertEqual([(b['id'], b['target']) for b in report['blockers']], [('B9', 'L4')])
 
     def test_a_lane_owned_by_a_run_the_ledger_does_not_hold_is_never_merged_by_time(self):
         held = {a['run_id'] for a in self.ledger}

@@ -714,7 +714,7 @@ The JSON export is the full projection, indented, followed by a newline.
 | `tasks` | By id: `title`, `phase`, `done`, `parallel`, `depends_on`, `lane` |
 | `decisions` | `pending[]` and `made[]`: `id`, `question`, `options`, `selected`, `decided_by`, `at`, `url`, `source` |
 | `blockers[]` | `id`, `target`, `by` (`type`, `ref`), `since`, `source` (`facts`, `workflow-pause`, `delegation`) |
-| `events[]` | Bounded (up to 50 stage, failure, decision, block and workflow lines plus up to 30 others), oldest first: `at`, `kind` (`stage`, `failure`, `decision`, `block`, `workflow`, `delegation`, `subagent`, `lane`, `note`, `attempt`), `text` |
+| `events[]` | Bounded (up to 50 stage, failure, decision, block and workflow lines, up to 15 notes (`NOTE_LIMIT`) and up to 30 others), oldest first: `at`, `kind` (`stage`, `failure`, `decision`, `block`, `workflow`, `delegation`, `subagent`, `lane`, `note`, `attempt`), `text` |
 | `summary` | `tasks_total`, `tasks_done`, `lanes_active`, `blocked`, `decisions_pending` |
 | `overhead[]` | Only when present: attempts that belong to no lane |
 

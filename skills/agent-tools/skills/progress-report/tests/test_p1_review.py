@@ -84,6 +84,26 @@ class Folded(unittest.TestCase):
         self.assertEqual(lane['status'], 'active')
         self.assertGreaterEqual(report['summary']['lanes_active'], 1)
 
+    def closed_with(self, **change):
+        template = next(a for a in ledger() if a['identity'].endswith('/stage:clarify'))
+
+        def edit(feature_dir):
+            def mutate(data):
+                data['attempts'].append(dict(template, run_id='codex-20261017135900-aaaa02', started_at='2026-10-17T13:50:00+00:00',
+                                             ended_at='2026-10-17T13:55:00+00:00', accepted_at=None, **change))
+            edit_json(feature_dir, 'delegations.json', mutate)
+        report = rebuild(edit)
+        return next(l for l in report['lanes'] if l['owner'] == template['identity'])
+
+    def test_c2_a_closed_lane_with_a_newer_failed_attempt_is_failed(self):
+        self.assertEqual(self.closed_with(status='failed')['status'], 'failed')
+
+    def test_c2_a_closed_lane_with_a_newer_blocked_attempt_is_blocked(self):
+        self.assertEqual(self.closed_with(status='blocked')['status'], 'blocked')
+
+    def test_c2_a_closed_lane_with_a_newer_unaccepted_success_is_not_done(self):
+        self.assertNotEqual(self.closed_with(status='successful')['status'], 'done')
+
     def test_a2_retired_worker_lane_ids_resolve_to_the_surviving_lane(self):
         base = rebuild(lambda d: None)
         shown = {l['id'] for l in base['lanes']}
@@ -109,32 +129,26 @@ class Linking(unittest.TestCase):
         with tempfile.TemporaryDirectory() as base:
             return model.build(synth(base, facts, attempts), parse(now), 1, {})
 
-    def test_a4_identical_windows_do_not_merge_on_timing_alone(self):
+    def test_c2_identical_windows_and_requests_never_link_on_timing(self):
         facts = (fact_lane('L1', 'tool-a', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)
                  + fact_lane('L2', 'tool-b', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ))
         report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130500-aaaa', '2026-10-17T13:05:00+00:00', '2026-10-17T13:06:00+00:00')], '2026-10-17T14:00:00Z')
         self.assertEqual(sorted(l['id'] for l in report['lanes']), ['L1', 'L2', 'W1'])
-        self.assertEqual([len(l['attempts']) for l in report['lanes'] if l['id'] != 'W1'], [0, 0])
 
-    def test_f7_a_single_candidate_without_a_matching_request_is_left_separate(self):
-        facts = fact_lane('L1', 'tooling', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', {'harness': 'claude', 'model': 'claude-opus-5-5'})
-        report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130500-aaaa', '2026-10-17T13:05:00+00:00', '2026-10-17T13:06:00+00:00')], '2026-10-17T14:00:00Z')
-        self.assertEqual(sorted(l['id'] for l in report['lanes']), ['L1', 'W1'])
-
-    def test_one_candidate_with_a_matching_request_still_merges(self):
+    def test_c2_one_candidate_with_a_matching_request_does_not_merge_either(self):
         facts = fact_lane('L1', 'tooling', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)
         report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130500-aaaa', '2026-10-17T13:05:00+00:00', '2026-10-17T13:06:00+00:00')], '2026-10-17T14:00:00Z')
-        self.assertEqual([(l['id'], len(l['attempts'])) for l in report['lanes']], [('L1', 1)])
+        self.assertEqual([(l['id'], len(l['attempts'])) for l in report['lanes']], [('L1', 0), ('W1', 1)])
 
-    def test_f1_a_lane_recorded_just_before_its_run_dispatches_links_it_while_open(self):
+    def test_c2_an_open_lane_and_its_running_host_run_stay_separate(self):
         facts = fact_lane('L40', 'tooling', '2026-10-17T13:00:00Z', None, REQ)
-        report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130010-aaaa', '2026-10-17T13:00:10+00:00')], '2026-10-17T13:01:00Z')
-        self.assertEqual([(l['id'], l['status'], len(l['attempts'])) for l in report['lanes']], [('L40', 'active', 1)])
+        report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130010-aaaa', '2026-10-17T13:00:10+00:00', status='successful', ended='2026-10-17T13:00:40+00:00')], '2026-10-17T13:01:00Z')
+        self.assertEqual({l['id']: l['status'] for l in report['lanes']}['L40'], 'active')  # the unrelated run did not turn it waiting
 
-    def test_f1_two_open_lanes_still_leave_the_run_separate(self):
-        facts = fact_lane('L40', 'tool-a', '2026-10-17T13:00:00Z', None, REQ) + fact_lane('L41', 'tool-b', '2026-10-17T13:00:05Z', None, REQ)
-        report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130010-aaaa', '2026-10-17T13:00:10+00:00')], '2026-10-17T13:01:00Z')
-        self.assertEqual(len(report['lanes']), 3)
+    def test_c2_a_lane_owned_by_the_run_id_links_it(self):
+        facts = fact_lane('L1', 'codex-20261017130500-aaaa', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)
+        report = self.lanes(facts, [attempt(STAGE, 'codex-20261017130500-aaaa', '2026-10-17T13:05:00+00:00', '2026-10-17T13:06:00+00:00')], '2026-10-17T14:00:00Z')
+        self.assertEqual([(l['id'], len(l['attempts'])) for l in report['lanes']], [('L1', 1)])
 
 
 class Pause(unittest.TestCase):
@@ -154,6 +168,13 @@ class Pause(unittest.TestCase):
 
     def test_f2_an_older_claim_does_not(self):
         self.assertEqual([b['id'] for b in rebuild(self.pause_edit('paused', claimed='2026-10-17T13:58:00+00:00'))['blockers']], ['WP'])
+
+    def test_c2_pause_history_names_the_real_reason_not_an_accepted_stage(self):
+        text = lambda report: next(e['text'] for e in report['events'] if e['kind'] == 'workflow')
+        claimed = text(rebuild(self.pause_edit('paused', claimed='2026-10-17T13:59:30+00:00')))
+        self.assertIn('superseded: newer claim', claimed)
+        self.assertNotIn('accepted', claimed)
+        self.assertIn('superseded: status is in-progress', text(rebuild(self.pause_edit('in-progress'))))
 
     def test_f2_a_status_that_is_no_longer_paused_supersedes_the_pause(self):
         self.assertEqual(rebuild(self.pause_edit('in-progress'))['blockers'], [])
