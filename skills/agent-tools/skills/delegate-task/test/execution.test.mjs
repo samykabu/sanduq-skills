@@ -85,10 +85,10 @@ test('validation, malformed input and launch diagnostics cannot expose explicit 
   const malformed = cli(runner, ['run', '--plan', f]); assert.equal(malformed.status, 2); assert.ok(!malformed.stderr.includes(secret));
   fs.writeFileSync(f, JSON.stringify(plan('secret-launch', [{ name: secret + ' ' + inherited, argv: [path.join(tmp, secret)], timeout_s: 1 }], { env: { CUSTOM: secret } })), 'utf8');
   const launch = cli(runner, ['run', '--plan', f], { CHECK_API_KEY: inherited });
-  assert.equal(launch.status, 1); assert.ok(!launch.stdout.includes(secret)); assert.ok(!launch.stdout.includes(inherited));
+  assert.equal(launch.status, 2); assert.equal(launch.stdout, '');
   assert.ok(!launch.stderr.includes(secret)); assert.ok(!launch.stderr.includes(inherited));
-  assert.equal(JSON.parse(launch.stdout).checks[0].status, 'launch_failed');
-  const invalidNative = path.join(tmp, secret + '.exe'); fs.writeFileSync(invalidNative, 'not an executable');
+  assert.equal(fs.existsSync(path.join(tmp, 'checks/secret-launch')), false);
+  const invalidNative = path.join(tmp, secret + '.exe'); fs.writeFileSync(invalidNative, 'not an executable', { encoding: 'utf8', mode: 0o700 });
   fs.writeFileSync(f, JSON.stringify(plan('secret-native-launch', [{ name: secret + ' ' + inherited, argv: [invalidNative], timeout_s: 1 }], { env: { CUSTOM: secret } })), 'utf8');
   const native = cli(runner, ['run', '--plan', f], { CHECK_API_KEY: inherited });
   assert.equal(native.status, 1); assert.equal(JSON.parse(native.stdout).checks[0].status, 'launch_failed');
@@ -227,15 +227,15 @@ test('retry manifest binds argv/env and worktree identity, while allowing ordina
   assert.equal(spawnSync('git', ['init', '-q'], { cwd: gitCwd, windowsHide: true }).status, 0);
   await assert.rejects(runBatch(gp, tmp, { retryOf: registered.attempt_id }), /manifest\/worktree identity changed/);
 });
-test('many failed checks emit whole records and aggregate failure counts inside default and minimum byte budgets', () => {
-  const f = path.join(tmp, 'many-checks.json');
-  const p = plan('many-checks', Array.from({ length: 100 }, (_, i) => ({ name: `فشل ☕ ${i}`, argv: ['not-installed-batch-fixture'], timeout_s: 1 })));
-  fs.writeFileSync(f, JSON.stringify(p), 'utf8');
-  const r = publicJson(cli(runner, ['run', '--plan', f]), 16384, 1);
+test('historical launch failures emit whole records and aggregate counts inside default and minimum byte budgets', () => {
+  storedAttempt('many-checks', 1, Array.from({ length: 100 }, (_, i) => ({ name: `فشل ☕ ${i}`, status: 'launch_failed', exit_code: null,
+    launch_error: 'executable not found; historical launcher resolution diagnostic. '.repeat(5) })));
+  const receipt = collectBatch(tmp, 'many-checks').attempts[0];
+  const r = publicJson({ status: 0, stdout: encodeReceipt(receipt, 16384) });
   assert.equal(r.total_checks, 100); assert.equal(r.check_status_counts.launch_failed, 100); assert.equal(r.status, 'failed');
   assert.ok(r.projection.truncated); assert.ok(r.projection.next_cursor || r.projection.narrow);
   for (const c of r.checks) { assert.equal(c.status, 'launch_failed'); assert.equal(c.exit_code, null); assert.ok(c.name.startsWith('فشل')); }
-  const tiny = publicJson(cli(runner, ['run', '--plan', f, '--max-bytes', '2048']), 2048, 4);
+  const tiny = publicJson({ status: 0, stdout: encodeReceipt(receipt, 2048) }, 2048);
   assert.equal(tiny.status, 'failed'); assert.equal(tiny.check_status_counts.launch_failed, 100);
   assert.ok(tiny.projection.omitted_checks > 0);
   const restored = publicJson(cli(runner, ['collect', '--batch', 'many-checks', '--attempt', r.attempt_id, '--max-bytes', '2048', '--output-bytes', '0'] ), 2048);
@@ -296,6 +296,59 @@ test('empty executable is rejected before an attempt is created', () => {
   const f = path.join(tmp, 'empty-launch.json'); fs.writeFileSync(f, JSON.stringify(plan('empty', [{ name: 'empty launcher', argv: ['', ''], timeout_s: 1 }])));
   const result = cli(runner, ['run', '--plan', f]); assert.equal(result.status, 2); assert.match(result.stderr, /executable must be nonempty/);
 });
+test('later nonexistent executable rejects the whole plan before any side effect or attempt', async () => {
+  const marker = path.join(tmp, 'preflight-marker.txt'), f = path.join(tmp, 'preflight-plan.json');
+  const p = plan('preflight', [check('early side effect', 'once', marker, '1'), { name: 'later missing launcher', argv: ['missing-pr85-launcher'], timeout_s: 1 }]);
+  assert.throws(() => validatePlan(p), /executable not found/);
+  await assert.rejects(runBatch(p, tmp), /executable not found/);
+  fs.writeFileSync(f, JSON.stringify(p), 'utf8');
+  const result = cli(runner, ['run', '--plan', f]);
+  assert.equal(result.status, 2); assert.match(result.stderr, /executable not found/);
+  assert.equal(result.stdout, ''); assert.equal(fs.existsSync(marker), false);
+  assert.equal(fs.existsSync(path.join(tmp, 'checks/preflight')), false);
+});
+
+test('preflight uses batch and check cwd/env for PATH and explicit relative launchers without executing them', () => {
+  const base = path.join(tmp, 'resolution-base'), other = path.join(tmp, 'resolution-check');
+  const name = 'preflight-only' + (process.platform === 'win32' ? '.exe' : '');
+  for (const dir of [path.join(base, 'batch-bin'), path.join(other, 'check-bin'), other]) {
+    fs.mkdirSync(dir, { recursive: true });
+    // Invalid native contents still pass file resolution: validation must not
+    // try to launch arbitrary programs to determine whether they are usable.
+    fs.writeFileSync(path.join(dir, name), 'validation must only inspect this file', { encoding: 'utf8', mode: 0o700 });
+  }
+  const batchCheck = { name: 'batch PATH', argv: [name], timeout_s: 1 };
+  const localCheck = { name: 'check PATH', argv: [name], timeout_s: 1, cwd: other, env: { [process.platform === 'win32' ? 'Path' : 'PATH']: 'check-bin' } };
+  const p = plan('resolution', [batchCheck, localCheck, { name: 'relative launcher', argv: ['./' + name], timeout_s: 1, cwd: other }], { cwd: base, env: { PATH: 'batch-bin' } });
+  assert.equal(validatePlan(p), p);
+  assert.throws(() => validatePlan({ ...p, checks: [{ ...batchCheck, cwd: other }] }), /executable not found/);
+  assert.throws(() => validatePlan({ ...p, checks: [{ ...localCheck, cwd: base }] }), /executable not found/);
+  assert.throws(() => validatePlan({ ...p, checks: [{ ...batchCheck, env: { PATH: 'missing-bin' } }] }), /executable not found/);
+  assert.throws(() => validatePlan({ ...p, checks: [{ ...batchCheck, env: { PATH: '' } }] }), /executable not found/);
+  assert.equal(fs.existsSync(path.join(tmp, 'checks/resolution')), false);
+});
+
+test('validated per-check PATH/cwd and explicit environment overrides also govern execution', async () => {
+  const cwd = path.join(tmp, 'execution-resolution'); fs.mkdirSync(cwd);
+  const p = plan('execution-resolution', [{ name: 'effective command', argv: [path.basename(process.execPath), '-e', 'console.log(JSON.stringify({cwd:process.cwd(),value:process.env.CHECK_VALUE}))'], timeout_s: 10,
+    cwd, env: { [process.platform === 'win32' ? 'Path' : 'PATH']: path.dirname(process.execPath), CHECK_VALUE: 'check' } }], { env: { PATH: 'missing-bin', CHECK_VALUE: 'batch' } });
+  const r = await runBatch(p, tmp);
+  assert.equal(r.status, 'successful');
+  assert.deepEqual(JSON.parse(fs.readFileSync(r.checks[0].artifacts.stdout, 'utf8')), { cwd, value: 'check' });
+});
+
+test('POSIX preflight rejects files without execute permission and searches later PATH entries', { skip: process.platform === 'win32' }, async () => {
+  const first = path.join(tmp, 'non-executable'), second = path.join(tmp, 'executable');
+  for (const dir of [first, second]) fs.mkdirSync(dir);
+  const file = path.join(first, 'launcher');
+  fs.writeFileSync(file, 'not executable', { encoding: 'utf8', mode: 0o600 });
+  fs.writeFileSync(path.join(second, 'launcher'), 'executable file', { encoding: 'utf8', mode: 0o700 });
+  const c = { name: 'permission check', argv: [file], timeout_s: 1 };
+  await assert.rejects(runBatch(plan('permissions', [c]), tmp), /executable not found/);
+  assert.equal(fs.existsSync(path.join(tmp, 'checks/permissions')), false);
+  assert.doesNotThrow(() => validatePlan(plan('permissions-path', [{ ...c, argv: ['launcher'] }], { env: { PATH: [first, second].join(path.delimiter) } })));
+});
+
 test('invalid argv, duplicate names, undefined env and missing timeouts fail validation', () => {
   for (const c of [{ name: 'x', argv: ['node', null], timeout_s: 1 }, { name: 'x', argv: ['node'] }, { ...check('x', 'argv'), env: { BAD: undefined } }]) assert.throws(() => validatePlan(plan('bad', [c])));
   assert.throws(() => validatePlan(plan('bad', [check('same', 'argv'), check('same', 'argv')])), /unique/);
@@ -395,20 +448,22 @@ test('timeout kills owned descendants and leaves an unrelated process alive', as
     assert.equal(alive(unrelated.pid), true);
   } finally { unrelated.kill('SIGKILL'); await new Promise(r => unrelated.on('close', r)); }
 });
-test('program and launch failures retain meaningful names, codes and following checks', async () => {
-  const r = await runBatch(plan('failures', [check('parser regression', 'fail'), { name: 'missing launcher', argv: ['does-not-exist-retro625'], timeout_s: 1 }, check('later validation', 'argv')]), tmp);
+test('program failures retain meaningful names, codes and following checks', async () => {
+  const r = await runBatch(plan('failures', [check('parser regression', 'fail'), check('later validation', 'argv')]), tmp);
   assert.equal(r.status, 'failed');
-  assert.deepEqual(r.checks.map(c => [c.name, c.status, c.exit_code]), [['parser regression', 'failed', 17], ['missing launcher', 'launch_failed', null], ['later validation', 'passed', 0]]);
+  assert.deepEqual(r.checks.map(c => [c.name, c.status, c.exit_code]), [['parser regression', 'failed', 17], ['later validation', 'passed', 0]]);
 });
 test('actual OS spawn failures are distinct from nonzero program exits', async () => {
-  const f = path.join(tmp, 'invalid-native.exe'); fs.writeFileSync(f, 'this is not an executable', { mode: 0o600 });
+  const f = path.join(tmp, 'invalid-native.exe'); fs.writeFileSync(f, 'this is not an executable', { encoding: 'utf8', mode: 0o700 });
   const r = await runBatch(plan('spawn-error', [{ name: 'OS launcher failure', argv: [f], timeout_s: 2 }]), tmp);
   assert.equal(r.checks[0].status, 'launch_failed'); assert.equal(r.checks[0].exit_code, null); assert.ok(r.checks[0].launch_error);
 });
-test('Windows shims are rejected explicitly without a shell fallback', { skip: process.platform !== 'win32' }, async () => {
-  const f = path.join(tmp, 'unsupported.cmd'); fs.writeFileSync(f, '@echo off\r\necho should-not-execute');
-  const r = await runBatch(plan('shim', [{ name: 'unsupported shim', argv: [f], timeout_s: 1 }]), tmp);
-  assert.equal(r.checks[0].status, 'launch_failed'); assert.match(r.checks[0].launch_error, /unsupported Windows shim/);
+test('Windows shims are rejected before an attempt without a shell fallback', { skip: process.platform !== 'win32' }, async () => {
+  const f = path.join(tmp, 'unsupported.cmd'); fs.writeFileSync(f, '@echo off\r\necho should-not-execute', 'utf8');
+  const p = plan('shim', [{ name: 'unsupported shim', argv: [f], timeout_s: 1 }]);
+  assert.throws(() => validatePlan(p), /unsupported Windows shim/);
+  await assert.rejects(runBatch(p, tmp), /unsupported Windows shim/);
+  assert.equal(fs.existsSync(path.join(tmp, 'checks/shim')), false);
 });
 test('repeated attempts append and collector exposes prior failures', async () => {
   const p = plan('repeat', [check('first failure', 'fail')]);
@@ -441,16 +496,33 @@ test('CLI rejects unsafe ids, oversized plans and projection limits', () => {
   assert.equal(cli(runner, ['run', '--plan', f]).status, 2);
 });
 test('bounded delegate projection keeps failure, unknown actual model and normalised usage', () => {
-  const r = projectResult({ schema: 'delegate-task.result.v2', status: 'failed', summary: 'token=private-value\n' + 'a'.repeat(30000), requested_model: 'gpt-6.1-sol', actual_model: null, model_observed: false, tokens: { total: 42, fidelity: 'exact' }, status_provenance: { primary: 'exit_code', evidence: Array(200).fill('program failed') } });
+  const r = projectResult({ schema: 'delegate-task.result.v2', status: 'failed', summary: 'token=private-value\n' + 'a'.repeat(30000), requested_model: 'gpt-6.1-sol', actual_model: null, model_observed: false, tokens: { total: 42, fidelity: 'exact' }, usage_raw: { input_tokens: 1000, output_tokens: 2000 }, status_provenance: { primary: 'exit_code', evidence: Array(200).fill('program failed') } });
   assert.equal(r.status, 'failed'); assert.equal(r.actual_model, null); assert.equal(r.tokens.total, 42);
+  assert.equal(Object.hasOwn(r, 'usage_raw'), false);
   assert.equal(r.projection.truncated, true); assert.ok(!JSON.stringify(r).includes('private-value'));
 });
 test('public projection bounds oversized keys and redacts multiline and opaque known secrets', () => {
-  const r = projectResult({ status: 'failed', summary: 'first-line\nsecond-line opaque-value', usage_raw: { ['k'.repeat(100000)]: 'value' } }, { secrets: ['first-line\nsecond-line', 'opaque-value'] });
+  const r = projectResult({ status: 'failed', summary: 'first-line\nsecond-line opaque-value', artifacts: { ['k'.repeat(100000)]: 'value' } }, { secrets: ['first-line\nsecond-line', 'opaque-value'] });
   const s = JSON.stringify(r); assert.ok(s.length < 20000); assert.ok(!s.includes('opaque-value')); assert.ok(!s.includes('first-line')); assert.equal(r.projection.truncated, true);
   assert.ok(!redact('Authorization: Bearer opaquecredential').includes('opaquecredential'));
   assert.ok(!redact('Authorization: Basic abc').includes('abc'));
 });
+test('stored raw usage is excluded from summary while normalised usage and full readback remain intact', () => {
+  const id = 'codex-20261017000000-aabbcc', dir = path.join(tmp, id); fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ harness: 'codex' }), 'utf8');
+  const tokens = { input: 10, output: 5, total: 15, fidelity: 'exact' };
+  const usageRaw = { input_tokens: 1000, output_tokens: 2000, payload: 'raw-usage-sentinel' };
+  const raw = JSON.stringify({ schema: 'delegate-task.result.v2', run_id: id, status: 'successful', tokens, usage_raw: usageRaw });
+  fs.writeFileSync(path.join(dir, 'result.json'), raw, 'utf8');
+  const full = cli(driver, ['collect', id, '--json']); assert.equal(full.status, 0, full.stderr);
+  assert.deepEqual(JSON.parse(full.stdout).usage_raw, usageRaw);
+  const summary = cli(driver, ['collect', id, '--summary']); assert.equal(summary.status, 0, summary.stderr);
+  const projected = JSON.parse(summary.stdout);
+  assert.deepEqual(projected.tokens, tokens); assert.equal(Object.hasOwn(projected, 'usage_raw'), false);
+  assert.ok(!summary.stdout.includes('raw-usage-sentinel'));
+  assert.equal(fs.readFileSync(path.join(dir, 'result.json'), 'utf8'), raw);
+});
+
 test('bounded collector refuses oversized historical metadata without rewriting it', () => {
   const id = 'codex-20261016000001-aabbcc', dir = path.join(tmp, id); fs.mkdirSync(dir);
   fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ harness: 'codex' }));
