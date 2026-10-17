@@ -30,12 +30,12 @@ def checkpoint(feature_dir):
     # Workflow's claim moves the status off `paused` and stamps `active.claimed_at`, but never clears `pause`.
     superseded = None  # why the pause is history: a neutral reason, or None while it still stands
     if pause:
-        if status not in (None, 'paused'):
-            superseded = f'status is {status}'
+        if paused_at and last and last['_when'] > paused_at:
+            superseded = 'later accepted receipt'
         elif paused_at and claimed and claimed > paused_at:
             superseded = 'newer claim'
-        elif paused_at and last and last['_when'] > paused_at:
-            superseded = 'later accepted receipt'
+        elif status not in (None, 'paused'):
+            superseded = f'status is {status}'
     return {'branch': data.get('branch'), 'feature': data.get('feature'), 'status': data.get('status'),
             'stage': active.get('stage') if active else None, 'issue': link, 'updated_at': data.get('updated_at'),
             'started_at': first, 'last_accepted': {'stage': last['stage'], 'at': last['at']} if last else None,

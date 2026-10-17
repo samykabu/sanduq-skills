@@ -473,8 +473,8 @@ class Run842BrowserTests(BrowserTest):
         quiet = self.page.locator("#b-lanes details.quiet")
         self.assertEqual(quiet.count(), 1)
         self.assertIn("lanes with no tasks or attempts", quiet.locator(":scope > summary").inner_text())
-        busy_rows = self.page.locator("#b-lanes > div > table tbody tr, #b-lanes .body > table tbody tr").count()
-        self.assertLessEqual(busy_rows, 39)
+        busy_rows = self.page.locator("#b-lanes > table tbody tr").count()
+        self.assertEqual(busy_rows, 44)
         self.assertFalse(quiet.evaluate("e=>e.open"))
 
     def test_stage_and_missing_telemetry_are_explained(self):

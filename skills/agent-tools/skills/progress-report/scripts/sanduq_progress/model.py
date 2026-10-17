@@ -137,11 +137,10 @@ def _child_numbers(child):
     return [n for n in [child.get('lane_no'), *(child.get('lane_aliases') or [])] if isinstance(n, int) and not isinstance(n, bool)]
 
 
-STAGE_IDENTITY = re.compile(r'/stage:[a-z_]+$')
 TASK_IDENTITY = re.compile(r'/(T\d+)$')
 
 
-def link_attempts(lanes, grouped, now):
+def link_attempts(lanes, grouped):
     """Attach delegation attempts to the facts lane that describes the same run, so one run is one lane.
 
     Only durable ids link them, never labels, time windows or matching model requests:
@@ -278,7 +277,7 @@ def build(ctx, now, rev=1, state=None, plan=None):
     grouped = {}
     for a in sorted(attempts, key=lambda a: (a.get('started_at') or '', str(a.get('run_id')))):
         grouped.setdefault(str(a['identity']), []).append(a)
-    link_attempts(lanes, grouped, now)
+    link_attempts(lanes, grouped)
     lanes, folded = fold_lanes(lanes, grouped)
     retired = {}
     for number, (identity, rows) in enumerate(grouped.items(), 1):
@@ -446,10 +445,17 @@ def build(ctx, now, rev=1, state=None, plan=None):
         lane_blockers.setdefault(b['target'], []).append(b)
     report_lanes, unassigned = [], {'active': [], 'waiting': [], 'blocked': [], 'done': []}
 
-    def _newer_attempt(lane):
+    def _later_activity(lane):
+        """An attempt still active after the lane closed: it ended after the close, or is still running."""
         if not lane['ended']:
             return False
-        return any((parse_time(r.get('started_at')) or lane['ended']) > lane['ended'] for r in lane.get('rows') or [])
+
+        def last_activity(row):
+            began = parse_time(row.get('started_at'))
+            if row.get('status') == 'running' and not row.get('ended_at'):
+                return now
+            return parse_time(row.get('ended_at')) or began or lane['ended']
+        return any(last_activity(r) > lane['ended'] for r in lane.get('rows') or [])
 
     def status_of(lane):
         todo = [t for t in lane['tasks'] if not tmap[t]['done']]
@@ -463,8 +469,8 @@ def build(ctx, now, rev=1, state=None, plan=None):
         if lane['origin'] == 'coordinator':
             recent = main and (parse_time(main.get('last_observed_at')) or now) + timedelta(seconds=stale_after) >= now
             return 'active' if recent else ('pending' if not lane['tasks'] else 'waiting')
-        if lane['closed'] and not _newer_attempt(lane):
-            return 'done'  # historical closure never outranks an attempt that started after the lane closed
+        if lane['closed'] and not _later_activity(lane):
+            return 'done'  # historical closure never outranks an attempt still active after the lane closed
         if lane_blockers.get(lane['id']):  # an open blocker outranks terminal child evidence
             return 'blocked'
         ended = None if lane['_derived'] else _child_end(lane)

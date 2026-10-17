@@ -84,26 +84,6 @@ class Folded(unittest.TestCase):
         self.assertEqual(lane['status'], 'active')
         self.assertGreaterEqual(report['summary']['lanes_active'], 1)
 
-    def closed_with(self, **change):
-        template = next(a for a in ledger() if a['identity'].endswith('/stage:clarify'))
-
-        def edit(feature_dir):
-            def mutate(data):
-                data['attempts'].append(dict(template, run_id='codex-20261017135900-aaaa02', started_at='2026-10-17T13:50:00+00:00',
-                                             ended_at='2026-10-17T13:55:00+00:00', accepted_at=None, **change))
-            edit_json(feature_dir, 'delegations.json', mutate)
-        report = rebuild(edit)
-        return next(l for l in report['lanes'] if l['owner'] == template['identity'])
-
-    def test_c2_a_closed_lane_with_a_newer_failed_attempt_is_failed(self):
-        self.assertEqual(self.closed_with(status='failed')['status'], 'failed')
-
-    def test_c2_a_closed_lane_with_a_newer_blocked_attempt_is_blocked(self):
-        self.assertEqual(self.closed_with(status='blocked')['status'], 'blocked')
-
-    def test_c2_a_closed_lane_with_a_newer_unaccepted_success_is_not_done(self):
-        self.assertNotEqual(self.closed_with(status='successful')['status'], 'done')
-
     def test_a2_retired_worker_lane_ids_resolve_to_the_surviving_lane(self):
         base = rebuild(lambda d: None)
         shown = {l['id'] for l in base['lanes']}
@@ -122,6 +102,51 @@ class Folded(unittest.TestCase):
                 stream.write(json.dumps(line) + '\n')
         blocker = next(b for b in rebuild(edit)['blockers'] if b['id'] == 'B9')
         self.assertEqual((blocker['target'], blocker['by']['ref']), (owner, owner))
+
+
+class Closure(unittest.TestCase):
+    """A closed facts lane reads done unless one of its attempts was still active after the close (10:00 open, 13:10 closed)."""
+    RUN = 'codex-20261017130500-aaaa'
+    IDENTITY = 'specs/9-demo/stage:implement'
+
+    def lane(self, owner, started, ended, status, now='2026-10-17T14:00:00Z'):
+        facts = fact_lane('L1', owner, '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)
+        attempts = [attempt(self.IDENTITY, self.RUN, started, ended, status=status)]
+        with tempfile.TemporaryDirectory() as base:
+            report = model.build(synth(base, facts, attempts), parse(now), 1, {})
+        lane = next(l for l in report['lanes'] if l['id'] == 'L1')
+        self.assertEqual(len(lane['attempts']), 1, 'the attempt is linked to the closed lane')
+        return lane['status'], report['summary']['lanes_active']
+
+    def each_owner(self):
+        return (('run id', self.RUN), ('identity', self.IDENTITY))
+
+    def test_c3_an_attempt_that_ended_before_the_close_leaves_the_lane_done(self):
+        for name, owner in self.each_owner():
+            with self.subTest(owner=name):
+                self.assertEqual(self.lane(owner, '2026-10-17T13:05:00+00:00', '2026-10-17T13:09:00+00:00', 'failed')[0], 'done')
+
+    def test_c3_a_lane_closed_while_its_run_is_still_running_reads_active(self):
+        for name, owner in self.each_owner():
+            with self.subTest(owner=name):
+                status, active = self.lane(owner, '2026-10-17T13:05:00+00:00', None, 'running')
+                self.assertEqual(status, 'active')
+                self.assertGreaterEqual(active, 1)
+
+    def test_c3_an_attempt_started_before_the_close_and_failed_after_it_reads_failed(self):
+        for name, owner in self.each_owner():
+            with self.subTest(owner=name):
+                self.assertEqual(self.lane(owner, '2026-10-17T13:05:00+00:00', '2026-10-17T13:20:00+00:00', 'failed')[0], 'failed')
+
+    def test_c3_an_attempt_started_after_the_close_and_unaccepted_is_not_done(self):
+        for name, owner in self.each_owner():
+            with self.subTest(owner=name):
+                self.assertNotEqual(self.lane(owner, '2026-10-17T13:15:00+00:00', '2026-10-17T13:20:00+00:00', 'successful')[0], 'done')
+
+    def test_c3_an_attempt_started_after_the_close_and_blocked_is_blocked(self):
+        for name, owner in self.each_owner():
+            with self.subTest(owner=name):
+                self.assertEqual(self.lane(owner, '2026-10-17T13:15:00+00:00', '2026-10-17T13:20:00+00:00', 'blocked')[0], 'blocked')
 
 
 class Linking(unittest.TestCase):
