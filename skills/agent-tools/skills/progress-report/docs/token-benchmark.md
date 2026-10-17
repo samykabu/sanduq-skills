@@ -47,11 +47,11 @@ Fixed tool framing is identical across approaches and is not counted. Setup cost
 | `decision_made` | 2 | 83 | 1288 | 797 | 0 |
 | `reopen_task` | 1 | 0 | 1368 | 504 | 0 |
 | `noop_refresh` | 7 | 0 | 0 | 0 | 0 |
-| `resume` | 1 | 887 | 901 | 901 | 1349 |
-| `compaction` | 1 | 887 | 898 | 898 | 1355 |
-| **Updates total** | 55 | **2419** | **59967** | **24206** | **2704** |
+| `resume` | 1 | 887 | 901 | 901 | 557 |
+| `compaction` | 1 | 887 | 898 | 898 | 557 |
+| **Updates total** | 55 | **2419** | **59967** | **24206** | **1114** |
 | Setup (once per feature) | | 903 | 581 | 581 | 0 |
-| **Total with setup** | | **3322** | **60548** | **24787** | **2704** |
+| **Total with setup** | | **3322** | **60548** | **24787** | **1114** |
 
 ## Results: cl100k_base
 
@@ -67,11 +67,11 @@ Fixed tool framing is identical across approaches and is not counted. Setup cost
 | `decision_made` | 2 | 83 | 1269 | 784 | 0 |
 | `reopen_task` | 1 | 0 | 1364 | 500 | 0 |
 | `noop_refresh` | 7 | 0 | 0 | 0 | 0 |
-| `resume` | 1 | 883 | 904 | 904 | 1351 |
-| `compaction` | 1 | 883 | 901 | 901 | 1357 |
-| **Updates total** | 55 | **2416** | **59771** | **24014** | **2708** |
+| `resume` | 1 | 883 | 904 | 904 | 557 |
+| `compaction` | 1 | 883 | 901 | 901 | 557 |
+| **Updates total** | 55 | **2416** | **59771** | **24014** | **1114** |
 | Setup (once per feature) | | 899 | 582 | 582 | 0 |
-| **Total with setup** | | **3315** | **60353** | **24596** | **2708** |
+| **Total with setup** | | **3315** | **60353** | **24596** | **1114** |
 
 ## Break-even including setup
 
@@ -85,7 +85,7 @@ Fixed tool framing is identical across approaches and is not counted. Setup cost
 | NEW | 9481 | 3536 |
 | MD-EDIT | 195314 | 2162 |
 | MD-EDIT-LEAN | 80828 | 2162 |
-| MD-RENDER | 7701 | 0 |
+| MD-RENDER | 3088 | 0 |
 
 ## Reading the result
 

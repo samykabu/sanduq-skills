@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased — agent-tools 1.3.1
+## Unreleased — agent-tools 1.4.0
 
+- `progress-report` 1.2.0: v3 projection (stages, workstreams, runs, decisions, timeline), `--schema v2` compatibility, coordinator self-report and
+  `theme --layout`. See the [bundle changelog](skills/agent-tools/CHANGELOG.md#140--2026-10-17).
 - Native check batches, bounded collection, explicit retries and startup diagnostics. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
 
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository

@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.0 — 2026-10-17
+
+`progress-report` 1.2.0: a v3 projection with stages, workstreams, runs and a timeline. This entry covers the data side; the
+Timeline view ships in the same release.
+
+- `progress status --json` now prints `sanduq.progress.v3` by default. `--schema v2` prints the v2 document unchanged, and the
+  Workflow shim, the one-line summary, `progress export --schema v2` and the `classic` layout use it. `report.json` holds v3.
+- Stages come from Workflow's published `stage_plan` (canonical order and policy filter for older producers). Episodes come from
+  `workflow/lifecycle.jsonl`; older data gives labelled partial episodes from receipts and recoveries, or an unknown group.
+- Runs are keyed by delegation run id, with recorded retry links, exact-claim candidate acceptance, intents kept apart as
+  `dispatch`, namespaced host children and labelled durations. Nothing is inferred from timing or matching text.
+- Workstreams: lane facts marked with `progress lane --workstream`, the workstream tags that `tasks.md` declares in its legend, and
+  a Shared group. Role markers and `[P]` never count.
+- Decisions from three adapters (facts, Workflow ledger, `workflow/clarifications.json`), each reported as available, absent,
+  unsupported or invalid. An unrecorded editor or answer time stays null.
+- `progress bind --host H --model M --effort E` stores a coordinator self-report in `.host/`, shown as self-reported and never
+  preferred over what the host observed.
+- `progress theme --layout timeline|classic` sets the layout key in `layout.js`; `classic` feeds the browser the v2 document.
+- Every source file read is listed with a content fingerprint and generation.
+- `progress export` accepts `--schema`; `status` rejects an unknown schema with `PROGRESS_USAGE`.
+- Fixture `tests/fixtures/run-842` gains the tasks.md legend and a derived `workflow/clarifications.json` (C1Q1).
+
 ## 1.3.1 — 2026-10-17
 
 Fixes from the review of the sanduq vendoring PR.

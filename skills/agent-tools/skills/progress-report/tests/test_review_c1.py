@@ -161,7 +161,7 @@ class F6PublishOnce(Project):
         self.bind()
         self.hook('stop', self.payload('claude_pre_task.json', tool_name=None), now='2026-10-15T12:00:00Z')
         self.assertNotIn('final_at', json.loads(self.ctx.state.read_text()))
-        with mock.patch.object(render_data, 'write', wraps=render_data.write) as write:
+        with mock.patch.object(render_data, 'patch_collection', wraps=render_data.patch_collection) as write:
             for i in range(100):
                 second = f'2026-10-15T12:{1 + i // 60:02d}:{i % 60:02d}Z'
                 self.assertEqual(self.hook('pre_tool_use', self.payload('claude_pre_task.json', tool_name='Bash', tool_input={}),
@@ -205,7 +205,7 @@ class F8ReferencedRuns(Project):
 
     def build_counting(self):
         with mock.patch.object(runscol, 'project_run', wraps=runscol.project_run) as read:
-            report = model.build(self.ctx, NOW, 1, {})
+            report = model.build_v2(self.ctx, NOW, 1, {})
         return read.call_count, report
 
     def test_only_runs_referenced_by_the_ledger_are_read(self):
@@ -314,7 +314,7 @@ class A2Restart(Project):
                                   ('running', '2026-10-15T12:10:00Z', {})):
             snapshot.merge(self.ctx, 'claude', 'claude-sess-1', stamp(at), child={'key': 'agent-1', 'update': {
                 'status': status, 'last_observed_at': at, 'started_at': '2026-10-15T12:00:00Z', **extra}})
-        report = model.build(self.ctx, stamp('2026-10-15T12:12:00Z'), 1, {})
+        report = model.build_v2(self.ctx, stamp('2026-10-15T12:12:00Z'), 1, {})
         lane = next(l for l in report['lanes'] if l['origin'] == 'host-child')
         self.assertEqual(lane['status'], 'active')
 
@@ -334,10 +334,10 @@ class A3StableChildLanes(Project):
         self.bind()
         self.children('agent-a', 'agent-b', 'agent-c')
         state = {}
-        self.assertEqual(self.ids(model.build(self.ctx, NOW, 1, state)), {'agent-a': 'C1', 'agent-b': 'C2', 'agent-c': 'C3'})
+        self.assertEqual(self.ids(model.build_v2(self.ctx, NOW, 1, state)), {'agent-a': 'C1', 'agent-b': 'C2', 'agent-c': 'C3'})
         self.cli('lane', 'L1', '--tasks', 'T002', '--owner', 'agent-a')
         self.cli('block', 'C2', '--by', 'ext:waiting')
-        report = model.build(self.ctx, NOW, 2, state)
+        report = model.build_v2(self.ctx, NOW, 2, state)
         self.assertEqual(self.ids(report), {'agent-b': 'C2', 'agent-c': 'C3'})
         blocker = next(b for b in report['blockers'] if b['target'] == 'C2')
         self.assertEqual(next(l for l in report['lanes'] if l['id'] == blocker['target'])['owner'], 'agent-b')

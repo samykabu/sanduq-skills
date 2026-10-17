@@ -44,7 +44,7 @@ class WorkflowFiles(Project):
                                                         **fields}), encoding='utf-8')
 
     def build(self):
-        return model.build(self.ctx, NOW, 1, {})
+        return model.build_v2(self.ctx, NOW, 1, {})
 
     def lane_of(self, report, owner):
         return next(l for l in report['lanes'] if l['owner'] == owner)
@@ -150,7 +150,7 @@ class F06ChildMerge(Project):
                                                 effort={'level': 'xhigh'}), now='2026-10-15T12:11:00Z')
         self.hook('post_tool_use', self.payload('claude_post_task.json', tool_response={'agentId': 'agent-9f'}), now='2026-10-15T12:11:30Z')
         self.hook('stop', self.payload('claude_child_event.json', model={'id': 'claude-haiku-5-5'}), now='2026-10-15T12:12:00Z')
-        return model.build(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
+        return model.build_v2(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
 
     def test_child_matching_the_lane_owner_by_agent_id_merges(self):
         report = self.child_events('agent-9f')
@@ -190,7 +190,7 @@ class F07ChildEffort(Project):
         self.init(debounce_seconds=0)
         self.bind()
         self.hook('post_tool_use', self.payload('claude_child_event.json', effort={'level': 'xhigh'}))
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         lane = next(l for l in report['lanes'] if l['origin'] == 'host-child')
         self.assertEqual(lane['observed']['effort']['value'], 'xhigh')
 
@@ -235,7 +235,7 @@ class F09DebouncedFreshness(Project):
         self.assertTrue(after['collection']['dirty'])
         self.assertEqual(after['collection']['last_event_at'], '2026-10-15T12:00:07Z')
         self.assertGreater(after['rev'], before['rev'])  # the UI ignores a document that does not advance rev
-        self.assertEqual(after['lanes'], before['lanes'])  # cheap: nothing else was rebuilt
+        self.assertEqual(after['runs'], before['runs'])  # cheap: nothing else was rebuilt
         report = json.loads(self.ctx.report.read_text(encoding='utf-8'))
         self.assertEqual(report['rev'], after['rev'])
         # the next verb or final refresh clears it and continues the rev sequence
@@ -243,7 +243,7 @@ class F09DebouncedFreshness(Project):
         cleared = self.read_data_js()
         self.assertFalse(cleared['collection']['dirty'])
         self.assertGreater(cleared['rev'], after['rev'])
-        self.assertTrue(any(l['origin'] == 'host-child' for l in cleared['lanes']))
+        self.assertTrue(any(r['run_id'].startswith('host:') for r in cleared['runs']))
 
     def test_hook_after_the_debounce_window_performs_the_deferred_refresh(self):
         self.init(debounce_seconds=1000)
@@ -256,7 +256,7 @@ class F09DebouncedFreshness(Project):
                                    now='2026-10-15T12:50:00Z'), 'refreshed')
         data = self.read_data_js()
         self.assertFalse(data['collection']['dirty'])
-        self.assertTrue(any(l['origin'] == 'host-child' for l in data['lanes']))
+        self.assertTrue(any(r['run_id'].startswith('host:') for r in data['runs']))
 
 
 class F11DuplicateConflicts(Project):
@@ -295,7 +295,7 @@ class F13WorkflowDecisions(Project):
                                                            'decisions': list(items)}), encoding='utf-8')
 
     def made(self):
-        return {d['id']: d for d in model.build(self.ctx, NOW, 1, {})['decisions']['made']}
+        return {d['id']: d for d in model.build_v2(self.ctx, NOW, 1, {})['decisions']['made']}
 
     def test_multiple_selection_keeps_every_selected_option_and_updated_at(self):
         self.init()
@@ -322,7 +322,7 @@ class F13WorkflowDecisions(Project):
         self.init()
         self.decisions({'id': 'SD1', 'mode': 'multiple', 'options': ['Alpha', 'Beta'], 'status': 'pending', 'option': None,
                         'selected': [], 'answers': []})
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         self.assertEqual([d['id'] for d in report['decisions']['pending']], ['SD1'])
         self.assertIsNone(report['decisions']['pending'][0]['selected'])
 

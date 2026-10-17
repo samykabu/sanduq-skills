@@ -66,7 +66,7 @@
   function readState() {
     var p = new URLSearchParams(location.hash.replace(/^#/, ''));
     var list = function (k) { return (p.get(k) || '').split(',').filter(Boolean); };
-    return { f: p.get('f') || '', k: p.get('k') || '', c: list('c'), o: list('o') };
+    return { f: p.get('f') || '', k: p.get('k') || '', c: list('c'), o: list('o'), q: p.get('q') || '', s: p.get('s') || '', p: parseInt(p.get('p'), 10) || 1, g: p.get('g') || '' };
   }
   function writeState(s) {
     var p = new URLSearchParams();
@@ -74,6 +74,10 @@
     if (s.k) p.set('k', s.k);
     if (s.c.length) p.set('c', s.c.join(','));
     if (s.o.length) p.set('o', s.o.join(','));
+    if (s.q) p.set('q', s.q);
+    if (s.s) p.set('s', s.s);
+    if (s.p > 1) p.set('p', String(s.p));
+    if (s.g) p.set('g', s.g);
     var h = p.toString();
     try { history.replaceState(null, '', location.pathname + location.search + (h ? '#' + h : '')); } catch (e) { location.hash = h; }
   }
@@ -350,19 +354,445 @@
 
   var RENDER = { header: bHeader, orchestrator: bOrch, lanes: bLanes, boards: bBoards, decisions: bDecisions, blockers: bBlockers, events: bEvents };
 
+  /* ---------- v3 Timeline layout (schema sanduq.progress.v3) ---------- */
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var PAGE = 10, TL_LIMIT = 12;
+  function isV3(d) { return !!d && d.schema === 'sanduq.progress.v3'; }
+  function timelineLayout(d) { return isV3(d) && LAYOUT.layout !== 'classic'; }
+  function utc(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return null;
+    var s = new Date(t).toISOString();
+    return parseInt(s.slice(8, 10), 10) + ' ' + MON[parseInt(s.slice(5, 7), 10) - 1] + ' ' + s.slice(11, 16);
+  }
+  function stamp(iso) {
+    var u = utc(iso);
+    return u ? attr(el('time', null, u + ' UTC'), { datetime: iso }) : unk();
+  }
+  function num(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
+  function cnt(v) { return num(v) == null ? unk() : String(v); }
+  function tid(t) { return typeof t === 'string' ? t : t && (t.id || t.task) ? String(t.id || t.task) : '?'; }
+  function slug(v) { return String(v == null ? 'unknown' : v).replace(/[^a-z]/gi, '').slice(0, 12).toLowerCase() || 'unknown'; }
+  function tri(v) { return v === true ? 'yes' : v === false ? 'no' : 'unknown'; }
+  /* a details element whose open state is kept in the hash under key */
+  function keep(det, key, st, attrs) {
+    det.open = st.o.indexOf(key) >= 0;
+    det.addEventListener('toggle', function () {
+      var s = readState();
+      if (det.open === (s.o.indexOf(key) >= 0)) return;
+      toggle(s.o, key, det.open);
+      writeState(s);
+    });
+    return det;
+  }
+  /* a button that toggles key in the hash and redraws */
+  function flip(label, key, dk, st, extra) {
+    var on = st.o.indexOf(key) >= 0;
+    var b = attr(el('button', 'tgl', label), { type: 'button', 'aria-expanded': String(on), 'data-k': dk });
+    b.addEventListener('click', function () {
+      var s = readState();
+      toggle(s.o, key, s.o.indexOf(key) < 0);
+      writeState(s);
+      render();
+    });
+    return b;
+  }
+  function vsec(id, title, body, cls) {
+    var h = el('h2', null, title);
+    h.id = id + '-h';
+    var s = el('section', 'blk v3 ' + (cls || ''), [h, el('div', 'body', body)]);
+    s.id = id;
+    s.setAttribute('data-v3', id);
+    s.setAttribute('aria-labelledby', id + '-h');
+    return s;
+  }
+  function prov(o, field) {
+    var p = (o.provenance || {})[field];
+    if (p === 'self-report') return el('span', 'prov self', 'self-reported');
+    if (p === 'host-hook') return el('span', 'prov host', 'host hook');
+    if (p === 'none') return el('span', 'prov none', 'no source');
+    return null;
+  }
+
+  /* 1. header */
+  function vHeader(d) {
+    var f = d.feature || {}, sm = d.summary || {}, na = f.next_action, stg = f.stage || {};
+    var h = el('h1', 'wrap', LAYOUT.title || f.title || f.id || 'Progress');
+    var meta = el('div', 'meta');
+    if (f.id) meta.appendChild(el('span', 'mono wrap', f.id));
+    if (f.issue) meta.appendChild(link('Issue #' + f.issue.number, f.issue.url));
+    meta.appendChild(el('span', 'wrap', ['Branch ', f.branch ? el('code', null, f.branch) : unk()]));
+    if (f.mode === 'plan') {
+      meta.appendChild(el('span', 'wrap', ['Plan ', f.source ? el('code', null, f.source) : unk()]));
+    } else {
+      meta.appendChild(el('span', 'stg', ['Stage ', stg.value ? pill(stg.value) : unk(), ' · ', stg.status ? stg.status : unk(), ' · ', stg.validity ? stg.validity : unk()]));
+    }
+    var next = el('p', 'next', [el('b', null, 'Next action '), na && na.text ? el('span', 'wrap', na.text) : unk()]);
+    if (na && na.text) {
+      next.appendChild(el('span', 'sub', [' · ', na.kind === 'active-claim' ? 'active claim' : na.kind === 'next-stage' ? 'next stage' : 'kind unknown',
+        na.stage ? ' (' + na.stage + ')' : '', ' · evaluated ', when(na.evaluated_at)]));
+    }
+    var counts = el('dl', 'counts');
+    [['Tasks done', num(sm.tasks_done) == null || num(sm.tasks_total) == null ? unk() : sm.tasks_done + ' / ' + sm.tasks_total],
+     ['Stages accepted', num(sm.stages_accepted) == null || num(sm.stages_selected) == null ? unk() : sm.stages_accepted + ' / ' + sm.stages_selected],
+     ['Runs', num(sm.runs_total) == null ? unk() : sm.runs_total + (num(sm.runs_failed) ? ' (' + sm.runs_failed + ' failed or abandoned)' : '')],
+     ['Decisions pending', cnt(sm.decisions_pending)], ['Blockers open', cnt(sm.blockers_open)]].forEach(function (c) {
+      counts.appendChild(el('div', null, [el('dt', null, c[0]), el('dd', null, c[1])]));
+    });
+    var top = el('div', 'top v3top', [el('div', null, [h, meta]), el('p', 'snap', ['Snapshot ', stamp(d.generated_at), ' · ', when(d.generated_at)])]);
+    var hd = el('header', 'hdr v3', [top, next, counts]);
+    hd.id = 'v3-header';
+    hd.setAttribute('data-v3', 'v3-header');
+    return hd;
+  }
+
+  /* 2. attention strip */
+  function vAttention(d) {
+    var a = d.attention || [];
+    var body = a.length ? el('ul', 'attn', a.map(function (x) {
+      var sev = ['high', 'medium', 'info'].indexOf(x.severity) < 0 ? 'info' : x.severity;
+      return el('li', 'item sev-' + sev, [el('span', 'k', (x.kind || 'note') + ' · ' + sev), el('span', 'wrap', x.text || ''), x.since ? el('span', 'sub', when(x.since)) : null]);
+    })) : el('p', 'empty', 'Nothing needs attention.');
+    return vsec('v3-attention', 'Needs attention', body, 'attention');
+  }
+
+  /* 3. orchestrator */
+  function vOrch(d) {
+    var o = d.orchestrator || {}, ctx = o.context || {};
+    function field(label, m, fmt, key) {
+      return item(label, [m && typeof m === 'object' && 'value' in m ? mv(m, fmt) : unk(), ' ', prov(o, key || label)]);
+    }
+    var cv = ctx.value && typeof ctx.value === 'object' ? ctx.value : null;
+    var ctxNode = cv && typeof cv.used_percent === 'number' ? [el('span', 'mv', cv.used_percent.toFixed(1) + '%'), mvTag(ctx)] : unk();
+    var kv = el('dl', 'kv', [
+      item('Host', plain(o.host)),
+      field('Model', o.model, null, 'model'), field('Effort', o.effort, null, 'effort'),
+      item('Context used', [ctxNode, ' ', prov(o, 'context')]),
+      field('Host elapsed', o.host_elapsed, dur, 'host_elapsed'), field('Active (observed work)', o.active, dur, 'active'),
+      item('Session', plain(o.session_id)), item('Since', o.since ? stamp(o.since) : unk())
+    ]);
+    return vsec('v3-orchestrator', 'Orchestrator', [kv, o.note ? el('p', 'note', o.note) : null], 'orch');
+  }
+
+  /* 4. stages over time (Gantt) */
+  function stageOpen(s) {
+    if (!s.first_start) return false;
+    if (!s.last_end) return true;
+    return (s.episodes || []).some(function (e) { return e.outcome === 'running' && !e.ended_at; });
+  }
+  function isFail(r) { return r.worker_status === 'failed' || r.worker_status === 'abandoned'; }
+  function vStages(d, st) {
+    var stages = (d.stages || []).filter(function (s) { return s.selected !== false && s.status !== 'excluded'; })
+      .sort(function (a, b) { return (num(a.order) == null ? 1e9 : a.order) - (num(b.order) == null ? 1e9 : b.order); });
+    var now = Date.now(), lo = Infinity, hi = -Infinity;
+    var fails = {};
+    (d.runs || []).forEach(function (r) { if (isFail(r) && r.stage) (fails[r.stage] = fails[r.stage] || []).push(r); });
+    function ext(t) { if (!isNaN(t)) { lo = Math.min(lo, t); hi = Math.max(hi, t); } }
+    stages.forEach(function (s) {
+      ext(Date.parse(s.first_start));
+      if (s.last_end) ext(Date.parse(s.last_end));
+      if (stageOpen(s)) ext(now);
+      (fails[s.id] || []).forEach(function (r) { ext(Date.parse(r.started_at)); });
+    });
+    var body = [];
+    if (!stages.length) {
+      body.push(el('p', 'empty', d.feature && d.feature.mode === 'plan' ? 'This plan has no Workflow stages.' : 'No Workflow stages are recorded for this report.'));
+      return vsec('v3-stages', 'Stages over time', body, 'stages');
+    }
+    if (!isFinite(lo)) lo = hi = now;
+    var span = Math.max(hi - lo, 60000);
+    function pct(t) { return Math.max(0, Math.min(100, (t - lo) / span * 100)); }
+    var rows = stages.map(function (s) {
+      var a = Date.parse(s.first_start), open = stageOpen(s);
+      var b = open ? now : Date.parse(s.last_end);
+      var track = el('div', 'gtrack');
+      if (!isNaN(a) && !isNaN(b)) {
+        var bar = el('i', 'gbar st-' + slug(s.status) + (open ? ' open' : '') + (fails[s.id] ? ' hasfail' : ''));
+        bar.style.left = pct(a) + '%';
+        bar.style.width = Math.max(0.8, pct(b) - pct(a)) + '%';
+        track.appendChild(bar);
+      } else {
+        track.appendChild(el('span', 'gnone', s.status === 'pending' ? 'not started' : 'timing unknown'));
+      }
+      (fails[s.id] || []).forEach(function (r) {
+        var t = Date.parse(r.started_at);
+        if (isNaN(t)) return;
+        var m = el('b', 'fm', '×');
+        m.style.left = pct(t) + '%';
+        m.title = r.run_id + ' ' + r.worker_status;
+        track.appendChild(m);
+      });
+      var sel = st.g === s.id;
+      var nruns = num(s.run_count), nfail = num(s.failed_runs);
+      var label = el('span', 'glabel', [el('b', 'wrap', s.label || s.id), el('span', 'sub', (nruns == null ? 'runs unknown' : nruns + (nruns === 1 ? ' run' : ' runs')) + (nfail ? ' · ' + nfail + ' failed' : '') + (open ? ' · open' : ''))]);
+      var btn = attr(el('button', 'grow' + (sel ? ' sel' : ''), [label, track]), {
+        type: 'button', 'aria-expanded': String(sel), 'aria-controls': 'v3-ep', 'data-k': 'g-' + s.id,
+        'aria-label': (s.label || s.id) + ', ' + (s.status || 'unknown') + (open ? ', still open' : '') + ', ' + (nruns == null ? 'runs unknown' : nruns + ' runs') + (nfail ? ', ' + nfail + ' failed' : '') + '. Show episodes'
+      });
+      btn.addEventListener('click', function () {
+        var x = readState();
+        x.g = x.g === s.id ? '' : s.id;
+        writeState(x);
+        render();
+      });
+      return btn;
+    });
+    var axis = el('div', 'gaxis');
+    for (var i = 0; i < 5; i++) axis.appendChild(el('span', null, utc(new Date(lo + span * i / 4).toISOString())));
+    var inner = el('div', 'ginner', [el('div', 'grows', rows), el('div', 'gaxisrow', [el('span', 'sub', 'UTC'), axis])]);
+    var scroll = el('div', 'gscroll', inner);
+    scroll.tabIndex = 0;
+    scroll.setAttribute('role', 'group');
+    scroll.setAttribute('aria-label', 'Stage timeline, scrolls sideways');
+    body.push(el('p', 'note legend', 'Bar runs from the first start to the last end. A hatched bar is still open and is drawn to now. A cross marks a failed or abandoned run.'));
+    body.push(scroll);
+    var det = el('div', 'epdetail');
+    det.id = 'v3-ep';
+    var cur = stages.filter(function (s) { return s.id === st.g; })[0];
+    if (cur) det.appendChild(episodes(cur, d));
+    else det.hidden = true;
+    body.push(det);
+    return vsec('v3-stages', 'Stages over time', body, 'stages');
+  }
+  function episodes(s, d) {
+    var byId = {};
+    (d.runs || []).forEach(function (r) { byId[r.run_id] = r; });
+    var eps = s.episodes || [], unknown = s.unknown_runs || [];
+    var out = el('div', null, [el('h3', 'wrap', (s.label || s.id) + ': episodes'),
+      el('p', 'note', [pill(s.status), ' validity ', s.validity || 'unknown', s.accepted_at ? [' · accepted ', stamp(s.accepted_at)] : null, ' · run time ', mv(s.run_time, dur), ' (summed, may overlap)'])]);
+    if (eps.length) {
+      out.appendChild(el('ol', 'eps', eps.map(function (e) {
+        return el('li', null, [el('b', null, 'Episode ' + (e.n == null ? '?' : e.n)), ' ', pill(e.outcome || 'unknown'), ' ',
+          el('span', 'sub', [stamp(e.started_at), ' to ', e.ended_at ? stamp(e.ended_at) : el('b', null, 'open'),
+            ' · ', (e.runs || []).length + ' runs', ' · ', e.source || 'source unknown', e.fidelity ? el('span', 'fid', e.fidelity) : null,
+            e.claim_id ? [' · claim ', el('code', null, e.claim_id)] : null]),
+          e.reason ? el('div', 'wrap sub', e.reason) : null]);
+      })));
+    } else if (!unknown.length) {
+      out.appendChild(el('p', 'empty', 'No episodes recorded for this stage.'));
+    }
+    if (unknown.length) {
+      out.appendChild(el('div', 'epunknown', [el('h4', null, 'Episode unknown (' + unknown.length + ')'),
+        el('p', 'note', 'These runs have no recorded claim, so they are not placed in an episode.'),
+        el('ul', null, unknown.map(function (id) { var r = byId[id]; return el('li', 'wrap', [el('code', null, id), r ? [' ', pill(r.worker_status), ' ', r.summary || ''] : ' (not in the run list)']); }))]));
+    }
+    return out;
+  }
+
+  /* 5a. what happened */
+  function vTimeline(d, st) {
+    var all = (d.timeline || []).map(function (e, i) { return { e: e, i: i }; })
+      .sort(function (a, b) { return (Date.parse(a.e.at) || 0) - (Date.parse(b.e.at) || 0) || a.i - b.i; }).map(function (x) { return x.e; });
+    var showAll = st.o.indexOf('tl-all') >= 0, bounded = all.length > TL_LIMIT;
+    var list = bounded && !showAll ? all.slice(-TL_LIMIT) : all;
+    var body = [];
+    if (!all.length) body.push(el('p', 'empty', 'No curated events yet.'));
+    else {
+      body.push(el('ol', 'tl', list.map(function (e) {
+        var kind = ['stage', 'decision', 'failure', 'recovery', 'revalidation', 'note', 'blocker'].indexOf(e.kind) < 0 ? 'note' : e.kind;
+        var det = keep(el('details', null, [attr(el('summary', null, [el('time', 'mono note', utc(e.at) || 'unknown time'), el('span', 'kd', kind), el('span', 'wrap', e.text || '')]), { 'data-k': 'tl-' + e.id }),
+          el('p', 'note', ['At ', stamp(e.at), e.fidelity ? el('span', 'fid', e.fidelity) : null, (e.refs || []).length ? [' · refs: ', (e.refs || []).map(function (r) { return el('code', 'wrap', r + ' '); })] : ' · no linked records'])]), 'tl:' + e.id, st);
+        return el('li', 'tl-row k-' + kind, det);
+      })));
+      if (bounded) {
+        body.push(el('p', 'note', showAll ? 'Showing all ' + all.length + ' events.' : 'Showing the latest ' + TL_LIMIT + ' of ' + all.length + ' events.'));
+        body.push(flip(showAll ? 'Show latest only' : 'Show all (' + all.length + ')', 'tl-all', 'tl-all', st));
+      }
+    }
+    return vsec('v3-timeline', 'What happened', body, 'timeline');
+  }
+
+  /* 5b. workstreams */
+  var BUCKETS = ['active', 'blocked', 'waiting', 'done'];
+  function vWorkstreams(d, st) {
+    var ws = d.workstreams || [], body = [];
+    if (!ws.length) body.push(el('p', 'empty', 'No workstreams are recorded.'));
+    ws.forEach(function (w) {
+      var t = w.tasks || {}, total = BUCKETS.reduce(function (n, k) { return n + (t[k] || []).length; }, 0), done = (t.done || []).length;
+      var track = attr(el('div', 'track'), { role: 'img', 'aria-label': done + ' of ' + total + ' tasks done' });
+      BUCKETS.forEach(function (k) {
+        if (!(t[k] || []).length || !total) return;
+        var seg = el('i', 'seg b-' + k);
+        seg.style.width = (t[k].length * 100 / total) + '%';
+        track.appendChild(seg);
+      });
+      var chips = [];
+      ['active', 'blocked', 'waiting'].forEach(function (k) {
+        (t[k] || []).forEach(function (x) { var c = el('span', 'tchip b-' + k, tid(x)); c.title = k; chips.push(c); });
+      });
+      var owners = w.owners || [];
+      var row = el('div', 'wsrow', [
+        el('div', 'wshead', [el('b', 'wrap', w.label || w.id), el('span', 'sub', w.origin || 'origin unknown'), el('span', 'cnt', total ? done + ' / ' + total + ' done' : 'no tasks')]),
+        track,
+        chips.length ? el('div', 'chips', chips) : null,
+        done ? keep(el('details', 'wsdone', [attr(el('summary', null, done + ' done'), { 'data-k': 'wsd-' + w.id }), el('div', 'chips', (t.done || []).map(function (x) { return el('span', 'tchip b-done', tid(x)); }))]), 'wsd:' + w.id, st) : null,
+        owners.length ? el('ul', 'owners', owners.map(function (o) { return el('li', 'wrap sub', [el('b', null, o.agent || 'unknown'), ' ', stamp(o.from), ' to ', o.to ? stamp(o.to) : 'now']); })) : el('p', 'sub', ['Owner ', unk()]),
+        (w.conflicts || []).length ? el('p', 'note warn', 'Conflicts: ' + w.conflicts.map(function (c) { return typeof c === 'string' ? c : JSON.stringify(c); }).join('; ')) : null
+      ]);
+      body.push(row);
+    });
+    return vsec('v3-workstreams', 'Workstreams during Execute', body, 'workstreams');
+  }
+
+  /* 5c. decisions */
+  function v3Decision(x) {
+    var ans = x.answer, val = ans && ans.value != null ? (Array.isArray(ans.value) ? ans.value.join(', ') : String(ans.value)) : null;
+    var by = x.decided_by ? x.decided_by : 'editor not recorded';
+    var li = el('li', null, [el('h3', 'wrap', [el('span', 'mono', x.source_id || x.key || '?'), ' ', x.question || el('span', 'unk', 'question not recorded')]), pill(x.state || 'unknown')]);
+    if ((x.options || []).length) li.appendChild(el('div', 'opts', x.options.map(function (o) { return el('span', 'wrap' + (val && String(o).indexOf(val) === 0 ? ' sel' : ''), o); })));
+    if (ans) li.appendChild(el('p', 'note', ['Answer ', el('strong', 'wrap', val == null ? 'unknown' : val), ' · ', by, ' · answered ', x.answered_at ? stamp(x.answered_at) : el('span', 'unk', 'time not recorded')]));
+    if (x.applied) li.appendChild(el('p', 'note', ['Applied ', stamp(x.applied.at), x.applied.evidence ? ' · ' + x.applied.evidence : null]));
+    li.appendChild(el('p', 'note', ['Source ', x.source || 'unknown', x.stage ? ' · stage ' + x.stage : null, ' · ', x.url ? link('evidence', x.url) : el('span', 'unk', 'no evidence link')]));
+    return li;
+  }
+  function vDecisions(d) {
+    var dc = d.decisions || {}, p = dc.pending || [], m = dc.made || [], src = dc.sources || [];
+    var ok = src.filter(function (s) { return s.state === 'available'; }).map(function (s) { return s.name; });
+    var bad = src.filter(function (s) { return s.state !== 'available'; }).map(function (s) { return s.name + ' (' + (s.state || 'unknown') + ')'; });
+    var body = [el('p', 'sect', 'Pending'), p.length ? el('ul', 'dec', p.map(v3Decision)) : el('p', 'empty', 'None pending.'),
+      el('p', 'sect', 'Made'), m.length ? el('ul', 'dec', m.map(v3Decision)) : el('p', 'empty', ok.length ? 'None recorded.' : 'None recorded; no decision source was readable.')];
+    body.push(el('p', 'note srcline', ['Sources checked: ', ok.length ? ok.join(', ') : 'none', '. Unavailable: ', bad.length ? bad.join(', ') : 'none', '.']));
+    return vsec('v3-decisions', 'Decisions', body, 'decisions');
+  }
+
+  /* 6. all runs */
+  function runHay(r) {
+    return [r.run_id, r.identity, r.stage, r.harness, r.requested_model, r.actual_model && r.actual_model.value, r.worker_status, r.workstream, (r.tasks || []).join(' '), r.summary].join(' ').toLowerCase();
+  }
+  function vRuns(d, st) {
+    var runs = d.runs || [], dispatch = d.dispatch || [];
+    var statuses = [];
+    runs.forEach(function (r) { if (r.worker_status && statuses.indexOf(r.worker_status) < 0) statuses.push(r.worker_status); });
+    statuses.sort();
+    var q = attr(el('input'), { type: 'search', 'aria-label': 'Search runs', placeholder: 'Search runs', 'data-k': 'q', value: st.q });
+    q.value = st.q;
+    var sel = attr(el('select'), { 'aria-label': 'Filter by status', 'data-k': 'rs' });
+    [''].concat(statuses).forEach(function (s) { var o = el('option', null, s || 'All statuses'); o.value = s; sel.appendChild(o); });
+    sel.value = st.s;
+    var out = el('div', 'runsbody');
+    function draw() {
+      var s = readState(), key = document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-k');
+      var needle = s.q.toLowerCase();
+      var list = runs.filter(function (r) { return (!s.s || r.worker_status === s.s) && (!needle || runHay(r).indexOf(needle) >= 0); });
+      list = list.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
+        return (isFail(b.r) ? 1 : 0) - (isFail(a.r) ? 1 : 0) || (Date.parse(b.r.started_at) || 0) - (Date.parse(a.r.started_at) || 0) || a.i - b.i;
+      }).map(function (x) { return x.r; });
+      var pages = Math.max(1, Math.ceil(list.length / PAGE)), pg = Math.min(Math.max(1, s.p), pages);
+      var slice = list.slice((pg - 1) * PAGE, pg * PAGE);
+      out.textContent = '';
+      var status = attr(el('p', 'note runcount', list.length ? 'Showing ' + ((pg - 1) * PAGE + 1) + ' to ' + ((pg - 1) * PAGE + slice.length) + ' of ' + list.length + ' runs' + (list.length !== runs.length ? ' (filtered from ' + runs.length + ')' : '') + '. Failures first.' : 'No runs match.'), { role: 'status' });
+      out.appendChild(status);
+      if (slice.length) {
+        var cols = ['Run', 'Stage', 'Tasks', 'Model', 'Effort', 'Started', 'Duration', 'Status', 'Accepted'];
+        var tbl = el('table', 'stack runs');
+        tbl.appendChild(el('thead', null, el('tr', null, cols.map(function (c) { return attr(el('th', null, c), { scope: 'col' }); }))));
+        var tb = el('tbody');
+        slice.forEach(function (r) {
+          var open = s.o.indexOf('run:' + r.run_id) >= 0;
+          var b = attr(el('button', 'tgl mono', r.run_id), { type: 'button', 'aria-expanded': String(open), 'data-k': 'run-' + r.run_id });
+          b.addEventListener('click', function () {
+            var x = readState();
+            toggle(x.o, 'run:' + r.run_id, x.o.indexOf('run:' + r.run_id) < 0);
+            writeState(x);
+            draw();
+          });
+          var cells = [['Run', b], ['Stage', plain(r.stage)], ['Tasks', (r.tasks || []).length ? (r.tasks || []).join(', ') : unk()],
+            ['Model', [el('span', 'sub', 'requested ' + (r.requested_model || 'unknown')), el('span', null, ['actual ', mv(r.actual_model)])]],
+            ['Effort', mv(r.effort)], ['Started', stamp(r.started_at)], ['Duration', mv(r.duration, dur)], ['Status', pill(r.worker_status)],
+            ['Accepted', 'evidence ' + tri(r.evidence_accepted) + ', candidate ' + tri(r.candidate_accepted)]];
+          tb.appendChild(el('tr', isFail(r) ? 'failrow' : null, cells.map(function (c) { return attr(el('td', null, c[1]), { 'data-label': c[0] }); })));
+          if (open) {
+            var dt = el('dl', 'kv', [item('Identity', plain(r.identity)), item('Harness', plain(r.harness)), item('Episode', r.episode_id ? el('code', null, r.episode_id) : el('span', 'unk', 'episode unknown')),
+              item('Workstream', plain(r.workstream)), item('Retry of', r.retry_of ? el('code', null, r.retry_of) : el('span', 'unk', 'none recorded')),
+              item('Ended', r.ended_at ? stamp(r.ended_at) : el('span', 'unk', 'unknown')), item('Summary', plain(r.summary))]);
+            var dtr = el('tr', 'rdetail', attr(el('td', null, dt), { colspan: String(cols.length) }));
+            tb.appendChild(dtr);
+          }
+        });
+        tbl.appendChild(tb);
+        out.appendChild(tbl);
+      }
+      var pager = el('div', 'pager');
+      function pbtn(label, to, dk) {
+        var dis = to < 1 || to > pages;
+        var bt = attr(el('button', 'tgl', label), { type: 'button', 'data-k': dk, 'aria-disabled': String(dis) });
+        bt.addEventListener('click', function () {
+          if (dis) return;
+          var x = readState();
+          x.p = to;
+          writeState(x);
+          draw();
+        });
+        return bt;
+      }
+      pager.appendChild(pbtn('Previous', pg - 1, 'pg-prev'));
+      pager.appendChild(el('span', null, 'Page ' + pg + ' of ' + pages));
+      pager.appendChild(pbtn('Next', pg + 1, 'pg-next'));
+      out.appendChild(pager);
+      if (key) {
+        var cand = out.querySelectorAll('[data-k]');
+        for (var i = 0; i < cand.length; i++) if (cand[i].getAttribute('data-k') === key) { cand[i].focus(); break; }
+      }
+    }
+    q.addEventListener('input', function () {
+      var x = readState();
+      x.q = q.value;
+      x.p = 1;
+      writeState(x);
+      draw();
+    });
+    sel.addEventListener('change', function () {
+      var x = readState();
+      x.s = sel.value;
+      x.p = 1;
+      writeState(x);
+      draw();
+    });
+    draw();
+    var disp = el('div', 'dispatch', [el('h3', null, 'Dispatch intents (' + dispatch.length + ')'), el('p', 'note', 'Intents that have no run yet. They are not counted as runs.'),
+      dispatch.length ? el('ul', null, dispatch.map(function (x) { return el('li', 'wrap', [el('code', null, x.intent_id || '?'), ' ', x.identity || 'identity unknown', ' · ', pill(x.state || 'unknown'), ' ', stamp(x.created_at)]); })) : el('p', 'empty', 'None.')]);
+    var det = keep(el('details', 'runsec', [attr(el('summary', null, 'All runs (' + runs.length + ')'), { 'data-k': 'runs' }),
+      el('div', 'toolbar', [q, sel]), out, disp]), 'runs', st);
+    var sec = el('section', 'blk v3 runs', el('div', 'body', det));
+    sec.id = 'v3-runs';
+    sec.setAttribute('data-v3', 'v3-runs');
+    return sec;
+  }
+
+  function renderV3(d, st) {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(vHeader(d));
+    frag.appendChild(vAttention(d));
+    frag.appendChild(vOrch(d));
+    frag.appendChild(vStages(d, st));
+    frag.appendChild(el('div', 'v3cols', [vTimeline(d, st), el('div', 'v3right', [vWorkstreams(d, st), vDecisions(d)])]));
+    frag.appendChild(vRuns(d, st));
+    return frag;
+  }
+
   /* ---------- render ---------- */
   function render() {
     if (!data) return;
     var st = readState(), active = document.activeElement, key = active && active.getAttribute && active.getAttribute('data-k');
+    var caret = key === 'q' && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null;
+    var oldScroll = app.querySelector('.gscroll'), sx = oldScroll ? oldScroll.scrollLeft : 0, sy = window.pageYOffset;
     try {
       var frag = document.createDocumentFragment();
-      var order = Array.isArray(LAYOUT.blocks) ? LAYOUT.blocks : ALL;
-      var hidden = Array.isArray(LAYOUT.hidden) ? LAYOUT.hidden : [];
-      order.forEach(function (n) {
-        if (RENDER[n] && hidden.indexOf(n) < 0) frag.appendChild(RENDER[n](data, st));
-      });
+      if (timelineLayout(data)) {
+        frag = renderV3(data, st);
+      } else {
+        var order = Array.isArray(LAYOUT.blocks) ? LAYOUT.blocks : ALL;
+        var hidden = Array.isArray(LAYOUT.hidden) ? LAYOUT.hidden : [];
+        if (isV3(data)) frag.appendChild(el('p', 'note warn', 'The classic layout needs a v2 report. Showing what this v3 report has in common with it.'));
+        order.forEach(function (n) {
+          if (RENDER[n] && hidden.indexOf(n) < 0) frag.appendChild(RENDER[n](data, st));
+        });
+      }
       app.textContent = '';
       app.appendChild(frag);
+      var ns = app.querySelector('.gscroll');
+      if (ns) ns.scrollLeft = sx;
+      if (sy) window.scrollTo(0, sy);
       renderError = '';
       document.title = (LAYOUT.title || (data.feature && data.feature.title) || 'Sanduq Progress') + ' - Progress';
     } catch (e) {
@@ -370,7 +800,11 @@
     }
     if (key) {
       var els = app.querySelectorAll('[data-k]');
-      for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-k') === key) { els[i].focus(); break; }
+      for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-k') === key) {
+        els[i].focus({ preventScroll: true });
+        if (caret && els[i].setSelectionRange) try { els[i].setSelectionRange(caret[0], caret[1]); } catch (e) { /* not a text input */ }
+        break;
+      }
     }
     updateBanners();
   }
@@ -391,7 +825,12 @@
 
   /* ---------- poller ---------- */
   function accept(d) {
-    return d && typeof d === 'object' && /^sanduq\.progress\.v2$/.test(d.schema || '') && typeof d.rev === 'number';
+    if (!d || typeof d !== 'object') return false;
+    if (/^sanduq\.progress\.v3$/.test(d.schema || '')) {
+      if (typeof d.rev !== 'number') d.rev = Date.parse(d.generated_at) || 0;  /* a v3 report without a counter orders by snapshot time */
+      return true;
+    }
+    return /^sanduq\.progress\.v2$/.test(d.schema || '') && typeof d.rev === 'number';
   }
   function poll() {
     if (inflight) return;

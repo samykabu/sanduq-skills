@@ -18,7 +18,9 @@ except ImportError:  # run as a script
 BLOCKS = ("header", "decisions", "blockers", "orchestrator", "lanes", "boards", "events")  # attention first
 TOKEN_KEYS = ("bg", "surface", "text", "muted", "line", "brand", "accent",
               "active", "waiting", "blocked", "done", "failed")
-TOP_KEYS = {"v", "preset", "title", "logo", "density", "blocks", "hidden", "tokens", "font"}
+TOP_KEYS = {"v", "preset", "title", "logo", "density", "blocks", "hidden", "tokens", "font", "layout"}
+LAYOUTS = ("timeline", "classic")  # timeline: the v3 Timeline view (default); classic: the v2 lanes view, fed the v2 document
+DEFAULT_LAYOUT = "timeline"
 DENSITIES = ("comfortable", "compact")
 FONT_KEYS = ("sans", "mono")
 DEFAULT_FONT = {"sans": "system-ui, -apple-system, 'Segoe UI', 'Noto Sans Arabic', sans-serif",
@@ -122,6 +124,8 @@ def validate(doc):
             _fail(f"{k} must be a short string or null")
     if doc.get("density", "comfortable") not in DENSITIES:
         _fail("density must be comfortable or compact")
+    if doc.get("layout", DEFAULT_LAYOUT) not in LAYOUTS:
+        _fail("layout must be timeline or classic")
     for k in ("blocks", "hidden"):
         val = doc.get(k, [])
         if not isinstance(val, list) or any(b not in BLOCKS for b in val) or len(set(val)) != len(val):
@@ -159,7 +163,7 @@ def resolve_doc(doc=None):
     font.update(doc.get("font", {}))
     return {"v": 1, "preset": preset, "title": doc.get("title"), "logo": doc.get("logo"),
             "density": doc.get("density", "comfortable"), "blocks": order, "hidden": hidden,
-            "tokens": tokens, "font": font}
+            "tokens": tokens, "font": font, "layout": doc.get("layout", DEFAULT_LAYOUT)}
 
 
 def theme_path(project_root):
@@ -199,7 +203,8 @@ def render_layout(resolved):
     hidden = list(resolved["hidden"])
     blocks = [b for b in resolved["blocks"] if b not in hidden]
     payload = {"blocks": blocks, "hidden": hidden, "density": resolved["density"],
-               "title": resolved.get("title"), "logo": resolved.get("logo"), "preset": resolved["preset"]}
+               "title": resolved.get("title"), "logo": resolved.get("logo"), "preset": resolved["preset"],
+               "layout": resolved.get("layout", DEFAULT_LAYOUT)}
     text = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).replace("</", "<\\/")
     return "window.__SANDUQ_PROGRESS_LAYOUT__=" + text + ";\n"
 
@@ -267,6 +272,19 @@ def from_illustrate(project_root):
     return {"v": 1, "preset": name, "tokens": tokens}
 
 
+def _stored(project_root):
+    """The theme.json document as stored ({} when there is none); an unreadable one is an error, never silently replaced."""
+    path = theme_path(project_root)
+    if not path.is_file():
+        return {}
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        _fail("cannot read theme.json: " + str(exc)[:80])
+    validate(doc)
+    return doc
+
+
 def _store(project_root, doc):
     validate(doc)
     _atomic_write(theme_path(project_root), json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
@@ -281,7 +299,7 @@ def _refresh_views(project_root, resolved):
             write_assets(view, resolved)
 
 
-USAGE = "theme --preset NAME | --from-illustrate | --file PATH | --show | --help"
+USAGE = "theme --preset NAME | --from-illustrate | --file PATH | --layout timeline|classic | --show | --help"
 
 
 def cli(argv, project_root=None):
@@ -294,7 +312,14 @@ def cli(argv, project_root=None):
         if args == ["--show"]:
             print(json.dumps(resolve(root), indent=2))
             return 0
-        if len(args) == 2 and args[0] == "--preset":
+        if len(args) == 2 and args[0] == "--layout":
+            if args[1] not in LAYOUTS:
+                _fail("layout must be timeline or classic")
+            doc = _stored(root)  # only the layout changes; every other customization is kept
+            doc["layout"] = args[1]
+            doc.setdefault("v", 1)
+            label = "layout " + args[1]
+        elif len(args) == 2 and args[0] == "--preset":
             if args[1] not in PRESETS:
                 _fail("unknown preset " + args[1][:40])
             doc, label = {"v": 1, "preset": args[1]}, args[1]
@@ -312,6 +337,10 @@ def cli(argv, project_root=None):
         else:
             print("progress: error PROGRESS_USAGE " + USAGE)
             return 2
+        if "layout" not in doc:
+            keep = _stored(root).get("layout")  # a new look keeps the layout the user picked
+            if keep:
+                doc["layout"] = keep
         _store(root, doc)
         _refresh_views(root, resolve_doc(doc))
         print(f"progress: theme {label}")

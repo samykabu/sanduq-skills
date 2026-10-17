@@ -136,7 +136,7 @@ class RealProjectionTests(helpers.Project, BrowserTest):
         (folder / "decisions.json").write_text(json.dumps({"version": 1, "decisions": [{
             "id": "SD1", "mode": "multiple", "options": ["Alpha", "Beta", "Gamma"], "status": "answered", "option": None,
             "selected": ["A", "C"], "answers": [{"option": "A", "updated_at": "2026-10-15T09:00:00Z"}]}]}), encoding="utf-8")
-        built = model.build(self.ctx, datetime.datetime(2026, 10, 15, 12, 30, tzinfo=datetime.timezone.utc), 1, {})
+        built = model.build_v2(self.ctx, datetime.datetime(2026, 10, 15, 12, 30, tzinfo=datetime.timezone.utc), 1, {})
         return fresh(built)
 
     def test_durations_selections_and_unknowns_render_from_real_output(self):
@@ -166,7 +166,7 @@ class PlanProjectionTests(helpers.PlanProject, BrowserTest):
         self.init_plan()
         self.cli("lane", "L1", "--tasks", "P002,T010", "--label", "Backend", "--owner", "me")
         self.cli("block", "T010", "--by", "P002")
-        built = model.build(self.ctx, datetime.datetime(2026, 10, 15, 12, 30, tzinfo=datetime.timezone.utc), 1, {})
+        built = model.build_v2(self.ctx, datetime.datetime(2026, 10, 15, 12, 30, tzinfo=datetime.timezone.utc), 1, {})
         self.assertEqual(built["feature"]["mode"], "plan")
         self.open(fresh(built))
         self.assertIn("Launch plan", self.text("h1"))

@@ -106,6 +106,13 @@ class Project(unittest.TestCase):
         return json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
 
     def report(self):
+        """The v2 compatibility document for the current producers (report.json itself holds v3)."""
+        from datetime import datetime
+        state = json.loads(self.ctx.state.read_text(encoding='utf-8')) if self.ctx.state.exists() else {}
+        from sanduq_progress import model
+        return model.build_v2(self.ctx, datetime.fromisoformat(T0.replace('Z', '+00:00')), int(state.get('rev') or 0), state)
+
+    def stored_report(self):
         return json.loads(self.ctx.report.read_text(encoding='utf-8'))
 
 
@@ -173,14 +180,15 @@ def run842_ctx(base):
     feature = base / RUN842_FEATURE
     (feature / 'workflow').mkdir(parents=True, exist_ok=True)
     (feature / 'progress').mkdir(parents=True, exist_ok=True)
-    for name in ('workflow/checkpoint.json', 'workflow/delegations.json', 'workflow/decisions.json', 'progress/facts.jsonl', 'tasks.md'):
+    for name in ('workflow/checkpoint.json', 'workflow/delegations.json', 'workflow/decisions.json', 'workflow/clarifications.json',
+                 'progress/facts.jsonl', 'tasks.md'):
         shutil.copyfile(RUN842 / name, feature / name)
     return Ctx(base, RUN842_FEATURE)
 
 
-def run842_report(base, now=RUN842_NOW):
-    """The projection model.build gives for the frozen #842 fixture, at a fixed clock."""
+def run842_report(base, now=RUN842_NOW, schema='v2'):
+    """The projection model.build gives for the frozen #842 fixture, at a fixed clock (v2 by default: the phase 1 tests pin it)."""
     from datetime import datetime
     from sanduq_progress import model
     ctx = run842_ctx(base)
-    return model.build(ctx, datetime.fromisoformat(now.replace('Z', '+00:00')), 1, {}), ctx
+    return model.build(ctx, datetime.fromisoformat(now.replace('Z', '+00:00')), 1, {}, schema=schema), ctx

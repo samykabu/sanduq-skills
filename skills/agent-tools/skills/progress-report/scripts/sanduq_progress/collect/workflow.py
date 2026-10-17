@@ -42,10 +42,64 @@ def checkpoint(feature_dir):
             superseded = f'status is {status}'
     return {'branch': data.get('branch'), 'feature': data.get('feature'), 'status': data.get('status'),
             'stage': active.get('stage') if active else None, 'issue': link, 'updated_at': data.get('updated_at'),
+            'generation': _int(data.get('generation')), 'stage_plan': stage_plan(data.get('stage_plan')),
+            'next_action': next_action(data.get('next_action')), 'recoveries': recoveries(data.get('recoveries')),
+            'processes': _processes(data.get('policy')),
+            'receipt_flags': {str(r['stage']): {'stale': r['_stale'], 'mode': r['mode']} for r in accepted},
             'started_at': first, 'last_accepted': {'stage': latest['stage'], 'at': latest['at']} if latest else None,
             'receipts': [{'stage': r['stage'], 'at': r['at']} for r in accepted],
             'pause': {'reason': clean(pause.get('reason'), 120), 'at': pause.get('at'), 'superseded': superseded}
             if pause else None}
+
+
+def _int(value):
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _processes(policy):
+    """The policy snapshot's qa / user_manual switches when the checkpoint carries them, else None for each."""
+    processes = policy.get('processes') if isinstance(policy, dict) and isinstance(policy.get('processes'), dict) else {}
+    return {k: processes.get(k) if isinstance(processes.get(k), bool) else None for k in ('qa', 'user_manual')}
+
+
+def stage_plan(value):
+    """Workflow's published stage list (`stage_plan: {v, generation, stages}`), validated. `state` is absent, available,
+    unsupported (a version this reader does not know) or invalid; only `available` carries stages."""
+    if value is None:
+        return {'state': 'absent', 'generation': None, 'stages': []}
+    if not isinstance(value, dict) or not isinstance(value.get('stages'), list):
+        return {'state': 'invalid', 'generation': None, 'stages': []}
+    if value.get('v') != 1:
+        return {'state': 'unsupported', 'generation': None, 'stages': []}
+    out = []
+    for item in value['stages']:
+        ident = (item.get('id') or item.get('stage')) if isinstance(item, dict) else item
+        if not isinstance(ident, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,40}', ident) or any(s['id'] == ident for s in out):
+            return {'state': 'invalid', 'generation': None, 'stages': []}
+        label = item.get('label') if isinstance(item, dict) and isinstance(item.get('label'), str) else None
+        out.append({'id': ident, 'label': clean(label, 60) if label else None})
+    return {'state': 'available', 'generation': _int(value.get('generation')), 'stages': out}
+
+
+NEXT_KINDS = ('active-claim', 'next-stage')
+
+
+def next_action(value):
+    """Workflow's cached next-action evaluation, or None. Progress never computes one."""
+    if not isinstance(value, dict) or not isinstance(value.get('text'), str) or not value['text'].strip():
+        return None
+    kind, stage = value.get('kind'), value.get('stage')
+    return {'text': clean(value['text'], 200), 'stage': stage if isinstance(stage, str) and stage else None,
+            'kind': kind if kind in NEXT_KINDS else None,
+            'evaluated_at': value.get('evaluated_at') if isinstance(value.get('evaluated_at'), str) else None,
+            'generation': _int(value.get('generation'))}
+
+
+def recoveries(value):
+    if not isinstance(value, list):
+        return []
+    return [{'stage': str(r.get('stage')) if r.get('stage') else None, 'reason': clean(r.get('reason'), 120), 'at': r.get('at')}
+            for r in value if isinstance(r, dict) and parse_time(r.get('at'))]
 
 
 def accepted_receipts(receipts):
@@ -58,7 +112,9 @@ def accepted_receipts(receipts):
         at = item.get('completed_at') or item.get('created_at')
         when = parse_time(at)
         if when:
-            rows.append((when, index, {'stage': str(item.get('stage') or key), 'at': at, '_when': when, '_stale': bool(item.get('stale'))}))
+            rows.append((when, index, {'stage': str(item.get('stage') or key), 'at': at, '_when': when, '_stale': bool(item.get('stale')),
+                                    'mode': item.get('mode') if isinstance(item.get('mode'), str) else None,
+                                    'created_at': item.get('created_at') if parse_time(item.get('created_at')) else None}))
     return [r[2] for r in sorted(rows, key=lambda r: (r[0], r[1]))]
 
 
@@ -66,6 +122,13 @@ def attempts(feature_dir):
     data = read_json(Path(feature_dir) / 'workflow' / 'delegations.json')
     rows = data.get('attempts') if isinstance(data, dict) else None
     return [a for a in rows or [] if isinstance(a, dict) and a.get('identity')]
+
+
+def ledger_feature(feature_dir):
+    """The feature directory the delegation ledger says it belongs to (it prefixes every delegation identity)."""
+    data = read_json(Path(feature_dir) / 'workflow' / 'delegations.json')
+    value = data.get('feature') if isinstance(data, dict) else None
+    return value if isinstance(value, str) and value else None
 
 
 def identity_tasks(attempt):
@@ -108,8 +171,16 @@ def decisions(feature_dir):
         selected = (chosen if multiple else chosen[0]) if chosen else None
         stamps = [str(x.get(k)) for x in answers for k in ('updated_at', 'created_at', 'at') if x.get(k)]
         stamp = max(stamps) if stamps else None
+        authors = [clean(x.get('author'), 80) for x in answers if isinstance(x.get('author'), str) and x['author'].strip()]
+        application = item.get('application') if isinstance(item.get('application'), dict) else None
+        evidence = application.get('evidence') if application and isinstance(application.get('evidence'), dict) else {}
         out.append({'id': str(item['id']), 'question': clean(item.get('question') or f"Workflow decision {item['id']}", 200),
                     'options': options, 'selected': selected, 'decided_by': 'user' if selected else None,
                     'at': stamp, 'url': item.get('question_url'), 'source': 'workflow',
-                    'pending': pending})
+                    'pending': pending,
+                    # v3 adapter inputs: the ledger's own status and mode, answer digest, recorded author, application evidence
+                    'raw_status': status, 'multiple': multiple, 'revision': len(answers),
+                    'answer_digest': item.get('answer_digest') if isinstance(item.get('answer_digest'), str) else None,
+                    'author': authors[-1] if authors else None,
+                    'applied_evidence': sorted(clean(k, 160) for k in evidence)})
     return True, out

@@ -29,7 +29,7 @@ class F1DuplicateLane(Project):
         self.hook('post_tool_use', self.payload('claude_child_event.json'), now='2026-10-15T12:01:00Z')
 
     def build(self, at='2026-10-15T12:02:00Z'):
-        return model.build(self.ctx, stamp(at), 1, {})
+        return model.build_v2(self.ctx, stamp(at), 1, {})
 
     def test_one_running_subagent_is_one_lane(self):
         self.start()
@@ -153,14 +153,14 @@ class A3DurableChildLane(Project):
         self.bind()
         for i, name in enumerate(('agent-a', 'agent-b', 'agent-c'), 1):
             self.child(name, f'2026-10-15T12:0{i}:00Z', agent_id=name)
-        self.assertEqual(self.owners(model.build(self.ctx, NOW, 1, {})), {'agent-a': 'C1', 'agent-b': 'C2', 'agent-c': 'C3'})
+        self.assertEqual(self.owners(model.build_v2(self.ctx, NOW, 1, {})), {'agent-a': 'C1', 'agent-b': 'C2', 'agent-c': 'C3'})
         self.cli('lane', 'L1', '--tasks', 'T002', '--owner', 'agent-a')
         self.cli('block', 'C2', '--by', 'ext:waiting')
         self.cli('refresh')
         self.assertEqual(self.owners(self.report()), {'agent-b': 'C2', 'agent-c': 'C3'})
         for path in self.ctx.view.glob('state.json'):
             path.unlink()
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         self.assertEqual(self.owners(report), {'agent-b': 'C2', 'agent-c': 'C3'})
         self.assertTrue(any(b['target'] == 'C2' for b in report['blockers']))
 
@@ -170,14 +170,14 @@ class A3DurableChildLane(Project):
         self.child('agent-x', '2026-10-15T12:01:00Z')
         self.child('toolu_Y', '2026-10-15T12:02:00Z')
         state = {}
-        self.assertEqual(self.owners(model.build(self.ctx, NOW, 1, state)), {'agent-x': 'C1', 'toolu_Y': 'C2'})
+        self.assertEqual(self.owners(model.build_v2(self.ctx, NOW, 1, state)), {'agent-x': 'C1', 'toolu_Y': 'C2'})
         self.cli('block', 'C2', '--by', 'ext:waiting')
         # the tool result later names the agent id: the entry keeps its number whatever its key becomes
         self.child('toolu_Y', '2026-10-15T12:03:00Z', agent_id='agent-y')
-        report = model.build(self.ctx, NOW, 2, state)
+        report = model.build_v2(self.ctx, NOW, 2, state)
         self.assertEqual(self.owners(report), {'agent-x': 'C1', 'agent-y': 'C2'})
         self.child('agent-y', '2026-10-15T12:04:00Z', by_agent=True)  # an agent-keyed event for it merges, never renumbers
-        self.assertEqual(self.owners(model.build(self.ctx, NOW, 3, {})), {'agent-x': 'C1', 'agent-y': 'C2'})
+        self.assertEqual(self.owners(model.build_v2(self.ctx, NOW, 3, {})), {'agent-x': 'C1', 'agent-y': 'C2'})
         self.assertTrue(any(b['target'] == 'C2' for b in report['blockers']))
 
     def test_a_retired_number_still_resolves_to_the_merged_lane(self):
@@ -185,10 +185,10 @@ class A3DurableChildLane(Project):
         self.bind()
         self.child('agent-a', '2026-10-15T12:01:00Z')
         self.child('toolu_A', '2026-10-15T12:02:00Z')
-        self.assertEqual(sorted(self.owners(model.build(self.ctx, NOW, 1, {})).values()), ['C1', 'C2'])
+        self.assertEqual(sorted(self.owners(model.build_v2(self.ctx, NOW, 1, {})).values()), ['C1', 'C2'])
         self.cli('block', 'C2', '--by', 'ext:waiting')
         self.child('toolu_A', '2026-10-15T12:03:00Z', agent_id='agent-a')
-        report = model.build(self.ctx, NOW, 2, {})
+        report = model.build_v2(self.ctx, NOW, 2, {})
         lanes = child_lanes(report)
         self.assertEqual(len(lanes), 1)
         blocker = next(b for b in report['blockers'] if b['source'] == 'facts')

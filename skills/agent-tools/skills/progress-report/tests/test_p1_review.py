@@ -20,7 +20,7 @@ def rebuild(edit, now=NOW):
     with tempfile.TemporaryDirectory() as base:
         ctx = helpers.run842_ctx(base)
         edit(ctx.feature_dir)
-        return model.build(ctx, parse(now), 1, {})
+        return model.build_v2(ctx, parse(now), 1, {})
 
 
 def edit_json(feature_dir, name, change):
@@ -113,7 +113,7 @@ class Closure(unittest.TestCase):
         facts = fact_lane('L1', owner, '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)
         attempts = [attempt(self.IDENTITY, self.RUN, started, ended, status=status)]
         with tempfile.TemporaryDirectory() as base:
-            report = model.build(synth(base, facts, attempts), parse(now), 1, {})
+            report = model.build_v2(synth(base, facts, attempts), parse(now), 1, {})
         lane = next(l for l in report['lanes'] if l['id'] == 'L1')
         self.assertEqual(len(lane['attempts']), 1, 'the attempt is linked to the closed lane')
         return lane['status'], report['summary']['lanes_active']
@@ -152,7 +152,7 @@ class Closure(unittest.TestCase):
 class Linking(unittest.TestCase):
     def lanes(self, facts, attempts, now):
         with tempfile.TemporaryDirectory() as base:
-            return model.build(synth(base, facts, attempts), parse(now), 1, {})
+            return model.build_v2(synth(base, facts, attempts), parse(now), 1, {})
 
     def test_c2_identical_windows_and_requests_never_link_on_timing(self):
         facts = (fact_lane('L1', 'tool-a', '2026-10-17T13:00:00Z', '2026-10-17T13:10:00Z', REQ)

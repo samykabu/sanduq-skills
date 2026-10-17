@@ -337,7 +337,7 @@ class PlanVerbs(PlanProject):
         self.assertEqual(self.cli('note', 'x', '--target', 'P004')[0], 0)
         self.assertEqual(self.cli('block', 'banana', '--by', 'P001')[0], 2)
         self.assertEqual(self.cli('decide', 'ask', 'Which?', '--options', 'a,b')[1], 'progress: D1 pending')
-        report = json.loads(self.cli('status', '--json')[1])
+        report = json.loads(self.cli('status', '--json', '--schema', 'v2')[1])
         lane = next(l for l in report['lanes'] if l['id'] == 'L1')
         self.assertEqual(lane['tasks']['done'], ['P001'])
         self.assertEqual(report['tasks']['P003']['depends_on'], [])
@@ -347,7 +347,7 @@ class PlanVerbs(PlanProject):
         self.init_plan()
         self.cli('lane', 'L1', '--tasks', 'P002', '--owner', 'me')
         self.write_plan(PLAN_MD.replace('- [x] Set up the database', '- [ ] A new first item\n- [x] Set up the database'))
-        report = json.loads(self.cli('status', '--json')[1])
+        report = json.loads(self.cli('status', '--json', '--schema', 'v2')[1])
         self.assertEqual(report['tasks']['P002']['title'], 'Build the API')
         self.assertEqual(report['tasks']['P002']['lane'], 'L1')
         self.assertEqual(report['tasks']['P005']['title'], 'A new first item')
@@ -412,7 +412,7 @@ class PlanProjection(PlanProject):
 
     def test_golden_plan_projection(self):
         self.scenario()
-        built = model.build(self.ctx, NOW, 3, json.loads(self.ctx.state.read_text()))
+        built = model.build_v2(self.ctx, NOW, 3, json.loads(self.ctx.state.read_text()))
         built = {**built, 'generated_at': '<now>', 'rev': 0}
         if os.environ.get('UPDATE_GOLDEN'):
             GOLDEN.write_text(json.dumps(built, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')

@@ -30,14 +30,14 @@ class Projection(Project):
 
     def test_golden_projection(self):
         self.workflow_scenario()
-        built = normalised(model.build(self.ctx, NOW, 3, json.loads(self.ctx.state.read_text())))
+        built = normalised(model.build_v2(self.ctx, NOW, 3, json.loads(self.ctx.state.read_text())))
         if os.environ.get('UPDATE_GOLDEN'):
             GOLDEN.write_text(json.dumps(built, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
         self.assertEqual(built, json.loads(GOLDEN.read_text(encoding='utf-8')))
 
     def test_workflow_mode_lanes_attempts_and_decisions(self):
         self.workflow_scenario()
-        report = model.build(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
+        report = model.build_v2(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
         self.assertTrue(report['feature']['workflow'])
         self.assertEqual(report['feature']['issue'], {'number': 10, 'url': 'https://github.com/acme/app/issues/10'})
         self.assertEqual(report['feature']['stage'], {'value': 'execute', 'source': 'workflow-checkpoint'})
@@ -65,7 +65,7 @@ class Projection(Project):
 
     def test_plain_mode_has_a_coordinator_lane_and_no_workflow_fields(self):
         self.init()
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         self.assertFalse(report['feature']['workflow'])
         self.assertIsNone(report['feature']['stage'])
         self.assertEqual([l['id'] for l in report['lanes']], ['coordinator'])
@@ -80,7 +80,7 @@ class Projection(Project):
     def test_unmapped_host_child_has_no_tasks_and_unassigned_stays_visible_in_workflow_mode(self):
         self.init(debounce_seconds=0)
         self.workflow_file('checkpoint.json')
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         self.assertEqual(report['unassigned_tasks']['waiting'], ['T002', 'T003', 'T004'])
         self.assertEqual(report['unassigned_tasks']['done'], ['T001', 'T005'])
 
@@ -91,13 +91,13 @@ class Projection(Project):
         cp['status'] = 'paused'  # a pause only blocks while the checkpoint is still paused
         (self.feature_dir / 'workflow').mkdir()
         (self.feature_dir / 'workflow' / 'checkpoint.json').write_text(json.dumps(cp))
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         self.assertEqual(report['blockers'][0]['source'], 'workflow-pause')
 
     def test_markdown_export_is_deterministic_and_complete(self):
         self.workflow_scenario()
-        first = self.cli('export')
-        second = self.cli('export')
+        first = self.cli('export', '--schema', 'v2')
+        second = self.cli('export', '--schema', 'v2')
         self.assertEqual(first, second)
         self.assertEqual(first[0], 0)
         self.assertIn('| L1 | Docs |', first[1])
@@ -105,9 +105,9 @@ class Projection(Project):
         report = self.report()
         self.assertEqual(render_md.render(report), render_md.render(json.loads(json.dumps(report))))
         out = self.root / 'out.md'
-        self.assertEqual(self.cli('export', '--out', str(out)), (0, f'progress: exported {out}'))
+        self.assertEqual(self.cli('export', '--schema', 'v2', '--out', str(out)), (0, f'progress: exported {out}'))
         self.assertEqual(out.read_text(encoding='utf-8'), render_md.render(report))
-        code, text = self.cli('export', '--format', 'json')
+        code, text = self.cli('export', '--format', 'json', '--schema', 'v2')
         self.assertEqual(json.loads(text), report)
 
     def test_report_files_and_data_js(self):
@@ -115,7 +115,8 @@ class Projection(Project):
         data = (self.ctx.view / 'data.js').read_text(encoding='utf-8')
         self.assertTrue(data.startswith('window.__SANDUQ_PROGRESS__ = {'))
         payload = json.loads(data[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
-        self.assertEqual(payload, self.report())
+        self.assertEqual(payload, self.stored_report())  # data.js feeds the browser the stored v3 projection
+        self.assertEqual(payload['schema'], 'sanduq.progress.v3')
         self.assertEqual(self.report()['schema'], 'sanduq.progress.v2')
         revs = [self.report()['rev']]
         self.cli('refresh')
