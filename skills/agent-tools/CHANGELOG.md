@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.3.1 — 2026-10-17
+
+Fixes from the review of the sanduq vendoring PR.
+
+- `delegate-task` on Linux: check batches no longer fail on kernels that lack the `/proc/<pid>/task/<tid>/children` file. The
+  containment helper now falls back to scanning `/proc/*/stat` for its own children, and it still stops with a clear
+  `CHILD_ENUMERATION_UNAVAILABLE` if `/proc` cannot be read at all.
+- `delegate-task` on Windows: environment names are matched without regard to case, so a batch or per-check `PATH`
+  replaces an inherited `Path` instead of sitting beside it. Order stays inherited, then batch, then per-check.
+- `delegate-task`: every check's launcher is resolved before the batch creates an attempt, so a missing executable
+  fails up front instead of partway through; on Unix the launcher must be executable. Public delegate summaries no
+  longer include the raw usage block.
+- `delegate-task` on Windows: a cancel request that arrives before the check is launched now starts nothing and reports a
+  closed, not-started result.
+- `progress-report`: when two lanes in the facts log name the same delegation identity, they now fold into one lane
+  (before, the second one kept its own duplicate row).
+- `progress-report`: a receipt that Workflow marked stale no longer decides the current stage. The stage comes from the
+  latest receipt that is not stale. Stale receipts still count for pause history and the events list.
+
 ## 1.3.0 — 2026-10-17
 
 - Add native argv check batches with immutable attempts, exclusive execution ownership and explicit retries.

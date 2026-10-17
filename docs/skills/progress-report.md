@@ -8,7 +8,7 @@ from the plan and the host's hook payloads, so no agent is spent keeping it up t
 | | |
 | --- | --- |
 | Bundle | `agent-tools` (Claude Code plugin `agent-tools@sanduq`) |
-| Version | 1.3.0 |
+| Version | 1.3.1 |
 | Prerequisites | Python 3.11+ and git. Standard library only. A browser to open the report. Spec Kit is optional. |
 | Hosts | Codex: yes (the Codex hook file is unverified). Claude Code: yes. Claude Desktop: no (writes project files and host hooks). |
 

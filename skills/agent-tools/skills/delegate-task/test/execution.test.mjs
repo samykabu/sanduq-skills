@@ -585,3 +585,36 @@ test('startup deadline is opt-in; silent startup status does not declare complet
   const c = cli(driver, ['collect', id, '--wait', '10', '--json']); const r = JSON.parse(c.stdout);
   assert.equal(r.status_provenance.primary, 'telemetry_incomplete');
 });
+test('a cancel marker present before launch starts nothing and proves closure', { skip: process.platform !== 'win32' }, async () => {
+  const dir = fs.mkdtempSync(path.join(tmp, 'precancel-'));
+  const marker = path.join(dir, 'ran'), cancel = path.join(dir, 'cancel'), proof = path.join(dir, 'proof.json');
+  const [stdout, stderr] = ['stdout', 'stderr'].map(n => path.join(dir, n)); for (const f of [stdout, stderr]) fs.writeFileSync(f, '');
+  fs.writeFileSync(cancel, '');
+  const request = { nonce: 'n', owner_pid: process.pid, file: process.execPath, args: [fixture, 'once', marker, '100'], cwd: dir,
+    env: { ...process.env }, timeout_s: 10, stdout, stderr, proof, cancel };
+  const helper = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(here, '../containment-windows.ps1')],
+    { input: JSON.stringify(request), encoding: 'utf8', windowsHide: true, timeout: 30000 });
+  assert.equal(helper.status, 0, helper.stderr);
+  const result = JSON.parse(fs.readFileSync(proof, 'utf8'));
+  assert.equal(result.state, 'closed'); assert.equal(result.started, false); assert.equal(result.root_pid, null); assert.equal(result.launch_error, null);
+  assert.equal(fs.existsSync(marker), false);
+});
+test('Linux containment enumerates children by /proc scan when the kernel children file is missing', { skip: process.platform !== 'linux' }, () => {
+  const script = `
+import builtins, importlib.util, subprocess, sys
+spec = importlib.util.spec_from_file_location('containment_linux', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+real = builtins.open
+def no_children(path, *a, **k):
+    if str(path).endswith('/children'): raise FileNotFoundError(path)
+    return real(path, *a, **k)
+builtins.open = no_children
+child = subprocess.Popen(['sleep', '5'])
+try:
+    assert child.pid in m.list_children(), m.list_children()
+    assert 0 not in m.list_children()
+finally:
+    child.kill(); child.wait()
+`;
+  const r = spawnSync('python3', ['-c', script, path.join(here, '../containment-linux.py')], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+});
