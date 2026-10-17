@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0 — Unreleased
+## 1.3.0 — 2026-10-17
 
 - Add native argv check batches with immutable attempts, exclusive execution ownership and explicit retries.
 - Bound public collection by UTF-8 bytes while retaining complete raw evidence and omission metadata.
