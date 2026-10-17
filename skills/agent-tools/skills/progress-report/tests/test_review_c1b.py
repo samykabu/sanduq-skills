@@ -208,15 +208,24 @@ class EvidenceShapes(unittest.TestCase):
 
     @unittest.skipUnless(VECTOR.is_file(), 'tests/fixtures/clarifications-vector.json is not present')
     def test_the_shared_vector(self):
+        # The vector is what Scope's clarification_items writes (copied from sanduq
+        # extensions/scope/tests/fixtures/clarifications-vector.json). Nothing Scope records may be lost.
         vector = json.loads(VECTOR.read_text(encoding='utf-8'))
-        got = self.collect(vector['clarifications'])
-        want = vector['expect']
-        self.assertEqual(got['state'], want['state'])
-        shown = [{'source_id': i['source_id'], 'evidence': len(i['evidence']), 'links': len(i['evidence_links']),
-                  'applied_evidence': len(i['applied']['evidence']) if i['applied'] else 0} for i in got['items']]
-        self.assertEqual(shown, want['items'])
-        self.assertTrue(all(len(t) <= 200 for i in got['items'] for t in i['evidence']))
-        self.assertTrue(all(k['url'].startswith('https://') for i in got['items'] for k in i['evidence_links']))
+        self.assertTrue(vector['cases'])
+        for case in vector['cases']:
+            with self.subTest(case=case['name']):
+                got = self.collect({'v': 1, 'items': case['items']})
+                self.assertEqual([i['source_id'] for i in got['items']], [i['source_id'] for i in case['items']])
+                for want, item in zip(case['items'], got['items']):
+                    self.assertEqual(item['state'], want['state'])
+                    self.assertEqual(len(item['evidence']), len(want['evidence']))
+                    self.assertTrue(all(text and len(text) <= 200 for text in item['evidence']))
+                    links = [e['url'] for e in want['evidence'] if str(e.get('url') or '').startswith('https://')]
+                    self.assertEqual([k['url'] for k in item['evidence_links']], links)
+                    if want['applied']:
+                        self.assertEqual(item['applied']['evidence'], want['applied']['evidence'])
+                    else:
+                        self.assertIsNone(item['applied'])
 
     def test_the_v3_decision_carries_evidence_and_links(self):
         with tempfile.TemporaryDirectory() as base:

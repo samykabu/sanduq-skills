@@ -1,49 +1,301 @@
 {
-  "description": "Shared producer/consumer vector for workflow/clarifications.json. Written from the documented shape: evidence is a list of {kind, url|null, comment_id|null, explanation|null}; applied.evidence is a list of strings. The reader also takes plain-string evidence and a string applied.evidence. Replace this file with the producer's own vector when it exists; tests/test_review_c1b.py runs whatever is here.",
-  "clarifications": {
-    "v": 1,
-    "items": [
-      {
-        "source_id": "C1Q1",
-        "revision": 1,
-        "question": "Which retry policy applies?",
-        "options": ["Retry once", "Retry three times"],
-        "answer": {"kind": "single", "value": "A"},
-        "state": "applied",
-        "url": "https://github.com/example-org/example-app/issues/1#issuecomment-11",
-        "editor": null,
-        "observed_at": "2026-10-16T20:46:11Z",
-        "answered_at": null,
-        "applied": {"at": "2026-10-16T18:34:25Z", "evidence": ["comment 12: round 1 ready", "spec.md: FR-004"]},
-        "evidence": [
-          {"kind": "comment", "url": "https://github.com/example-org/example-app/issues/1#issuecomment-11", "comment_id": "11", "explanation": null},
-          {"kind": "disposition", "url": null, "comment_id": null, "explanation": "single checked original option; actor not claimed"}
-        ]
-      },
-      {
-        "source_id": "C2Q1",
-        "revision": 1,
-        "question": "Keep the draft?",
-        "options": ["Keep", "Reset"],
-        "answer": null,
-        "state": "waived",
-        "url": null,
-        "editor": null,
-        "observed_at": "2026-10-16T21:00:00Z",
-        "answered_at": null,
-        "applied": {"at": "2026-10-16T21:05:00Z", "evidence": "waived by the owner in the issue thread"},
-        "evidence": [
-          "plain string evidence from an older producer",
-          {"kind": "comment", "url": "http://insecure.example/never-a-link", "comment_id": 99, "explanation": null}
-        ]
-      }
-    ]
-  },
-  "expect": {
-    "state": "available",
-    "items": [
-      {"source_id": "C1Q1", "evidence": 2, "links": 1, "applied_evidence": 2},
-      {"source_id": "C2Q1", "evidence": 2, "links": 0, "applied_evidence": 1}
-    ]
-  }
+  "v": 1,
+  "note": "Produced by clarification_items in extensions/scope/scripts/clarification.py. Regenerate with UPDATE_CLARIFICATIONS_VECTOR=1 python -m unittest test_clarification.",
+  "cases": [
+    {
+      "name": "round-two-publication",
+      "outcome": "waiting",
+      "items": [
+        {
+          "source_id": "C1Q1",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": {
+            "kind": "single",
+            "value": "A"
+          },
+          "state": "applied",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1000",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": {
+            "at": "2026-09-12T09:00:00+00:00",
+            "evidence": [
+              "specs/001-example/spec.md#speckit-clarification:spec batch-round-two"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "selection",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-1000",
+              "comment_id": 1000,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "answered: Retry was ticked."
+            }
+          ],
+          "batch": "batch-round-two"
+        },
+        {
+          "source_id": "C1Q2",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "conflict",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1001",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "selection",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-1001",
+              "comment_id": 1001,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "unresolved: Two boxes are ticked."
+            }
+          ],
+          "batch": "batch-round-two"
+        },
+        {
+          "source_id": "C1Q3",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": {
+            "kind": "single",
+            "value": "B"
+          },
+          "state": "applied",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1002",
+          "editor": "creator",
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": "2026-09-11T10:00:00Z",
+          "applied": {
+            "at": "2026-09-12T09:00:00+00:00",
+            "evidence": [
+              "specs/001-example/spec.md#speckit-clarification:spec batch-round-two"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "comment",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-1005",
+              "comment_id": 1005,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "answered: B chosen in a reply."
+            }
+          ],
+          "batch": "batch-round-two"
+        },
+        {
+          "source_id": "C1Q4",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": {
+            "kind": "text",
+            "value": "Neither; the form is replaced by a wizard."
+          },
+          "state": "superseded",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1003",
+          "editor": "creator",
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": "2026-09-11T10:05:00Z",
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "comment",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-1006",
+              "comment_id": 1006,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "superseded: Replaced."
+            }
+          ],
+          "batch": "batch-round-two"
+        },
+        {
+          "source_id": "C2Q1",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "pending",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-2000",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "comment",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-2000",
+              "comment_id": 2000,
+              "explanation": null
+            }
+          ],
+          "batch": "batch-round-two"
+        }
+      ]
+    },
+    {
+      "name": "creator-closure",
+      "outcome": "closed",
+      "items": [
+        {
+          "source_id": "C1Q1",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "waived",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1000",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "closure",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-3001",
+              "comment_id": 3001,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "unresolved: Retry was ticked."
+            }
+          ],
+          "batch": "batch-closed"
+        },
+        {
+          "source_id": "C1Q2",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "waived",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1001",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "closure",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-3001",
+              "comment_id": 3001,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "unresolved: Two boxes are ticked."
+            }
+          ],
+          "batch": "batch-closed"
+        },
+        {
+          "source_id": "C1Q3",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "waived",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1002",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "closure",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-3001",
+              "comment_id": 3001,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "unresolved: B chosen in a reply."
+            }
+          ],
+          "batch": "batch-closed"
+        },
+        {
+          "source_id": "C1Q4",
+          "question": "What should happen if the request fails?",
+          "options": [
+            "Retry",
+            "Start again"
+          ],
+          "answer": null,
+          "state": "waived",
+          "url": "https://github.com/acme/app/issues/1#issuecomment-1003",
+          "editor": null,
+          "observed_at": "2026-09-12T09:00:00+00:00",
+          "answered_at": null,
+          "applied": null,
+          "evidence": [
+            {
+              "kind": "closure",
+              "url": "https://github.com/acme/app/issues/1#issuecomment-3001",
+              "comment_id": 3001,
+              "explanation": null
+            },
+            {
+              "kind": "disposition",
+              "url": null,
+              "comment_id": null,
+              "explanation": "unresolved: Replaced."
+            }
+          ],
+          "batch": "batch-closed"
+        }
+      ]
+    }
+  ]
 }
