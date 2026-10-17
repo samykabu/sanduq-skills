@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased — agent-tools 1.3.0
+## Unreleased — agent-tools 1.3.1
 
 - Native check batches, bounded collection, explicit retries and startup diagnostics. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
 
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
+
+## 2026-10-17 — agent-tools 1.3.1: review fixes
+
+- Linux children enumeration fallback, case-insensitive Windows env merge, cancel-before-launch on Windows, duplicate
+  facts lanes folded, stale receipts skipped for the current stage. See [agent-tools CHANGELOG](skills/agent-tools/CHANGELOG.md#131--2026-10-17).
 
 ## 2026-10-17 — agent-tools 1.3.0: progress-report correctness patch
 

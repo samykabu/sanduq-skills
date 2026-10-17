@@ -80,6 +80,16 @@ function executable(name, cwd, env) {
   }
   throw new Error('executable not found');
 }
+// Windows environment names are case-insensitive: an override of PATH must replace an inherited Path, not sit beside it.
+export function mergeEnv(...layers) {
+  const win = process.platform === 'win32', out = {}, names = new Map();
+  for (const layer of layers) for (const [k, v] of Object.entries(layer || {})) {
+    const id = win ? k.toUpperCase() : k;
+    if (names.has(id) && names.get(id) !== k) delete out[names.get(id)];
+    names.set(id, k); out[k] = v;
+  }
+  return out;
+}
 async function execute(c, p, dir, index, ownership) {
   const prefix = String(index + 1).padStart(3, '0');
   const paths = { stdout: path.join(dir, `${prefix}.stdout.log`), stderr: path.join(dir, `${prefix}.stderr.log`) };
@@ -90,7 +100,7 @@ async function execute(c, p, dir, index, ownership) {
   const abort = () => { aborted = true; cancel(); };
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, abort);
   try {
-    const env = { ...process.env, ...p.env, ...c.env };
+    const env = mergeEnv(process.env, p.env, c.env);
     const cwd = c.cwd || p.cwd;
     const argv = c.argv.map(a => a === '{{node}}' ? process.execPath : a === '{{python}}' ? p.interpreters.python : a);
     const file = executable(argv[0], cwd, env);
