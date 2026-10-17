@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import unittest
@@ -87,6 +88,7 @@ class Projection(Project):
         self.init()
         cp = json.loads((FIXTURES / 'checkpoint.json').read_text())
         cp['pause'] = {'reason': 'Needs owner input', 'at': '2026-10-15T11:00:00Z'}
+        cp['status'] = 'paused'  # a pause only blocks while the checkpoint is still paused
         (self.feature_dir / 'workflow').mkdir()
         (self.feature_dir / 'workflow' / 'checkpoint.json').write_text(json.dumps(cp))
         report = model.build(self.ctx, NOW, 1, {})
@@ -135,7 +137,7 @@ class Projection(Project):
         self.assertTrue(out.startswith('progress: ready specs/001-demo/progress/.view/index.html bind='))
         self.assertEqual(self.cli('status')[1].split(',')[0], 'progress: 2/5 tasks')
 
-    @unittest.skipIf(__import__('importlib').util.find_spec('sanduq_progress.theme'), 'theme module present')
+    @unittest.skipIf(importlib.util.find_spec('sanduq_progress.theme'), 'theme module present')
     def test_theme_verb_reports_unavailable_module(self):
         self.init()
         self.assertEqual(self.cli('theme', '--show'), (2, 'progress: error PROGRESS_THEME_UNAVAILABLE'))

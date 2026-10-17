@@ -6,7 +6,7 @@
 - [x] T002 [Impl] [B] Define the shared wire and port contracts in `…`, `…` and the TypeScript mirror `…`.
 ## Phase 3: Rules and schema (parallel lanes)
 - [x] T003 [P] [Impl] [B] Implement validation and normalization in `…`, `…` and `…`, the shared vectors `…`, and `…` plus `…`. Parallel with T004.
-- [x] T004 [P] [Impl] [A] Change the EF model and generate one migration: `…`, `…`, `…`, `…` (+ Designer and model snapshot), the embedded installers `…` and `…`, and their byte-identical mirrors `…` 
+- [x] T004 [P] [Impl] [A] Change the EF model and generate one migration: `…`, `…`, `…`, `…` (+ Designer and model snapshot), the embedded installers `…` and `…`, and their byte-identical mirrors `…`
 ## Phase 4: Server paths (lane A) and browser modules and seeds (lane B)
 - [x] T005 [Impl] [A] Implement the read side in `…`, `…` and `…`.
 - [x] T006 [Impl] [A] Implement the write side in `…`, `…` and `…`.

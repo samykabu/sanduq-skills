@@ -248,18 +248,24 @@ With no claim it is the stage of the latest accepted receipt (`outcome: "passed"
 receipt order) with `source: "workflow-receipts"` and `status` copied from the checkpoint (`in-progress`, ...). Only a
 checkpoint without receipts falls back to a terminal checkpoint status; otherwise `stage` is null.
 
-**Pause.** A checkpoint `pause` becomes the `WP` blocker (`source: "workflow-pause"`) only while no accepted receipt was
-completed after it. Once a later stage was accepted the pause is history: no blocker, and the event reads
-`paused (resolved by a later accepted stage): ...`.
+**Pause.** A checkpoint `pause` becomes the `WP` blocker (`source: "workflow-pause"`) only while it is the latest word: the
+checkpoint status is still `paused`, no new claim (`active.claimed_at`) is newer than the pause, and no accepted receipt
+was completed after it. Workflow's `claim` moves the status off `paused` but never clears `pause`, so any of the three
+makes the pause history: no blocker, and the event reads `paused (resolved by a later accepted stage): ...`.
 
 **One run, one lane.** A facts lane and a Workflow delegation describe the same work when a durable id says so, and
 only then. In order: the lane `owner` is a delegation `identity`; the `owner` is a delegation `run_id`; a lane with
 no tasks was open when attempts of exactly one `stage:<name>` identity started (two stages in one window are not
-guessed); a lane with tasks was open when attempts of a single-task identity `T<n>` for one of its tasks started
-(each attempt goes to the tightest window). A lane owned by a run id the ledger does not hold is never matched by
-time. Facts lanes that end up holding attempts of one identity fold into one lane per identity: the lowest lane id
-survives, `owner` becomes the identity, and a blocker that targets a folded id resolves to the surviving lane. Labels
-are never compared. Every attempt appears in exactly one lane.
+guessed); a lane with tasks was open when attempts of a single-task identity `T<n>` for one of its tasks started.
+Timing alone never links: the last two rules need exactly one qualifying lane for the attempt and a durable signal that
+agrees (the lane's requested harness and model equal the attempt's); several qualifying lanes, or none that agree, leave
+the run as its own lane. An open lane's window runs to now, so a lane recorded just before its run dispatches links it
+at once. A lane owned by a run id the ledger does not hold is never matched by time. A lane's status comes from its
+current attempts: a folded lane that was closed but absorbed a running attempt is `active`. Facts lanes that end up holding attempts of one identity fold into one lane per identity: the lowest lane id
+survives, `owner` becomes the identity, and a blocker that targets a folded id, or a retired `W<n>` id, resolves to the surviving lane (blocker targets,
+`by.ref` and lane references all go through the alias). Labels are never compared. Every attempt appears in exactly one
+lane; an identity named in a multi-identity workstream lane keeps its share there and is not also folded elsewhere
+unless its own lane exists, so a task id can appear in two lanes' attempts (T021 on the #842 fixture).
 
 **Lane time.** A lane with attempts reports `elapsed` as the sum of its attempts' own durations (start to end, or to
 now while one runs; a finished attempt with no end uses the harness-measured duration), never the span between the

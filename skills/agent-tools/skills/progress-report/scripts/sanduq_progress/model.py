@@ -143,6 +143,13 @@ RUN_ID = re.compile(r'[a-z][a-z0-9]*-\d{8,14}-[0-9a-f]{4,}')
 TASK_IDENTITY = re.compile(r'/(T\d+)$')
 
 
+def _same_request(lane, row):
+    """The lane and the attempt asked for the same harness and model: a durable signal that they describe one run."""
+    want = lane.get('requested') or {}
+    return bool(want.get('harness') and want.get('model') and want.get('harness') == row.get('requested_harness')
+                and want.get('model') == row.get('requested_model'))
+
+
 def link_attempts(lanes, grouped, now):
     """Attach delegation attempts to the facts lane that describes the same run, so one run is one lane.
 
@@ -174,11 +181,13 @@ def link_attempts(lanes, grouped, now):
     def window(lane):
         if not lane['since']:
             return None
-        end = lane['ended'] or lane['since']
+        end = lane['ended'] or now  # an open lane stays open: a run dispatched after it was recorded still falls inside
         return lane['since'] - LINK_SLACK, end
 
-    # Rules 3 and 4. A run can fall inside several lane windows (adjacent lanes, or one long orchestrator lane); it goes
-    # to the tightest window, and a task-less lane that would end up with two different stages gets none of them.
+    # Rules 3 and 4. Timing alone never links: a run links only when exactly one lane qualifies and that lane's requested
+    # harness and model equal the attempt's (a durable signal). Several qualifying lanes (adjacent lanes, a long
+    # orchestrator lane, identical windows) are ambiguous, so the run stays its own lane. A task-less lane that would end
+    # up with two different stages gets none of them.
     chosen = {}
     for lane in facts:
         span = window(lane)
@@ -196,11 +205,13 @@ def link_attempts(lanes, grouped, now):
                 continue
             for row in rows:
                 begun = parse_time(row.get('started_at'))
-                if begun and span[0] <= begun <= span[1]:
-                    chosen.setdefault(id(row), (identity, row, []))[2].append((span[1] - span[0], -span[0].timestamp(), lane['id'], lane))
+                if begun and span[0] <= begun <= span[1] and _same_request(lane, row):
+                    chosen.setdefault(id(row), (identity, row, []))[2].append(lane)
     wins = {}
     for identity, row, options in chosen.values():
-        lane = min(options, key=lambda o: o[:3])[3]
+        if len(options) != 1:
+            continue
+        lane = options[0]
         wins.setdefault(lane['id'], (lane, []))[1].append((identity, row))
     for lane, picks in wins.values():
         if not lane['tasks'] and len({identity for identity, _ in picks}) > 1:
@@ -210,15 +221,16 @@ def link_attempts(lanes, grouped, now):
 
 
 KEEP_KINDS = ('stage', 'failure', 'decision', 'block', 'workflow')
-KEEP_LIMIT, OTHER_LIMIT = 50, 30
+KEEP_LIMIT, OTHER_LIMIT, NOTE_LIMIT = 50, 30, 15
 
 
 def bounded_events(events):
     """Events stay bounded but are not just the newest lines: stage acceptances, failures, decisions, blockers and
     workflow pauses keep their own budget, so a burst of delegation lines cannot push them out."""
     important = [e for e in events if e['kind'] in KEEP_KINDS][-KEEP_LIMIT:]
-    rest = [e for e in events if e['kind'] not in KEEP_KINDS][-OTHER_LIMIT:]
-    return sorted(important + rest, key=lambda e: (e['at'], e['kind'], e['text']))
+    notes = [e for e in events if e['kind'] == 'note'][-NOTE_LIMIT:]  # the coordinator's own record: its own budget
+    rest = [e for e in events if e['kind'] not in KEEP_KINDS and e['kind'] != 'note'][-OTHER_LIMIT:]
+    return sorted(important + notes + rest, key=lambda e: (e['at'], e['kind'], e['text']))
 
 
 def fold_lanes(lanes, grouped):
@@ -297,10 +309,8 @@ def build(ctx, now, rev=1, state=None, plan=None):
 
     # ---- lanes --------------------------------------------------------------------------------------------
     lanes = []
-    firsts = {}
     history = {}
     for rec in loaded['all']:
-        firsts.setdefault(rec['id'], rec.get('ts'))
         if rec['kind'] == 'lane':
             history.setdefault(rec['id'], []).append(rec)
     for rec in sorted((r for r in fact_rows if r['kind'] == 'lane'), key=lambda r: natural(r['id'])):
@@ -322,8 +332,10 @@ def build(ctx, now, rev=1, state=None, plan=None):
         grouped.setdefault(str(a['identity']), []).append(a)
     link_attempts(lanes, grouped, now)
     lanes, folded = fold_lanes(lanes, grouped)
+    retired = {}
     for number, (identity, rows) in enumerate(grouped.items(), 1):
         if not rows:
+            retired[f'W{number}'] = identity
             continue
         lane = {'id': f'W{number}', 'label': clean(identity.rsplit('/', 1)[-1], 60), 'owner': identity,
                 'origin': 'workflow-delegation', 'requested': {}, 'tasks': [], 'closed': False, 'since': None, 'rows': rows}
@@ -395,9 +407,15 @@ def build(ctx, now, rev=1, state=None, plan=None):
         lane['tasks'] = [t for t in lane['tasks'] if task_lane.get(t) == lane['id']]
 
     # ---- blockers -----------------------------------------------------------------------------------------
+    shown_in = {str(r['identity']): lane['id'] for lane in lanes for r in lane.get('rows') or []}
+    for wid, name in retired.items():  # a retired W lane id keeps meaning the lane its identity's attempts are shown in
+        if name in shown_in:
+            folded.setdefault(wid, shown_in[name])
+
     def resolve(ref):
         """A reference to a child (its C<n> number or a retired alias) means the lane that child is displayed in now."""
-        return folded.get(ref) or identity.get(ref, ref)
+        ref = folded.get(ref) or identity.get(ref, ref)
+        return folded.get(ref) or ref
 
     blockers = []
     for rec in sorted((r for r in fact_rows if r['kind'] == 'block' and r.get('state') == 'open'), key=lambda r: natural(r['id'])):
@@ -492,8 +510,8 @@ def build(ctx, now, rev=1, state=None, plan=None):
         if lane['origin'] == 'coordinator':
             recent = main and (parse_time(main.get('last_observed_at')) or now) + timedelta(seconds=stale_after) >= now
             return 'active' if recent else ('pending' if not lane['tasks'] else 'waiting')
-        if lane['closed']:
-            return 'done'
+        if lane['closed'] and not (lane['_derived'] and lane['_derived']['running']):
+            return 'done'  # historical closure never outranks a newer running attempt
         if lane_blockers.get(lane['id']):  # an open blocker outranks terminal child evidence
             return 'blocked'
         ended = None if lane['_derived'] else _child_end(lane)

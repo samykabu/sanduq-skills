@@ -10,7 +10,7 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 ## 2026-10-17 — agent-tools 1.3.0: progress-report correctness patch
 
 - `progress-report`: stage from accepted receipts, stale pauses no longer block, frozen durations, one lane per run,
-  attention-first layout with kind-filtered events. See [agent-tools CHANGELOG](skills/agent-tools/CHANGELOG.md#123--2026-10-17).
+  attention-first layout with kind-filtered events. See [agent-tools CHANGELOG](skills/agent-tools/CHANGELOG.md#130--unreleased).
 
 ## 2026-10-16 — agent-tools 1.2.2: progress-report docs for the single Spec Kit hook command
 

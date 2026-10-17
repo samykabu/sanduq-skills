@@ -112,7 +112,8 @@
     if (f.issue) meta.appendChild(link('Issue #' + f.issue.number, f.issue.url));
     meta.appendChild(el('span', 'wrap', ['Branch ', f.branch ? el('code', null, f.branch) : unk()]));
     if (f.mode === 'plan') meta.appendChild(el('span', 'wrap', ['Plan ', f.source ? el('code', null, f.source) : unk()]));
-    else meta.appendChild(el('span', null, ['Stage ', f.stage && f.stage.value ? pill(f.stage.value) : unk()]));
+    else meta.appendChild(el('span', null, ['Stage ', f.stage && f.stage.value ? pill(f.stage.value) : unk(),
+      f.stage && f.stage.status && f.stage.status !== 'in-progress' ? el('span', 'sub', ' \u00b7 ' + f.stage.status) : null]));
     head.appendChild(meta);
     top.appendChild(head);
     var bar = attr(el('div', 'bar', el('i')), { role: 'progressbar', 'aria-label': 'Tasks done', 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': String(done) });
@@ -142,7 +143,7 @@
     ]);
     var c = d.collection || {}, missing = o.model && o.model.value == null && c.automatic === false && (!o.host || o.host === 'codex' || o.host === 'unknown');
     return section('orchestrator', null, [kv,
-      missing ? el('p', 'note warn', 'No host hook data \u2014 Codex worktree hooks not active?') : null,
+      missing ? el('p', 'note warn', 'No host hook data for this report yet' + (o.host === 'codex' ? ' \u2014 are the Codex worktree hooks active?' : '.')) : null,
       el('p', 'note', 'Elapsed is wall time since start. Active counts only observed work intervals and stays unknown without them.')], st);
   }
   function mvTag(m) {
@@ -166,7 +167,7 @@
     var open = st.o.indexOf(l.id) >= 0, at = l.attempts || [];
     var det = el('details');
     det.open = open;
-    det.appendChild(el('summary', null, at.length + (at.length === 1 ? ' attempt' : ' attempts')));
+    det.appendChild(attr(el('summary', null, at.length + (at.length === 1 ? ' attempt' : ' attempts')), { 'data-k': 'attempts-' + l.id }));
     if (at.length) det.appendChild(el('ul', null, at.map(function (a) {
       return el('li', 'wrap', [a.run_id || '?', ' ', pill(a.status), ' ', dur((Date.parse(a.ended_at) - Date.parse(a.started_at)) / 1000) || (a.ended_at ? '' : 'running'),
         a.tokens ? ' ' + tokText(a.tokens) : '', a.fidelity ? el('span', 'fid', a.fidelity) : null]);
@@ -227,7 +228,7 @@
     if (busy.length) body.push(laneTable(busy, st));
     if (quiet.length) {
       /* lanes with no tasks and no attempts have no board or run to read: one collapsed line, not table rows */
-      var det = el('details', 'quiet', [el('summary', null, quiet.length + (quiet.length === 1 ? ' lane' : ' lanes') + ' with no tasks or attempts'), laneTable(quiet, st)]);
+      var det = el('details', 'quiet', [attr(el('summary', null, quiet.length + (quiet.length === 1 ? ' lane' : ' lanes') + ' with no tasks or attempts'), { 'data-k': 'quiet-lanes' }), laneTable(quiet, st)]);
       det.open = st.o.indexOf('quiet-lanes') >= 0;
       det.addEventListener('toggle', function () {
         var s = readState();
@@ -267,7 +268,7 @@
     /* a board with only finished work starts closed; a click flips it, and the flip is kept in the hash */
     var doneOnly = !(spec[0][2].length || spec[1][2].length || spec[2][2].length);
     var flipped = st.o.indexOf(key) >= 0;
-    var det = el('details', 'board', [el('summary', null, [el('h3', 'wrap', name), el('span', 'sub', doneOnly ? spec[3][2].length + ' done' : '')]), cols]);
+    var det = el('details', 'board', [attr(el('summary', null, [el('h3', 'wrap', name), el('span', 'sub', doneOnly ? spec[3][2].length + ' done' : '')]), { 'data-k': 'board-' + key }), cols]);
     det.open = doneOnly === flipped;
     det.addEventListener('toggle', function () {
       var s = readState(), nowFlipped = det.open === doneOnly;

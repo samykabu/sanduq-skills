@@ -85,7 +85,7 @@
   "execute": {
    "stage": "execute",
    "outcome": "passed",
-   "summary": "Revalidated the retained #842 execution under \u0001<id> after the Workflow 1.10.3 runtime (49c5dc88; source 9255afa, ZIP 1f6db2c3, reviewed 0 blocking) replaced the only drifted dependency. No code, tests or workers were needed. At pushed HEAD 1d63a04, src/tests/web are identical to tested 48bac36; 23 tasks are checked; #884-#906 are live CLOSED under #842 and match the revalidated Tasks map (44 cover",
+   "summary": "Revalidated the retained #842 execution under [redacted-id] after the Workflow 1.10.3 runtime (49c5dc88; source 9255afa, ZIP 1f6db2c3, reviewed 0 blocking) replaced the only drifted dependency. No code, tests or workers were needed. At pushed HEAD 1d63a04, src/tests/web are identical to tested 48bac36; 23 tasks are checked; #884-#906 are live CLOSED under #842 and match the revalidated Tasks map (44 cover",
    "completed_at": "2026-10-17T06:29:51.953405+00:00"
   },
   "verify": {
@@ -103,7 +103,7 @@
   "qa_document": {
    "stage": "qa_document",
    "outcome": "passed",
-   "summary": "Executed speckit.assure.document once as bounded retained-evidence revalidation inside \u0001<id>. Fresh consistency checks passed 41/41: all twelve upstream receipts native-current, retained QA static validation 70/70, current Assure Analyze/Document and Manual statuses, exact 32 QA and 72 Manual outputs, accepted global memory 364db267 and native lineage unchanged, four approved tooling carriers exac",
+   "summary": "Executed speckit.assure.document once as bounded retained-evidence revalidation inside [redacted-id]. Fresh consistency checks passed 41/41: all twelve upstream receipts native-current, retained QA static validation 70/70, current Assure Analyze/Document and Manual statuses, exact 32 QA and 72 Manual outputs, accepted global memory 364db267 and native lineage unchanged, four approved tooling carriers exac",
    "completed_at": "2026-10-17T07:27:48.692135+00:00"
   },
   "manual_update": {

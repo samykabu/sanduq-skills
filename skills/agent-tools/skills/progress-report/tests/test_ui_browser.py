@@ -348,6 +348,40 @@ class UpdateTests(BrowserTest):
         self.assertLessEqual(n, 1)
 
 
+class ReviewC1Tests(BrowserTest):
+    def test_a5_focus_on_a_board_summary_survives_a_refresh(self):
+        self.open()
+        self.page.focus("summary[data-k^='board-']")
+        key = self.page.evaluate("document.activeElement.getAttribute('data-k')")
+        self.assertTrue(key)
+        p = fresh(load("projection-sample.json"), rev=30)
+        p["feature"]["title"] = "Refreshed"
+        write_data(self.view, p)
+        self.wait_text("h1", "Refreshed")
+        self.assertEqual(self.page.evaluate("document.activeElement.getAttribute('data-k')"), key)
+
+    def test_f6_the_header_shows_a_stage_status_that_is_not_in_progress(self):
+        p = fresh(load("projection-sample.json"))
+        p["feature"]["stage"] = {"value": "pr", "source": "workflow-receipts", "status": "paused"}
+        self.open(p)
+        self.assertIn("pr " + chr(0xb7) + " paused", " ".join(self.text("header").split()))
+        p["feature"]["stage"]["status"] = "in-progress"
+        self.open(p)
+        self.assertNotIn("paused", self.text("header"))
+
+    def test_f9_missing_telemetry_note_names_codex_only_for_a_codex_host(self):
+        for host, codex in (("claude", False), (None, False), ("codex", True)):
+            p = fresh(load("projection-sample.json"))
+            p["orchestrator"].update(host=host, model={"value": None, "source": "unknown", "observed_at": None, "fidelity": "unknown"})
+            p["collection"]["automatic"] = False
+            self.open(p)
+            note = self.page.inner_text(".note.warn") if host != "claude" else ""
+            if host == "claude":
+                self.assertEqual(self.page.locator(".note.warn").count(), 0)  # a Claude host with no data is not flagged
+            else:
+                self.assertEqual("Codex" in note, codex, host)
+
+
 class OtherProjectionTests(BrowserTest):
     def test_minimal_shows_unknown(self):
         self.open(fresh(load("projection-minimal.json")))
@@ -447,7 +481,7 @@ class Run842BrowserTests(BrowserTest):
         self.open(self.proj)
         self.assertIn("pr", self.text("header .meta"))
         self.assertIn("No host hook data", self.text("#b-orchestrator"))
-        self.assertIn("Codex worktree hooks not active?", self.text("#b-orchestrator"))
+        self.assertNotIn("Codex", self.text("#b-orchestrator"))  # no host is named, so the note is host-neutral
         self.assertIn("No open blockers.", self.text("#b-blockers"))
         self.assertIn("No decisions recorded in Workflow decisions.", self.text("#b-decisions"))
 

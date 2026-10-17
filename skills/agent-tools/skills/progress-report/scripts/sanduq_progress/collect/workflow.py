@@ -25,7 +25,11 @@ def checkpoint(feature_dir):
     # A pause is a snapshot taken when the feature stopped. An accepted receipt completed after it means the feature
     # moved on, so the pause is history, not a blocker. The checkpoint keeps the stale record; we do not.
     paused_at = parse_time(pause.get('at')) if pause else None
-    superseded = bool(pause and paused_at and last and last['_when'] > paused_at)
+    claimed = parse_time(active.get('claimed_at')) if active else None
+    status = data.get('status')
+    # Workflow's claim moves the status off `paused` and stamps `active.claimed_at`, but never clears `pause`.
+    superseded = bool(pause and ((paused_at and last and last['_when'] > paused_at) or (status not in (None, 'paused'))
+                                 or (paused_at and claimed and claimed > paused_at)))
     return {'branch': data.get('branch'), 'feature': data.get('feature'), 'status': data.get('status'),
             'stage': active.get('stage') if active else None, 'issue': link, 'updated_at': data.get('updated_at'),
             'started_at': first, 'last_accepted': {'stage': last['stage'], 'at': last['at']} if last else None,

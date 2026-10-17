@@ -17,6 +17,12 @@
     with nothing to read collapse into one line; events keep stage, failure and decision lines and filter by kind; a line
     explains missing host hook data; "None made" now reads "No decisions recorded in Workflow decisions".
   - The default block order changed; a project's own `theme.json` order is kept.
+  - Review fixes: a closed lane that absorbs a newer running attempt is active; retired `W<n>` ids and folded ids keep
+    aliases (blocker targets, `by.ref`, lane references); timing links a run only when one lane qualifies and its
+    requested harness and model agree (the fixture now shows 48 lanes, still 39 with something to read); an open lane's
+    window runs to now; a pause is history once the status leaves `paused` or a newer claim exists; notes reach the
+    events list within their own bound; the header shows a stage status other than in-progress ("pr · paused"); board and
+    quiet-lane summaries keep keyboard focus across a refresh; the missing-telemetry note is host-neutral.
 
 ## 1.2.2 — 2026-10-16
 

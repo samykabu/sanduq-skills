@@ -15,7 +15,6 @@ import helpers
 from sanduq_progress import model
 from sanduq_progress.collect import workflow as wf
 
-BASELINE_LANES = 77  # the same fixture before the patch (76 in the saved report, plus the later PR run)
 
 
 def parse(value):
@@ -84,7 +83,7 @@ class Run842(unittest.TestCase):
         def edit(feature_dir):
             path = feature_dir / 'workflow' / 'checkpoint.json'
             data = json.loads(path.read_text(encoding='utf-8'))
-            data['pause']['at'] = '2026-10-17T13:59:00+00:00'
+            data['pause']['at'], data['status'] = '2026-10-17T13:59:00+00:00', 'paused'  # Workflow leaves `pause` behind once it claims again
             path.write_text(json.dumps(data), encoding='utf-8')
         blockers = self.rebuild(edit=edit)['blockers']
         self.assertEqual([b['id'] for b in blockers], ['WP'])
@@ -125,14 +124,16 @@ class Run842(unittest.TestCase):
 
     # ---- 4. duplicate lanes -----------------------------------------------------------------------------------------
     def test_lane_count_drops_and_no_attempt_is_lost_or_duplicated(self):
-        self.assertLess(len(self.report['lanes']), BASELINE_LANES - 30)
+        # Exact on the frozen fixture: 48 lanes (the baseline was 77). Timing alone no longer links a lane to a run, so
+        # two facts lanes stay beside their runs; a deliberate change to linking should change this number on purpose.
+        self.assertEqual(len(self.report['lanes']), 48)
         shown = [a['run_id'] for lane in self.report['lanes'] for a in lane['attempts']]
         self.assertEqual(len(shown), len(self.ledger))
         self.assertEqual(sorted(shown), sorted(a['run_id'] for a in self.ledger))
 
     def test_lanes_with_something_to_read_fit_the_budget(self):
         busy = [l for l in self.report['lanes'] if l['attempts'] or any(l['tasks'][k] for k in ('active', 'waiting', 'blocked', 'done'))]
-        self.assertLessEqual(len(busy), 39)
+        self.assertEqual(len(busy), 39)  # exact on the frozen fixture; a new lane with something to read should be a decision
 
     def test_stage_mirror_lanes_fold_into_one_lane_per_stage(self):
         clarify = self.lanes['L3']  # L3, L4, L6, L9 and L12 all described clarify runs
@@ -176,7 +177,7 @@ class Run842(unittest.TestCase):
             kinds[event['kind']] = kinds.get(event['kind'], 0) + 1
         self.assertEqual(kinds['failure'], sum(1 for a in self.ledger if a['status'] in ('failed', 'abandoned') and a.get('ended_at')))
         self.assertEqual(kinds['stage'], 16)  # one per accepted receipt
-        self.assertLessEqual(len(self.report['events']), model.KEEP_LIMIT + model.OTHER_LIMIT)
+        self.assertLessEqual(len(self.report['events']), model.KEEP_LIMIT + model.OTHER_LIMIT + model.NOTE_LIMIT)
         self.assertLessEqual(kinds['delegation'], model.OTHER_LIMIT)
         self.assertEqual([e['at'] for e in self.report['events']], sorted(e['at'] for e in self.report['events']))
 
