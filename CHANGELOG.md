@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-17 — illustration-tools 3.4.2: stable render verification
+
+- Pause page clocks during render comparisons and advance them explicitly for declared reveal holds. JavaScript timers can no longer produce inconsistent clipping results between captures.
+- Restore SVG and ancestor styles exactly after capture, including when a capture fails.
+
 ## Unreleased — agent-tools 1.3.1
 
 - Native check batches, bounded collection, explicit retries and startup diagnostics. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
