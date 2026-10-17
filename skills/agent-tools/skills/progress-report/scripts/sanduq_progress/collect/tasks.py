@@ -6,8 +6,9 @@ phase. Fenced blocks and inline code spans are ignored, so task ids quoted in pr
 import re
 from pathlib import Path
 
-from ..util import clean
+from ..util import clean, read_bytes
 
+CRLF, CR, LF = chr(13) + chr(10), chr(13), chr(10)
 TASK = re.compile(r'^\s*[-*]\s+\[([ xX])\]\s+(T\d+)\b\s*(.*)$')
 HEADING = re.compile(r'^(#{1,3})\s+(.*?)\s*#*\s*$')
 FENCE = re.compile(r'^\s*(```|~~~)')
@@ -98,10 +99,15 @@ def parse(text):
     return {'title': title, 'tasks': tasks, 'legend': declared}
 
 
+def _text(raw):
+    """Decode like Path.read_text: UTF-8 with universal newlines."""
+    return raw.decode('utf-8').replace(CRLF, LF).replace(CR, LF)
+
+
 def collect(feature_dir):
     path = Path(feature_dir) / 'tasks.md'
     try:
-        return parse(path.read_text(encoding='utf-8'))
+        return parse(_text(read_bytes(path)))
     except OSError:
         return {'title': None, 'tasks': [], 'legend': {}}
 

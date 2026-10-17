@@ -290,13 +290,55 @@ def _store(project_root, doc):
     _atomic_write(theme_path(project_root), json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
 
+def _views(root):
+    return [*root.glob("specs/*/progress/.view"), *root.glob(PLAN_ROOT + "/*/.view"),
+            *(root / d / ".view" for d in registry_dirs(root))]
+
+
 def _refresh_views(project_root, resolved):
-    root = Path(project_root)
-    views = [*root.glob("specs/*/progress/.view"), *root.glob(PLAN_ROOT + "/*/.view"),
-             *(root / d / ".view" for d in registry_dirs(root))]
-    for view in views:
+    for view in _views(Path(project_root)):
         if view.is_dir():
             write_assets(view, resolved)
+
+
+def _republish(project_root):
+    """Rebuild report.json and data.js for every initialised report, each under its own report lock. The layout decides
+    which document data.js carries (v3 for timeline, v2 for classic), so changing it must publish the matching one now;
+    the next hook or refresh would otherwise leave the browser showing the wrong schema. Returns the reports it could not
+    republish as (feature, reason) pairs; the theme itself is already saved."""
+    import importlib
+    from datetime import datetime, timezone
+    package = __package__ or "sanduq_progress"  # run as a script, there is no package: the top of this file puts it on sys.path
+    Lock, LockBusy = (getattr(importlib.import_module(package + ".lock"), n) for n in ("Lock", "LockBusy"))
+    Ctx = importlib.import_module(package + ".paths").Ctx
+    refresh = importlib.import_module(package + ".refresh").refresh
+    util = importlib.import_module(package + ".util")
+    ProgressError, utcnow = util.ProgressError, util.utcnow
+    root = Path(project_root)
+    stamp = os.environ.get("SANDUQ_PROGRESS_NOW")  # the same test clock the progress command honours
+    moment = datetime.fromisoformat(stamp.replace("Z", "+00:00")).astimezone(timezone.utc) if stamp else utcnow()
+    failed = []
+    for view in _views(root):
+        directory = view.parent
+        is_feature = directory.name == "progress" and directory.parent.parent.name == "specs"
+        feature = (directory.parent if is_feature else directory).relative_to(root).as_posix()
+        try:
+            ctx = Ctx(root, feature)
+            if not ctx.report.is_file():
+                continue  # never initialised: nothing to republish
+            lock = Lock(ctx.lock, retries=3, delay=0.2)
+            try:
+                lock.acquire()
+            except LockBusy:
+                failed.append((feature, "another progress command is running"))
+                continue
+            try:
+                refresh(ctx, moment)
+            finally:
+                lock.release()
+        except (OSError, ValueError, ProgressError) as exc:
+            failed.append((feature, type(exc).__name__))
+    return failed
 
 
 USAGE = "theme --preset NAME | --from-illustrate | --file PATH | --layout timeline|classic | --show | --help"
@@ -341,9 +383,13 @@ def cli(argv, project_root=None):
             keep = _stored(root).get("layout")  # a new look keeps the layout the user picked
             if keep:
                 doc["layout"] = keep
+        before = resolve(root).get("layout")
         _store(root, doc)
         _refresh_views(root, resolve_doc(doc))
         print(f"progress: theme {label}")
+        if resolve_doc(doc).get("layout") != before:
+            for feature, why in _republish(root):
+                print(f"progress: warning data.js for {feature} not republished ({why}); run progress refresh")
         return 0
     except ThemeError as exc:
         print(f"progress: error PROGRESS_THEME_INVALID {exc}")

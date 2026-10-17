@@ -8,6 +8,7 @@ The v2 document (`model.build(..., schema='v2')`) is built first from the same r
 on top of it and takes the pieces v2 already settled (orchestrator telemetry, blockers, legacy lane aliases) from it.
 """
 import hashlib
+import os
 import re
 
 from . import SCHEMA_V3, selfreport
@@ -145,13 +146,13 @@ def build_runs(ctx, now, x, episodes_by_run, claim_episodes, ws_at):
         retry = next((str(a[k]) for k in ('replaces_run_id', 'parent_run_id') if a.get(k)), None)
         summary = clean(a.get('result_summary'), 160) or None
         run = {'run_id': rid, 'identity': identity, 'stage': known_stage, 'tasks': tasks,
-               'episode_id': episode['id'] if episode else None, 'workstream': ws_at(tasks, a.get('started_at')),
+               'episode_id': episode['id'] if episode else None, 'workstream': ws_at(tasks, a.get('started_at'), a),
                'harness': a.get('actual_harness') or a.get('requested_harness') or journal.get('harness'),
                'requested_model': a.get('requested_model') or journal.get('model'),
                'actual_model': base._model_measure(a, journal, now), 'effort': _effort(a, now),
                'started_at': a.get('started_at'), 'ended_at': a.get('ended_at') or journal.get('ended_at'),
                'duration': _duration(a, journal, now), 'worker_status': a.get('status') or 'unknown',
-               'evidence_accepted': True if a.get('accepted_at') else False if a.get('status') in FAILED else None,
+               'evidence_accepted': True if a.get('accepted_at') else None,  # no acceptance evidence stays null, a failed worker included
                'candidate_accepted': None, 'retry_of': retry, 'summary': summary}
         if rid in conflicts:
             run['conflict'] = sorted(conflicts[rid])
@@ -193,12 +194,14 @@ def build_runs(ctx, now, x, episodes_by_run, claim_episodes, ws_at):
 # ---- lifecycle episodes and stages ------------------------------------------------------------------------------------
 
 def _episodes(events, active_stage):
-    """Episodes from lifecycle events: a group of events that share an episode id (or, without one, a claim id). Events
-    carrying neither are not grouped; they only feed validity and the timeline."""
+    """Episodes from lifecycle events. An event joins an episode through its explicit `episode_id`, or, for a claim or resume
+    event, through its own `claim_id`. Every other event (a claim-time `invalidated`, a feature-level `paused`, an event
+    that names only a claim) is loose: it feeds validity and the timeline but creates no episode, and an invalidation never
+    sets an episode start. Starts come from claim and resume events only."""
     groups, loose = {}, []
     for e in events:
-        key = e['episode_id'] or (f"claim:{e['claim_id']}" if e['claim_id'] else None)
-        if key:
+        key = e['episode_id'] or (f"claim:{e['claim_id']}" if e['claim_id'] and e['event'] in lifecol.STARTS else None)
+        if key and e['stage']:
             groups.setdefault((e['stage'], key), []).append(e)
         else:
             loose.append(e)
@@ -211,11 +214,11 @@ def _episodes(events, active_stage):
         else:
             outcome = OUTCOME[last['event']]
         runs = list(dict.fromkeys(r for e in rows for r in e['delegation_run_ids']))
-        started = rows[0]['at'] if rows[0]['event'] in lifecol.STARTS else None
+        start = next((e for e in rows if e['event'] in lifecol.STARTS), None)
         out.append({'id': f'{stage}#{key}', 'stage': stage, 'source': 'workflow-lifecycle', 'fidelity': 'exact',
                     'claim_id': next((e['claim_id'] for e in reversed(rows) if e['claim_id']), None),
-                    'started_at': started, 'ended_at': ended['at'] if ended else None, 'outcome': outcome, 'runs': runs,
-                    'reason': next((e['reason'] for e in reversed(rows) if e['reason']), None)})
+                    'started_at': start['at'] if start else None, 'ended_at': ended['at'] if ended else None, 'outcome': outcome,
+                    'runs': runs, 'reason': next((e['reason'] for e in reversed(rows) if e['reason']), None)})
     return out, loose
 
 
@@ -234,8 +237,9 @@ def _fallback_episodes(cp, stages_with_lifecycle):
     for index, rec in enumerate(cp.get('recoveries') or []):
         if rec['stage'] and rec['stage'] not in stages_with_lifecycle:
             out.append({'id': f"{rec['stage']}#recovery-{index + 1}", 'stage': rec['stage'], 'source': 'checkpoint-recovery',
-                        'fidelity': 'partial', 'claim_id': None, 'started_at': None, 'ended_at': rec['at'],
-                        'outcome': 'recovered', 'runs': [], 'reason': rec['reason'] or None})
+                        'fidelity': 'partial', 'claim_id': None, 'started_at': rec.get('started_at'), 'ended_at': rec['at'],
+                        'outcome': 'recovered', 'runs': [], 'reason': rec['reason'] or None,
+                        **({'identity': rec['identity']} if rec.get('identity') else {})})
     return out
 
 
@@ -257,7 +261,7 @@ def build_stages(now, x, lifecycle, runs):
     active_stage = (cp or {}).get('stage')
     events = lifecycle['events']
     episodes, loose = _episodes(events, active_stage)
-    with_lifecycle = {e['stage'] for e in events}
+    with_lifecycle = {e['stage'] for e in events if e['stage']}
     episodes += _fallback_episodes(dict(cp or {}, _receipts=x['receipts']), with_lifecycle)
     evidence = set(receipts) | {r['stage'] for r in runs if r['stage']} | with_lifecycle | ({active_stage} if active_stage else set())
     if plan['state'] == 'available':
@@ -303,9 +307,15 @@ def build_stages(now, x, lifecycle, runs):
         else:
             status = 'pending'
         durations = [r['duration']['value'] for r in mine if r['duration'].get('value') is not None]
-        starts = [r['started_at'] for r in mine if parse_time(r['started_at'])]
-        ends = [r['ended_at'] for r in mine if parse_time(r['ended_at'])]
-        open_runs = any(r['worker_status'] in LIVE for r in mine)
+        starts = [t for t in [*(r['started_at'] for r in mine), *(e['started_at'] for e in eps)] if parse_time(t)]
+        ends = [t for t in [*(r['ended_at'] for r in mine), *(e['ended_at'] for e in eps)] if parse_time(t)]
+        # `open` means something confirms the stage is running now: a live run, a running episode or the active claim.
+        # A stage whose last end is simply not recorded is not open; the UI draws it as "end unknown", never to now.
+        is_open = selected and (active_stage == sid or any(r['worker_status'] in LIVE for r in mine)
+                                or any(e['outcome'] == 'running' for e in eps))
+        first_start = min(starts, key=parse_time) if starts else None
+        last_end = None if is_open or not ends else max(ends, key=parse_time)
+        timing = 'open' if is_open else 'unknown' if not first_start else 'closed' if last_end else 'end-unknown'
         stage_rows.append({
             'id': sid, 'label': label or _label(sid), 'order': position + 1, 'selected': selected, 'status': status,
             'validity': validity, 'accepted_at': accepted_at, 'episodes': eps, 'unknown_runs': unknown_runs,
@@ -313,8 +323,7 @@ def build_stages(now, x, lifecycle, runs):
             'run_time': {**_m(sum(durations), 'delegation-ledger', now, 'partial'), 'complete': len(durations) == len(mine),
                          'sources': ['delegation-ledger'], 'label': 'summed, may overlap'} if mine else unknown(),
             'models': sorted({r['actual_model']['value'] for r in mine if r['actual_model'].get('value')}),
-            'first_start': min(starts, key=parse_time) if starts else None,
-            'last_end': None if open_runs or not ends else max(ends, key=parse_time)})
+            'first_start': first_start, 'last_end': last_end, 'open': bool(is_open), 'timing': timing})
     return stage_rows, loose, {e['id']: e for e in episodes}, plan
 
 
@@ -352,27 +361,38 @@ def build_membership(x):
 
 
 def make_ws_at(member, marked):
-    """workstream(tasks, start): the one workstream every task of a run belonged to at the run's start, else None."""
-    def lane_at(tid, when):
-        found, moment = [], parse_time(when)
+    """workstream(tasks, start, attempt): the one workstream every task of a run belonged to at the run's start, else None.
+    A run with no valid start time has no moment to place against the dated assignments, so its workstream is unknown
+    unless the attempt itself names a marked workstream (`workstream` or `lane_id`) that holds all of its tasks."""
+    def lane_at(tid, moment):
+        found = []
         for lid, recs in marked.items():
             current = None
             for rec in recs:
                 stamp = parse_time(rec.get('ts'))
-                if stamp and (moment is None or stamp <= moment):
+                if stamp and stamp <= moment:
                     current = rec
             if current and tid in (current.get('tasks') or []):
                 found.append(lid)
         return found
 
-    def ws_at(tasks, start):
+    def explicit(tasks, attempt):
+        ref = next((attempt.get(k) for k in ('workstream', 'lane_id') if isinstance(attempt.get(k), str)), None) if attempt else None
+        if ref in marked and all(t in (marked[ref][-1].get('tasks') or []) for t in tasks):
+            return ref
+        return None
+
+    def ws_at(tasks, start, attempt=None):
         if not tasks:
             return None
+        moment = parse_time(start)
+        if moment is None:
+            return explicit(tasks, attempt)
         ids = set()
         for tid in tasks:
             if tid not in member:
                 return None
-            lanes = lane_at(tid, start)
+            lanes = lane_at(tid, moment)
             if len(lanes) > 1:
                 return None
             ids.add(lanes[0] if lanes else (member[tid][0] if member[tid][1] != 'facts-marked' else None))
@@ -433,7 +453,7 @@ def build_workstreams(x, member, marked, conflicts, runs, blockers):
 
 def _decision(fid, source, source_id, **kw):
     base = {'key': f'{fid}:{source}:{source_id}', 'source': source, 'source_id': source_id, 'question': None, 'options': [],
-            'answer': None, 'state': 'pending', 'revision': 1, 'answer_digest': None, 'evidence': [], 'url': None,
+            'answer': None, 'state': 'pending', 'revision': 1, 'answer_digest': None, 'evidence': [], 'evidence_links': [], 'url': None,
             'decided_by': None, 'observed_at': None, 'answered_at': None, 'applied': None, 'stage': None}
     base.update(kw)
     return base
@@ -481,10 +501,12 @@ def build_decisions(ctx, now, x, fid, clar):
         out.append(_decision(
             fid, 'clarification', item['source_id'] if current else f"{item['source_id']}@r{item['revision']}",
             question=item['question'], options=item['options'], answer=item['answer'],
-            state=item['state'] if current else 'superseded', revision=item['revision'], evidence=item['evidence'], url=item['url'],
+            state=item['state'] if current else 'superseded', revision=item['revision'], evidence=item['evidence'],
+            evidence_links=item['evidence_links'], url=item['url'],
             decided_by=item['editor'] if item['answer'] else None, observed_at=item['observed_at'], answered_at=item['answered_at'],
             applied=item['applied'], stage='clarify'))
-    note = f"{clar['skipped']} unreadable item(s) skipped" if clar.get('skipped') else None
+    note = ', '.join(p for p in (f"{clar['skipped']} unreadable item(s) skipped" if clar.get('skipped') else '',
+                                 'file over the size cap, not read' if clar.get('truncated') else '') if p) or None
     sources.append({'name': 'clarification', 'state': clar['state'], **({'note': note} if note else {})})
     pending = [d for d in out if d['state'] in ('pending', 'conflict')]
     made = [d for d in out if d['state'] not in ('pending', 'conflict')]
@@ -493,7 +515,10 @@ def build_decisions(ctx, now, x, fid, clar):
 
 # ---- sources, attention, timeline, history ------------------------------------------------------------------------------
 
-def build_sources(ctx, now):
+def build_sources(ctx, reads):
+    """The producer files this report was built from. Each entry describes the bytes the collectors actually parsed (hash,
+    size and read time come from the read itself, never from a second read). `consistent` is false when the file changed on
+    disk after it was read, or was read twice with different bytes, so the report may mix generations."""
     out = []
     candidates = [('workflow-checkpoint', ctx.feature_dir / 'workflow' / 'checkpoint.json'),
                   ('workflow-delegations', ctx.feature_dir / 'workflow' / 'delegations.json'),
@@ -501,13 +526,16 @@ def build_sources(ctx, now):
                   ('workflow-lifecycle', ctx.feature_dir / 'workflow' / 'lifecycle.jsonl'),
                   ('clarifications', ctx.feature_dir / 'workflow' / 'clarifications.json'),
                   ('tasks', ctx.feature_dir / 'tasks.md'), ('facts', ctx.facts), ('self-report', selfreport.path_of(ctx))]
+    changed = reads.changed() if reads else set()
     for name, path in candidates:
-        try:
-            raw = path.read_bytes()
-        except OSError:
+        row = reads.get(path) if reads else None
+        if row is None:
             continue
-        out.append({'name': name, 'path': path.relative_to(ctx.root).as_posix(),
-                    'fingerprint': hashlib.sha256(raw).hexdigest()[:16], 'generation': None, 'read_at': iso(now)})
+        entry = {'name': name, 'path': path.relative_to(ctx.root).as_posix(), 'fingerprint': row['sha'][:16], 'generation': None,
+                 'read_at': row['read_at'], 'bytes': row['size'], 'consistent': os.path.normpath(str(path)) not in changed}
+        if row['truncated']:
+            entry['note'] = f"only {row['bytes']} of {row['size']} bytes read"
+        out.append(entry)
     return out
 
 
@@ -600,14 +628,14 @@ def build_timeline(x, stages, loose, runs, decisions, blockers, history, fid):
     def add(kind, at, text, refs, fidelity, key):
         if at and parse_time(at):
             out.append({'id': _stable(kind, at, key), 'at': at, 'kind': kind, 'text': clean(text, NOTE_CAP), 'refs': refs, 'fidelity': fidelity})
-    lifecycle_stages = set()
     for e in x['lifecycle']['events']:
         if e['event'] in lifecol.STARTS:
             continue
-        lifecycle_stages.add((e['stage'], e['event']))
         extra = f": {e['reason']}" if e['reason'] else ''
-        add(TIMELINE_KIND[e['event']], e['at'], f"{_label(e['stage'])} {e['event'].replace('-', ' ')}{extra}",
-            [e['stage'], *e['delegation_run_ids']], 'recorded', e['event_id'])
+        cause = f" (caused by claim {e['caused_by_claim_id']})" if e['caused_by_claim_id'] and not e['reason'] else ''
+        subject = _label(e['stage']) if e['stage'] else 'Feature'  # a pause or recovery with no claim held is feature-level
+        add(TIMELINE_KIND[e['event']], e['at'], f"{subject} {e['event'].replace('-', ' ')}{extra}{cause}",
+            [*([e['stage']] if e['stage'] else []), *e['delegation_run_ids']], 'recorded', e['event_id'])
     for s in stages:
         for ep in s['episodes']:
             if ep['source'] == 'checkpoint-receipt':
@@ -699,10 +727,14 @@ def build(ctx, now, rev, state, v2, aux):
         if ep['claim_id']:
             claim_episodes.setdefault(ep['claim_id'], []).append(ep)
     runs, dispatch = build_runs(ctx, now, x, episodes_by_run, claim_episodes, ws_at)
-    accepted_runs = {r for e in lifecycle['events'] if e['event'] == 'accepted' for r in e['delegation_run_ids']}
-    rejected_runs = {r for e in lifecycle['events'] if e['event'] == 'rejected-completion' for r in e['delegation_run_ids']}
+    # Acceptance names the exact validated run (`candidate_run_id`). `delegation_run_ids` is claim membership: it puts a run
+    # in an episode and never makes it the accepted candidate. The latest event for a run wins.
+    candidate = {}
+    for e in lifecycle['events']:
+        if e['event'] in ('accepted', 'rejected-completion') and e['candidate_run_id']:
+            candidate[e['candidate_run_id']] = e['event'] == 'accepted'
     for r in runs:
-        r['candidate_accepted'] = True if r['run_id'] in accepted_runs else False if r['run_id'] in rejected_runs else None
+        r['candidate_accepted'] = candidate.get(r['run_id'])
     stages, loose, _, plan = build_stages(now, x, lifecycle, runs)
     decisions = build_decisions(ctx, now, x, fid, clar)
     workstreams = build_workstreams(x, member, marked, conflicts, runs, x['blockers'])
@@ -710,18 +742,25 @@ def build(ctx, now, rev, state, v2, aux):
     orchestrator = _orchestrator(ctx, now, x, v2)
     attention = build_attention(runs, decisions, x['blockers'], orchestrator, ctx, x)
     timeline = build_timeline(x, stages, loose, runs, decisions, x['blockers'], history, fid)
-    sources = build_sources(ctx, now)
+    sources = build_sources(ctx, aux.get('reads'))
     for s in sources:
         if s['name'] == 'workflow-checkpoint':
             s['generation'] = (cp or {}).get('generation')
         elif s['name'] == 'workflow-lifecycle':
             s['generation'] = max([e['generation'] for e in lifecycle['events'] if e['generation'] is not None], default=None)
-    if lifecycle['state'] != 'absent' and (lifecycle['torn'] or lifecycle['corrupt'] or lifecycle['conflicts']):
+    if lifecycle['state'] != 'absent':
+        notes = ', '.join(p for p in (
+            'torn final line ignored' if lifecycle['torn'] else '', f"{lifecycle['corrupt']} corrupt line(s) skipped" if lifecycle['corrupt'] else '',
+            f"{lifecycle['skipped']} unusable record(s) skipped" if lifecycle['skipped'] else '',
+            f"{len(lifecycle['conflicts'])} conflicting duplicate event id(s)" if lifecycle['conflicts'] else '',
+            f"older events not read: {lifecycle['bytes']} bytes, newest {lifecol.READ_CAP} read" if lifecycle['truncated'] else '') if p)
         for s in sources:
-            if s['name'] == 'workflow-lifecycle':
-                s['note'] = ', '.join(p for p in (
-                    'torn final line ignored' if lifecycle['torn'] else '', f"{lifecycle['corrupt']} corrupt line(s) skipped" if lifecycle['corrupt'] else '',
-                    f"{len(lifecycle['conflicts'])} conflicting duplicate event id(s)" if lifecycle['conflicts'] else '') if p)
+            if s['name'] == 'workflow-lifecycle' and notes:
+                s['note'] = notes
+    unstable = [s['name'] for s in sources if not s['consistent']]
+    if unstable:  # a file moved on while the others were read: do not certify this snapshot as current
+        v2['collection']['dirty'] = True
+        v2['collection']['inconsistent_sources'] = unstable
     # feature
     feature = dict(v2['feature'])
     stage_row = next((s for s in stages if s['id'] == (feature.get('stage') or {}).get('value')), None)

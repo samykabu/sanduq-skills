@@ -173,7 +173,7 @@ class Synthetic(Project):
 
     def event(self, n, event, stage='execute', at='2026-10-15T10:00:00Z', **extra):
         base = {'v': 1, 'event_id': f'e{n}', 'workflow_run_id': 'wr', 'generation': n, 'at': at, 'stage': stage, 'event': event,
-                'episode_id': None, 'claim_id': None, 'delegation_run_ids': [], 'reason': None}
+                'episode_id': None, 'claim_id': None, 'caused_by_claim_id': None, 'candidate_run_id': None, 'delegation_run_ids': [], 'reason': None}
         base.update(extra)
         return base
 
@@ -224,9 +224,10 @@ class Runs(Synthetic):
     def test_a_successful_worker_with_a_rejected_candidate_and_exact_claim_acceptance(self):
         self.ledger(self.attempt('r1', claim_id='c1'), self.attempt('r2', claim_id='c1', started='2026-10-15T11:00:00Z', ended='2026-10-15T11:10:00Z'))
         self.lifecycle(self.event(1, 'claim', episode_id='ep1', claim_id='c1'),
-                       self.event(2, 'rejected-completion', episode_id='ep1', claim_id='c1', delegation_run_ids=['r1'],
+                       self.event(2, 'rejected-completion', episode_id='ep1', claim_id='c1', delegation_run_ids=['r1'], candidate_run_id='r1',
                                   at='2026-10-15T10:20:00Z', reason='checklist drifted'),
-                       self.event(3, 'accepted', episode_id='ep1', claim_id='c1', delegation_run_ids=['r2'], at='2026-10-15T11:20:00Z'))
+                       self.event(3, 'accepted', episode_id='ep1', claim_id='c1', delegation_run_ids=['r1', 'r2'], candidate_run_id='r2',
+                                  at='2026-10-15T11:20:00Z'))
         report = self.build()
         runs = {r['run_id']: r for r in report['runs']}
         self.assertEqual((runs['r1']['worker_status'], runs['r1']['candidate_accepted']), ('successful', False))
@@ -609,11 +610,9 @@ class Adapter(Synthetic):
         shown = lambda: json.loads((self.ctx.view / 'data.js').read_text(encoding='utf-8')[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
         self.assertEqual(shown()['schema'], 'sanduq.progress.v3')
         self.assertEqual(self.cli('theme', '--layout', 'classic')[0], 0)
-        self.cli('refresh')
-        self.assertEqual(shown()['schema'], 'sanduq.progress.v2')
+        self.assertEqual(shown()['schema'], 'sanduq.progress.v2')  # the layout command itself publishes the matching document
         self.assertEqual(self.stored_report()['schema'], 'sanduq.progress.v3')
         self.assertEqual(self.cli('theme', '--layout', 'timeline')[0], 0)
-        self.cli('refresh')
         self.assertEqual(shown()['schema'], 'sanduq.progress.v3')
 
     def test_rev_advances_and_a_debounced_event_patches_both_documents(self):

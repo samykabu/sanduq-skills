@@ -26,8 +26,18 @@
         ]
       },
       "evidence": [
-        "clarify receipt: single checked original option in the native selection state; actor not claimed",
-        "snapshot comment 6222010489 last updated 2026-10-16T18:28:28Z"
+        {
+          "kind": "comment",
+          "url": "https://github.com/example-org/example-app/issues/842#issuecomment-6222010489",
+          "comment_id": "6222010489",
+          "explanation": null
+        },
+        {
+          "kind": "disposition",
+          "url": null,
+          "comment_id": null,
+          "explanation": "clarify receipt: single checked original option in the native selection state; actor not claimed"
+        }
       ]
     }
   ]

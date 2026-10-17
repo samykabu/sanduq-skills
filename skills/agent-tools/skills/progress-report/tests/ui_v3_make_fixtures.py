@@ -139,7 +139,8 @@ def build_sample():
                        "episodes": eps, "unknown_runs": unknown, "run_count": len(rs),
                        "failed_runs": sum(1 for r in rs if r["worker_status"] in ("failed", "abandoned")),
                        "run_time": M(sum(r["duration"]["value"] or 0 for r in rs) if rs else None, "delegation-ledger", "partial"),
-                       "models": sorted({r["requested_model"] for r in rs}), "first_start": first, "last_end": last})
+                       "models": sorted({r["requested_model"] for r in rs}), "first_start": first, "last_end": last,
+                       "open": sid == "pr", "timing": "open" if sid == "pr" else "unknown" if first is None else "closed"})
 
     def ws(label, ident, owners):
         ids = [t for t, w in TASKS if w == ident]
@@ -208,7 +209,9 @@ def build_sample():
             "observed_at": at(0, 20, 50), "answered_at": None, "applied": {"at": at(0, 20, 52), "evidence": "plan.md updated"}, "stage": "clarify"}],
             "sources": [{"name": "workflow decisions", "state": "available"}, {"name": "facts", "state": "absent"},
                         {"name": "clarifications", "state": "available"}, {"name": "legacy board", "state": "unsupported"}]},
-        "timeline": tl, "history": {"lane_aliases": {"L1": "A"}, "unresolved": []},
+        "timeline": tl, "history": {"lane_aliases": {"L1": "A", "L2": "run:run-044", "W7": "identity:codex-worker-7"},
+                    "unresolved": [{"id": "L9", "label": "Retired scratch lane", "reason": "no run id or delegation identity names this lane",
+                                    "owners": [{"agent": "codex-worker-3", "from": at(0, 22, 0), "to": at(0, 23, 30)}]}]},
         "sources": [{"name": "checkpoint", "path": "workflow/checkpoint.json", "fingerprint": "ab12", "generation": 61, "read_at": at(1, 14, 5)}],
         "summary": {"tasks_total": 23, "tasks_done": 23, "stages_selected": 16, "stages_accepted": 14, "runs_total": len(runs), "runs_failed": failed,
                     "decisions_pending": 0, "blockers_open": 0}}

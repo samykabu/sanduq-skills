@@ -600,7 +600,7 @@ a project before any `progress init`. It takes no other option. `--help` prints
 | Form | Effect | Output |
 | --- | --- | --- |
 | `--preset NAME` | Replaces the project `theme.json` with `{"v":1,"preset":"NAME"}` (the layout you picked is kept) | `progress: theme cobalt` |
-| `--layout NAME` | Sets only `layout` in `theme.json` and keeps every other customization. `timeline` (default) is the v3 Timeline view; `classic` is the v2 lanes view, which is fed the v2 document | `progress: theme layout classic` |
+| `--layout NAME` | Sets only `layout` in `theme.json` and keeps every other customization. `timeline` (default) is the v3 Timeline view; `classic` is the v2 lanes view, which is fed the v2 document. A layout change also rebuilds every initialised report under its own lock, so `data.js` matches at once. A report whose lock is busy gets a warning line and is republished by the next refresh | `progress: theme layout classic` |
 | `--from-illustrate` | Reads `active.theme` from `.github/illustration-theme.yml` and writes the matching colours as tokens | `progress: theme emerald` |
 | `--file PATH` | Validates your file and stores it as `theme.json` | `progress: theme classic` (the file's preset) |
 | `--show` | Prints the resolved theme, with every default filled in, as JSON | the JSON document |
@@ -682,8 +682,8 @@ first if you need the very latest. The output is deterministic: the same project
 and no revision number. Exporting costs no model tokens.
 
 The v3 Markdown export has these sections, in order: the title; a feature, task, stage and run summary line; the next action when there
-is one; **Orchestrator** (with where each field came from); **Needs attention**; **Stages**; **Workstreams**; **Decisions** (with the
-sources that could not be read); **Runs**; and **Timeline**. The v2 export (`--schema v2`) has these sections, in order: the title; a one-line feature and task summary; **Orchestrator** (host,
+is one; **Orchestrator** (with where each field came from); **Needs attention**; **Stages**; **Workstreams**; **Tasks** (a checklist grouped by phase, each task with its dependencies, workstream and
+state: done, active, blocked or waiting); **Decisions** (with the sources that could not be read); **Runs**; and **Timeline**. The v2 export (`--schema v2`) has these sections, in order: the title; a one-line feature and task summary; **Orchestrator** (host,
 model, effort, context, elapsed, each marked `(partial)` or `(estimated)` when not exact, and `unknown` when missing);
 **Lanes** (a table of lane, label, status, requested and observed model, and task ids by state, plus any unassigned
 tasks); **Tasks** (a checklist grouped by phase, with dependencies and lanes); **Decisions**; **Blockers**; and **Recent

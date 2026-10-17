@@ -152,6 +152,12 @@ details.quiet{margin-top:12px}
 .gbar.st-pending{background:var(--waiting)}
 .gbar.open{background:repeating-linear-gradient(135deg,var(--active) 0 6px,color-mix(in srgb,var(--active) 40%,var(--surface)) 6px 12px);border-inline-end:3px solid var(--active)}
 .gbar.hasfail{box-shadow:inset 0 -3px 0 var(--blocked)}
+.gbar.endunk{background:var(--waiting);border:1px dashed var(--muted);border-inline-end-style:dotted}
+.reflink{appearance:none;background:none;border:0;padding:0 2px;margin:0;font:inherit;font-family:var(--mono);font-size:.82em;color:var(--brand);text-decoration:underline;cursor:pointer;border-radius:3px}
+.reflink:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.hist{margin:0;padding-inline-start:18px;display:grid;gap:6px;font-size:.86rem}
+.hist li:target,.hist li.hit{background:color-mix(in srgb,var(--active) 40%,var(--surface));border-radius:4px}
+.hist li:focus-visible,.wsrow:focus-visible,.hit:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .fm{position:absolute;top:-2px;transform:translateX(-50%);font-size:.8rem;line-height:1;color:var(--failed);font-weight:700;text-shadow:0 0 2px var(--surface),0 0 2px var(--surface)}
 .gnone{position:absolute;inset:0;padding-inline-start:6px;font-size:.7rem;color:var(--muted);font-style:italic;line-height:14px}
 .gaxisrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;margin-top:6px;padding:0 4px}

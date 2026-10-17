@@ -1,0 +1,49 @@
+{
+  "description": "Shared producer/consumer vector for workflow/clarifications.json. Written from the documented shape: evidence is a list of {kind, url|null, comment_id|null, explanation|null}; applied.evidence is a list of strings. The reader also takes plain-string evidence and a string applied.evidence. Replace this file with the producer's own vector when it exists; tests/test_review_c1b.py runs whatever is here.",
+  "clarifications": {
+    "v": 1,
+    "items": [
+      {
+        "source_id": "C1Q1",
+        "revision": 1,
+        "question": "Which retry policy applies?",
+        "options": ["Retry once", "Retry three times"],
+        "answer": {"kind": "single", "value": "A"},
+        "state": "applied",
+        "url": "https://github.com/example-org/example-app/issues/1#issuecomment-11",
+        "editor": null,
+        "observed_at": "2026-10-16T20:46:11Z",
+        "answered_at": null,
+        "applied": {"at": "2026-10-16T18:34:25Z", "evidence": ["comment 12: round 1 ready", "spec.md: FR-004"]},
+        "evidence": [
+          {"kind": "comment", "url": "https://github.com/example-org/example-app/issues/1#issuecomment-11", "comment_id": "11", "explanation": null},
+          {"kind": "disposition", "url": null, "comment_id": null, "explanation": "single checked original option; actor not claimed"}
+        ]
+      },
+      {
+        "source_id": "C2Q1",
+        "revision": 1,
+        "question": "Keep the draft?",
+        "options": ["Keep", "Reset"],
+        "answer": null,
+        "state": "waived",
+        "url": null,
+        "editor": null,
+        "observed_at": "2026-10-16T21:00:00Z",
+        "answered_at": null,
+        "applied": {"at": "2026-10-16T21:05:00Z", "evidence": "waived by the owner in the issue thread"},
+        "evidence": [
+          "plain string evidence from an older producer",
+          {"kind": "comment", "url": "http://insecure.example/never-a-link", "comment_id": 99, "explanation": null}
+        ]
+      }
+    ]
+  },
+  "expect": {
+    "state": "available",
+    "items": [
+      {"source_id": "C1Q1", "evidence": 2, "links": 1, "applied_evidence": 2},
+      {"source_id": "C2Q1", "evidence": 2, "links": 0, "applied_evidence": 1}
+    ]
+  }
+}

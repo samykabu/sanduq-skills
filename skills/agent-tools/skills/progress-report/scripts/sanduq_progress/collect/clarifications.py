@@ -6,17 +6,33 @@
 
 `state` is pending, conflict, answered, applied, waived, superseded or withdrawn. `answer.kind` is single, multiple or
 text. `editor` and `answered_at` are null when the evidence does not record them; Progress never fills them in. Several
-items may share a `source_id` (revisions): the highest `revision` is current and the others are shown as superseded."""
+items may share a `source_id` (revisions): the highest `revision` is current and the others are shown as superseded.
+
+Evidence types. `evidence` is a list of objects `{kind, url|null, comment_id|null, explanation|null}`; `applied.evidence`
+is a list of strings. The reader also accepts plain strings in `evidence` and one string for `applied.evidence` (it is
+wrapped in a list). An evidence object is flattened to a display string of at most 200 characters, and its `url` is kept
+as a link in `evidence_links` ({text, url}) when it is an https URL. Nothing is invented for a missing field.
+
+Input size. The file is read up to `READ_CAP` bytes. A larger file is reported as `invalid` with `truncated` set and is not
+parsed, so a runaway file cannot consume memory during a refresh."""
+import json
 from pathlib import Path
 
-from ..util import clean, read_json
+from ..util import clean, read_capped
 
 STATES = ('pending', 'conflict', 'answered', 'applied', 'waived', 'superseded', 'withdrawn')
 KINDS = ('single', 'multiple', 'text')
+READ_CAP = 2 * 1024 * 1024
+EVIDENCE_CAP = 200
+EVIDENCE_ITEMS = 10
 
 
 def _str(value, cap):
     return clean(value, cap) if isinstance(value, str) and value.strip() else None
+
+
+def _https(value):
+    return value.strip()[:500] if isinstance(value, str) and value.strip().startswith('https://') else None
 
 
 def _answer(value):
@@ -30,37 +46,66 @@ def _answer(value):
     return {'kind': value['kind'], 'value': text} if text else None
 
 
+def _evidence_one(entry):
+    """(display text, https url or None) for one evidence entry, or None when it holds nothing readable."""
+    if isinstance(entry, str):
+        text = _str(entry, EVIDENCE_CAP)
+        return (text, None) if text else None
+    if not isinstance(entry, dict):
+        return None
+    kind, explanation = _str(entry.get('kind'), 60), _str(entry.get('explanation'), EVIDENCE_CAP)
+    comment, url = entry.get('comment_id'), _https(entry.get('url'))
+    comment = clean(comment, 40) if isinstance(comment, (str, int)) and not isinstance(comment, bool) and str(comment).strip() else None
+    parts = [kind, f'comment {comment}' if comment else None, explanation]
+    if not (comment or explanation) and url:
+        parts.append(url)
+    text = clean(' '.join(p for p in parts if p), EVIDENCE_CAP)
+    return (text, url) if text else None
+
+
+def _evidence(value):
+    """([display strings], [{text, url}]) from a list of objects or strings (a single string or object is wrapped)."""
+    if isinstance(value, (str, dict)):
+        value = [value]
+    rows = [x for x in map(_evidence_one, value[:EVIDENCE_ITEMS]) if x] if isinstance(value, list) else []
+    return [t for t, _ in rows], [{'text': t, 'url': u} for t, u in rows if u]
+
+
 def _item(item):
     if not isinstance(item, dict) or not _str(item.get('source_id'), 80) or item.get('state') not in STATES:
         return None
     revision = item.get('revision')
     applied = item.get('applied') if isinstance(item.get('applied'), dict) else None
-    url = item.get('url')
     options = item.get('options')
-    evidence = item.get('evidence')
+    texts, links = _evidence(item.get('evidence'))
     return {'source_id': _str(item['source_id'], 80),
             'revision': revision if isinstance(revision, int) and not isinstance(revision, bool) else 1,
             'question': _str(item.get('question'), 200),
             'options': [clean(o, 200) for o in options[:20] if isinstance(o, str)] if isinstance(options, list) else [],
             'answer': _answer(item.get('answer')), 'state': item['state'],
-            'url': url if isinstance(url, str) and url.startswith('https://') else None,
+            'url': _https(item.get('url')),
             'editor': _str(item.get('editor'), 80), 'observed_at': _str(item.get('observed_at'), 40),
             'answered_at': _str(item.get('answered_at'), 40),
-            'applied': {'at': _str(applied.get('at'), 40),
-                        'evidence': [clean(e, 200) for e in (applied.get('evidence') or [])[:10] if isinstance(e, str)]
-                        if isinstance(applied.get('evidence'), list) else []} if applied else None,
-            'evidence': [clean(e, 200) for e in evidence[:10] if isinstance(e, str)] if isinstance(evidence, list) else []}
+            'applied': {'at': _str(applied.get('at'), 40), 'evidence': _evidence(applied.get('evidence'))[0]} if applied else None,
+            'evidence': texts, 'evidence_links': links}
 
 
-def collect(feature_dir):
-    """{'state': absent|available|unsupported|invalid, 'items': [...], 'skipped': n}."""
+def collect(feature_dir, cap=None):
+    """{'state': absent|available|unsupported|invalid, 'items': [...], 'skipped': n, 'truncated': bool}."""
     path = Path(feature_dir) / 'workflow' / 'clarifications.json'
+    out = {'state': 'absent', 'items': [], 'skipped': 0, 'truncated': False}
     if not path.is_file():
-        return {'state': 'absent', 'items': [], 'skipped': 0}
-    data = read_json(path, None)
+        return out
+    try:
+        raw, size, truncated = read_capped(path, cap or READ_CAP)
+        data = None if truncated else json.loads(raw.decode('utf-8'))
+    except (OSError, ValueError):
+        data, truncated = None, False
+    if truncated:
+        return {**out, 'state': 'invalid', 'truncated': True}
     if not isinstance(data, dict) or not isinstance(data.get('items'), list):
-        return {'state': 'invalid', 'items': [], 'skipped': 0}
+        return {**out, 'state': 'invalid'}
     if data.get('v') != 1:
-        return {'state': 'unsupported', 'items': [], 'skipped': 0}
+        return {**out, 'state': 'unsupported'}
     items = [x for x in map(_item, data['items']) if x]
-    return {'state': 'available', 'items': items, 'skipped': len(data['items']) - len(items)}
+    return {**out, 'state': 'available', 'items': items, 'skipped': len(data['items']) - len(items)}

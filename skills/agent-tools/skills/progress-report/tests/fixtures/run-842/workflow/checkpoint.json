@@ -128,39 +128,109 @@
  },
  "recoveries": [
   {
-   "at": "2026-10-16T18:38:52.124776+00:00",
+   "claim": {
+    "stage": "clarify",
+    "token": "fixture-token-1",
+    "claimed_at": "2026-10-16T18:14:52.553619+00:00",
+    "session_id": "fixture-session",
+    "mode": "revalidate",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:clarify",
+     "task_type": "discovery"
+    }
+   },
    "reason": "C1Q1=A was applied and native clarification is Ready. Completion correctly refused changed Specify checklist and Project evidence; revalidate Specify against actual current artifacts before re-recording Clarify without duplicate publication.",
-   "stage": "clarify"
+   "at": "2026-10-16T18:38:52.124776+00:00"
   },
   {
-   "at": "2026-10-16T19:22:52.166877+00:00",
+   "claim": {
+    "stage": "plan",
+    "token": "fixture-token-2",
+    "claimed_at": "2026-10-16T18:51:48.749194+00:00",
+    "session_id": "fixture-session",
+    "mode": "revalidate",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:plan",
+     "task_type": "discovery"
+    }
+   },
    "reason": "Completed Plan research found an unapproved draft-only forward reachability restriction. Aligned two Spec clauses with published Scope/SD4=B; revalidate changed upstream artifacts. No new owner decision or answer was invented; Plan artifacts retained.",
-   "stage": "plan"
+   "at": "2026-10-16T19:22:52.166877+00:00"
   },
   {
-   "at": "2026-10-16T20:34:57.290995+00:00",
+   "claim": {
+    "stage": "plan",
+    "token": "fixture-token-3",
+    "claimed_at": "2026-10-16T19:44:13.201900+00:00",
+    "session_id": "fixture-session",
+    "mode": "revalidate",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:plan",
+     "task_type": "discovery"
+    }
+   },
    "reason": "Plan worker is terminal successful; completion rejected because Specify recorded mutable Plan research as a dependency. Revalidate Specify against the corrected research and approved source, then resume retained Plan.",
-   "stage": "plan"
+   "at": "2026-10-16T20:34:57.290995+00:00"
   },
   {
-   "at": "2026-10-17T00:55:31.458065+00:00",
+   "claim": {
+    "stage": "execute",
+    "token": "fixture-token-4",
+    "claimed_at": "2026-10-16T21:35:27.110623+00:00",
+    "session_id": "fixture-session",
+    "mode": "initial",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:execute",
+     "task_type": "coordination"
+    }
+   },
    "reason": "All Execute workers and coordinator are terminal and collected. R5 was implemented and tested, then the coordinator restored the incorrect consumer contract to avoid dependency drift. Restore the real R5 correction, revalidate Plan and dependent stages, then validate retained completed execution under a fresh claim. Do not accept the pending-contract candidate as final.",
-   "stage": "execute"
+   "at": "2026-10-17T00:55:31.458065+00:00"
   },
   {
-   "at": "2026-10-17T02:45:00.181574+00:00",
+   "claim": {
+    "stage": "review",
+    "token": "fixture-token-5",
+    "claimed_at": "2026-10-17T02:28:28.075174+00:00",
+    "session_id": "fixture-session",
+    "mode": "initial",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:review",
+     "task_type": "review"
+    }
+   },
    "reason": "Independent Review is terminal and collected. Preserve its two blocking findings N1/N2 and probes; reopen T018/T019 for one coherent repair and affected retest, then revalidate Verify and independently close the new findings. No passed Review receipt exists.",
-   "stage": "review"
+   "at": "2026-10-17T02:45:00.181574+00:00"
   },
   {
-   "at": "2026-10-17T03:10:28.079374+00:00",
+   "claim": {
+    "stage": "execute",
+    "token": "fixture-token-6",
+    "claimed_at": "2026-10-17T02:47:34.053284+00:00",
+    "session_id": "fixture-session",
+    "mode": "initial",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:execute",
+     "task_type": "coordination"
+    }
+   },
    "reason": "Execute coordinator and all children are terminal/collected; N1/N2 source and real collection passed at48bac36, evidence commit a859eca is product-identical. Preserve actual work. Changed final-checks/review-repairs dependencies require genuine Tasks and downstream artifact revalidation; do not accept an Execute candidate against stale upstream receipts.",
-   "stage": "execute"
+   "at": "2026-10-17T03:10:28.079374+00:00"
   },
   {
-   "at": "2026-10-17T04:53:33.397875+00:00",
+   "claim": {
+    "stage": "qa_document",
+    "token": "fixture-token-7",
+    "claimed_at": "2026-10-17T04:37:58.995980+00:00",
+    "session_id": "fixture-session",
+    "mode": "initial",
+    "delegation": {
+     "identity": "specs/842-versioned-workflow-graphs/stage:qa_document",
+     "task_type": "documentation"
+    }
+   },
    "reason": "QA Document completed and collected successfully, but expected generated-memory refresh was rejected by the upstream lineage contract; preserve outputs and terminal attempt, recover before reviewed tooling repair.",
-   "stage": "qa_document"
+   "at": "2026-10-17T04:53:33.397875+00:00"
   }
  ]
 }

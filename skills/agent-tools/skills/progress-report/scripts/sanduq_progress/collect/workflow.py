@@ -96,10 +96,25 @@ def next_action(value):
 
 
 def recoveries(value):
+    """Recorded recoveries. Workflow stores each as `{claim: {stage, claimed_at, mode, delegation: {identity}, ...}, reason, at}`
+    (an older flat `{stage, reason, at}` is read too). The claim's `claimed_at` is kept as the episode start and its
+    delegation identity as identity evidence. The claim token is never read."""
     if not isinstance(value, list):
         return []
-    return [{'stage': str(r.get('stage')) if r.get('stage') else None, 'reason': clean(r.get('reason'), 120), 'at': r.get('at')}
-            for r in value if isinstance(r, dict) and parse_time(r.get('at'))]
+    out = []
+    for r in value:
+        if not isinstance(r, dict) or not parse_time(r.get('at')):
+            continue
+        claim = r.get('claim') if isinstance(r.get('claim'), dict) else {}
+        stage = r.get('stage') or claim.get('stage')
+        delegation = claim.get('delegation') if isinstance(claim.get('delegation'), dict) else {}
+        identity = delegation.get('identity')
+        started = claim.get('claimed_at')
+        out.append({'stage': str(stage) if stage else None, 'reason': clean(r.get('reason'), 120), 'at': r.get('at'),
+                    'started_at': started if parse_time(started) else None,
+                    'mode': claim.get('mode') if claim.get('mode') in ('initial', 'revalidate', 'resume') else None,
+                    'identity': clean(identity, 160) if isinstance(identity, str) and identity.strip() else None})
+    return out
 
 
 def accepted_receipts(receipts):

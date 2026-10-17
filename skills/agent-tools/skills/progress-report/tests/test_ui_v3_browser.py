@@ -15,7 +15,8 @@ FIX = HERE / "fixtures"
 sys.path.insert(0, str(HERE.parent / "scripts"))
 sys.path.insert(0, str(HERE))
 import helpers  # noqa: E402
-from sanduq_progress import theme  # noqa: E402
+from sanduq_progress import model, theme  # noqa: E402
+from sanduq_progress.paths import Ctx  # noqa: E402
 
 try:
     from playwright.sync_api import sync_playwright
@@ -26,7 +27,7 @@ PW = None
 BROWSER = None
 SKIP = "playwright/chromium unavailable"
 UPDATE_WAIT = 30000
-ORDER = ["v3-header", "v3-attention", "v3-orchestrator", "v3-stages", "v3-timeline", "v3-workstreams", "v3-decisions", "v3-runs"]
+ORDER = ["v3-header", "v3-attention", "v3-orchestrator", "v3-stages", "v3-timeline", "v3-workstreams", "v3-decisions", "v3-runs", "v3-history"]
 ISO = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
 
 
@@ -542,6 +543,225 @@ class DarkTests(V3Test):
         bar = self.page.evaluate("getComputedStyle(document.querySelector('.gbar')).backgroundColor")
         self.assertNotEqual(bar, "rgba(0, 0, 0, 0)")
         self.assertEqual(self.errors, [])
+
+
+# ---- reports built by the real projection (model_v3), not only the ui_v3_*.json fixtures --------------------------------------
+
+def synthetic_report(ledger=(), lifecycle=(), now="2026-10-17T14:00:00Z"):
+    """The v3 document model.build gives for a small project with these delegation attempts and lifecycle events."""
+    with tempfile.TemporaryDirectory() as base:
+        root = Path(base)
+        (root / ".specify").mkdir()
+        feature = root / "specs" / "001-demo"
+        (feature / "workflow").mkdir(parents=True)
+        shutil.copyfile(FIX / "tasks.md", feature / "tasks.md")
+        (feature / "workflow" / "delegations.json").write_text(json.dumps({"feature": "specs/001-demo", "attempts": list(ledger)}), encoding="utf-8")
+        (feature / "workflow" / "lifecycle.jsonl").write_text("".join(json.dumps(e) + "\n" for e in lifecycle), encoding="utf-8")
+        moment = datetime.datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+        return model.build(Ctx(root, "specs/001-demo"), moment, 1, {}, schema="v3")
+
+
+def attempt(run_id, stage, status="failed", start="2026-10-17T10:00:00Z", end="2026-10-17T10:10:00Z", **extra):
+    row = {"identity": "specs/001-demo/stage:" + stage, "run_id": run_id, "status": status, "started_at": start, "ended_at": end,
+           "requested_model": "m", "actual_model": "m", "actual_model_evidence": "driver-result"}
+    row.update(extra)
+    return row
+
+
+def life(n, event, stage, at, **extra):
+    row = {"v": 1, "event_id": "e%d" % n, "workflow_run_id": "wr", "generation": n, "at": at, "stage": stage, "event": event, "episode_id": None,
+           "claim_id": None, "caused_by_claim_id": None, "candidate_run_id": None, "delegation_run_ids": [], "reason": None}
+    row.update(extra)
+    return row
+
+
+class RealProjectionTests(V3Test):
+    def run842(self):
+        with tempfile.TemporaryDirectory() as base:
+            report, _ = helpers.run842_report(base, schema="v3")
+        return fresh(report)
+
+    def test_real_run_842_output_renders_every_section_without_errors(self):
+        report = self.run842()
+        self.open(report)
+        self.assertEqual(self.page.eval_on_selector_all("[data-v3]", "els=>els.map(e=>e.id)"), ORDER)
+        shown = [s for s in report["stages"] if s["selected"] and s["status"] != "excluded"]
+        self.assertEqual(self.page.locator("#v3-stages button.grow").count(), len(shown))
+        self.assertEqual(self.page.locator("#v3-stages .gbar.open").count(), 0)  # nothing in the frozen run is open
+        self.assertIn("All runs (89)", self.text("#v3-runs summary"))
+        self.assertIn("History (", self.text("#v3-history summary"))
+        self.assertEqual(self.errors, [])
+
+    def test_a_timeline_run_reference_is_a_keyboard_link_that_opens_and_focuses_the_run(self):
+        report = self.run842()
+        failure = next(e for e in report["timeline"] if e["kind"] == "failure")
+        run_id = failure["refs"][0]
+        self.open(report)
+        self.page.click("[data-k='tl-all']")
+        self.page.focus("[data-k='tl-%s']" % failure["id"])
+        self.page.keyboard.press("Enter")
+        link = self.page.locator("#v3-timeline li.k-failure details[open] button.reflink", has_text=run_id).first
+        link.focus()
+        self.page.keyboard.press("Enter")
+        self.page.wait_for_function("location.hash.includes('runs')")
+        self.assertTrue(self.page.locator("#v3-runs details").first.evaluate("e=>e.open"))
+        self.assertEqual(self.focused(), "run-" + run_id)
+        self.assertEqual(self.page.get_attribute("[data-k='run-%s']" % run_id, "aria-expanded"), "true")
+        self.assertIn("Identity", self.text("#v3-runs tr.rdetail"))
+        self.assertEqual(self.errors, [])
+
+    def test_a_run_on_a_later_page_is_found_by_the_link(self):
+        report = self.run842()
+        last = min((r for r in report["runs"] if r["worker_status"] not in ("failed", "abandoned")), key=lambda r: r["started_at"] or "")  # the oldest successful run sorts onto the last page
+        self.assertNotIn(last["worker_status"], ("failed", "abandoned"))
+        report["timeline"].append({"id": "tl-last", "at": report["generated_at"], "kind": "note", "text": "look at the oldest run", "refs": [last["run_id"]], "fidelity": "recorded"})
+        self.open(report)
+        self.page.click("[data-k='tl-all']")
+        self.page.focus("[data-k='tl-tl-last']")
+        self.page.keyboard.press("Enter")
+        self.page.locator("#v3-timeline button.reflink", has_text=last["run_id"]).first.click()
+        self.assertEqual(self.focused(), "run-" + last["run_id"])
+        self.assertTrue(self.page.locator("[data-k='run-%s']" % last["run_id"]).is_visible())
+        self.assertNotIn("Page 1 of", self.text("#v3-runs .pager"))
+        self.assertEqual(self.errors, [])
+
+    def test_a_stage_reference_selects_the_stage_row_and_its_episodes(self):
+        report = self.run842()
+        stage = next(e for e in report["timeline"] if e["kind"] == "stage" and e["refs"] and e["refs"][0] in {s["id"] for s in report["stages"]})
+        sid = stage["refs"][0]
+        self.open(report)
+        self.page.click("[data-k='tl-all']")
+        self.page.focus("[data-k='tl-%s']" % stage["id"])
+        self.page.keyboard.press("Enter")
+        self.page.locator("#v3-timeline li.k-stage details[open] button.reflink", has_text=sid).first.click()
+        self.assertEqual(self.focused(), "g-" + sid)
+        self.assertTrue(self.page.is_visible("#v3-ep"))
+        self.assertIn("g=" + sid, self.hash())
+
+    def test_history_lists_aliases_and_unresolved_lanes_with_stable_ids_and_links_resolvable_ones(self):
+        report = self.run842()
+        aliases = report["history"]["lane_aliases"]
+        self.assertTrue(aliases)
+        self.open(report)
+        self.assertFalse(self.page.locator("#v3-history details").first.evaluate("e=>e.open"))  # collapsed by default
+        self.page.focus("#v3-history summary")
+        self.page.keyboard.press("Enter")
+        self.page.wait_for_function("location.hash.includes('hist')")
+        ids = self.page.eval_on_selector_all("#v3-history li[id]", "els=>els.map(e=>e.id)")
+        self.assertEqual(len(ids), len(aliases) + len(report["history"]["unresolved"]))
+        self.assertEqual(len(set(ids)), len(ids))
+        self.page.reload()
+        self.page.wait_for_selector("h1")
+        self.assertEqual(self.page.eval_on_selector_all("#v3-history li[id]", "els=>els.map(e=>e.id)"), ids)  # stable across loads
+        self.assertTrue(self.page.locator("#v3-history details").first.evaluate("e=>e.open"))  # and the open state is kept
+        self.assertEqual(self.errors, [])
+
+    def test_a_history_alias_that_points_at_a_run_is_a_link_to_that_run(self):
+        p = fresh(load("ui_v3_sample.json"))
+        self.open(p, "#o=hist")
+        self.assertEqual(self.page.locator("#v3-history li button.reflink").count(), 2)  # L1 -> A (workstream) and L2 -> run:run-044
+        self.page.locator("#v3-history li", has_text="L2").locator("button.reflink").focus()
+        self.page.keyboard.press("Enter")
+        self.assertEqual(self.focused(), "run-run-044")
+        self.assertEqual(self.page.locator("#v3-history li", has_text="W7").locator("button.reflink").count(), 0)  # identity: has no target here
+        self.assertIn("Retired scratch lane", self.text("#v3-history"))
+        self.assertIn("codex-worker-3", self.text("#v3-history"))
+
+    def test_hostile_ids_from_real_projection_output_render_and_navigate(self):
+        ids = ["constructor", "__proto__", "hasOwnProperty", "toString"]
+        ledger = [attempt(i, i, claim_id="c-" + i, start="2026-10-17T10:0%d:00Z" % n) for n, i in enumerate(ids)]
+        events = [life(n, "claim", i, "2026-10-17T09:0%d:00Z" % n, episode_id="ep-" + i, claim_id="c-" + i, delegation_run_ids=[i]) for n, i in enumerate(ids, 1)]
+        events.append(life(9, "paused", None, "2026-10-17T11:00:00Z", reason="context budget"))
+        report = fresh(synthetic_report(ledger, events))
+        self.assertEqual({r["run_id"] for r in report["runs"]}, set(ids))
+        report["timeline"].append({"id": "tl-x", "at": report["generated_at"], "kind": "note", "text": "refs", "refs": ["constructor", "toString", "__proto__", "nowhere"], "fidelity": "recorded"})
+        self.open(report)
+        self.assertEqual(self.errors, [])
+        self.assertEqual(self.page.locator("#v3-stages button.grow").count(), len([s for s in report["stages"] if s["selected"]]))
+        self.assertEqual(self.page.locator("#v3-stages .fm").count(), 4)  # one failure marker per hostile stage
+        self.page.click("button[data-k='g-constructor']")
+        self.assertIn("Constructor: episodes", self.text("#v3-ep"))
+        self.page.focus("[data-k='tl-tl-x']")
+        self.page.keyboard.press("Enter")
+        row = self.page.locator("#v3-timeline li:has(summary[data-k='tl-tl-x'])")
+        self.assertEqual(row.locator("button.reflink").count(), 3)  # the unknown ref stays plain text
+        self.assertIn("Feature paused: context budget", self.text("#v3-timeline"))
+        row.locator("button.reflink", has_text="__proto__").click()
+        self.assertEqual(self.focused(), "run-__proto__")
+        self.assertEqual(self.page.locator("#v3-runs table.runs tbody tr:not(.rdetail)").count(), 4)
+        self.assertEqual(self.errors, [])
+
+
+class TimingAndDecisionTests(V3Test):
+    def test_only_an_open_stage_grows_to_now_and_an_unknown_end_is_drawn_apart(self):
+        p = fresh(load("ui_v3_sample.json"))
+        for s in p["stages"]:
+            if s["id"] == "plan":
+                s["last_end"], s["open"], s["timing"] = None, False, "end-unknown"
+            if s["id"] == "scope":
+                s["last_end"], s["open"], s["timing"] = None, True, "open"
+        self.open(p)
+        plan, scope = "button[data-k='g-plan']", "button[data-k='g-scope']"
+        self.assertEqual(self.page.locator(plan + " .gbar.endunk").count(), 1)
+        self.assertEqual(self.page.locator(plan + " .gbar.open").count(), 0)
+        self.assertIn("end unknown", self.text(plan))
+        self.assertEqual(self.page.locator(scope + " .gbar.open").count(), 1)
+        self.assertEqual(self.page.locator("#v3-stages .gbar.open").count(), 2)
+        width = lambda sel: self.page.eval_on_selector(sel, "e=>e.getBoundingClientRect().width")
+        self.assertLess(width(plan + " .gbar"), 40)
+        self.assertGreater(width(scope + " .gbar"), 300)
+        self.assertIn("broken edge", self.text("#v3-stages"))
+
+    def test_a_document_without_the_open_flag_never_extends_a_bar(self):
+        p = fresh(load("ui_v3_sample.json"))
+        for s in p["stages"]:
+            s.pop("open", None)
+            s.pop("timing", None)
+        self.open(p)
+        self.assertEqual(self.page.locator("#v3-stages .gbar.open").count(), 0)
+        self.assertEqual(self.page.locator("button[data-k='g-pr'] .gbar.endunk").count(), 1)
+
+    def selected(self, options, value, kind="single"):
+        p = fresh(load("ui_v3_sample.json"))
+        made = p["decisions"]["made"][0]
+        made["options"], made["answer"] = options, {"kind": kind, "value": value}
+        self.open(p)
+        return self.page.evaluate(
+            "(id)=>{const li=[...document.querySelectorAll('#v3-decisions li')].find(l=>l.querySelector('h3')&&l.querySelector('h3').textContent.includes(id));"
+            "return [...li.querySelectorAll('.opts span')].map(e=>e.classList.contains('sel'))}", made["source_id"])
+
+    def test_a_letter_answer_picks_the_option_at_that_position(self):
+        self.assertEqual(self.selected(["First choice", "Second choice", "Third choice"], "B"), [False, True, False])
+
+    def test_an_option_that_starts_with_the_letter_is_not_picked_by_prefix(self):
+        self.assertEqual(self.selected(["Because it is safe", "Another way"], "A"), [True, False])  # position A is the first option
+        self.assertEqual(self.selected(["Always retry", "Other", "Bad idea"], "B"), [False, True, False])  # not "Bad idea" (starts with B)
+
+    def test_without_options_the_answer_matches_nothing_and_free_text_must_be_exact(self):
+        self.assertEqual(self.selected([], "A"), [])
+        self.assertEqual(self.selected(["Retry once", "Retry"], "Retry", kind="text"), [False, True])  # exact, never the prefix "Retry once"
+        self.assertEqual(self.selected(["Retry once", "Other"], "Ret", kind="text"), [False, False])
+        self.assertEqual(self.selected(["alpha", "beta", "gamma"], ["A", "C"], kind="multiple"), [True, False, True])
+
+    def test_decision_evidence_renders_with_links_only_for_safe_urls(self):
+        p = fresh(load("ui_v3_sample.json"))
+        made = p["decisions"]["made"][0]
+        made["evidence"] = ["comment 11 https://github.com/example/repo/issues/1#c", "plain evidence"]
+        made["evidence_links"] = [{"text": made["evidence"][0], "url": "https://github.com/example/repo/issues/1#c"},
+                                  {"text": made["evidence"][1], "url": "javascript:window.__PWNED__=1"}]
+        made["applied"] = {"at": (made.get("applied") or {}).get("at"), "evidence": ["spec.md FR-004", "comment 12 ready"]}
+        self.open(p)
+        self.assertEqual(self.page.locator("#v3-decisions ul.evid li").count(), 2)
+        self.assertEqual(self.page.locator("#v3-decisions ul.evid a").count(), 1)
+        self.assertEqual(self.page.get_attribute("#v3-decisions ul.evid a", "href"), "https://github.com/example/repo/issues/1#c")
+        self.assertIn("spec.md FR-004; comment 12 ready", self.text("#v3-decisions"))
+        self.assertIsNone(self.page.evaluate("window.__PWNED__ || null"))
+
+    def test_a_mixed_generation_snapshot_shows_a_banner(self):
+        p = fresh(load("ui_v3_sample.json"))
+        p["collection"]["inconsistent_sources"] = ["facts"]
+        self.open(p)
+        self.assertIn("Snapshot may mix generations", self.text("#banners"))
 
 
 if __name__ == "__main__":

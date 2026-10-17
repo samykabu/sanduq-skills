@@ -61,6 +61,16 @@
     return w;
   }
   function plain(v) { return v == null || v === '' ? unk() : el('span', 'wrap', v); }
+  /* Ids in the data are untrusted text: a run, stage or lane may be called "constructor" or "__proto__". Every lookup
+     keyed by such an id goes through a prototype-free object or an own-property read, never a plain {} lookup. */
+  function dict() { return Object.create(null); }
+  function own(o, k) { return o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined; }
+  /* a short stable token for an id, safe inside a DOM id (djb2 over the id text) */
+  function token(s) {
+    var h = 5381, t = String(s);
+    for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(16);
+  }
 
   /* ---------- UI state in location.hash ---------- */
   function readState() {
@@ -251,7 +261,7 @@
   }
 
   function chip(d, id, status, by) {
-    var t = (d.tasks || {})[id] || {};
+    var t = own(d.tasks, id) || {};
     var c = el('div', 'chip', [el('span', 'id', id), t.title || '']);
     c.style.setProperty('--s', 'var(--' + status + ')');
     if (by && by.length) c.appendChild(el('div', 'by', by.map(function (b) {
@@ -414,6 +424,83 @@
     return null;
   }
 
+  /* References between records. A timeline entry, an episode or a history row names a run, a stage, a workstream or a legacy
+     lane id. Each one that exists in this report becomes a real button that opens and focuses its target. */
+  var REFS = null, focusReq = null;
+  function buildRefs(d) {
+    var r = { runs: dict(), stages: dict(), ws: dict(), aliases: dict(), unresolved: dict(), byValue: dict() };
+    (d.runs || []).forEach(function (x) { if (x && x.run_id != null) r.runs[String(x.run_id)] = true; });
+    (d.stages || []).forEach(function (x) { if (x && x.id != null && x.selected !== false && x.status !== 'excluded') r.stages[String(x.id)] = true; });
+    (d.workstreams || []).forEach(function (x) { if (x && x.id != null) r.ws[String(x.id)] = true; });
+    var h = d.history || {}, al = h.lane_aliases || {};
+    Object.keys(al).forEach(function (k) { r.aliases[k] = String(al[k]); if (!(String(al[k]) in r.byValue)) r.byValue[String(al[k])] = k; });
+    (Array.isArray(h.unresolved) ? h.unresolved : []).forEach(function (u) { if (u && u.id != null) r.unresolved[String(u.id)] = true; });
+    return r;
+  }
+  function refTarget(ref, noAlias) {
+    var r = REFS, t = String(ref);
+    if (!r) return null;
+    if (t in r.runs) return { kind: 'run', id: t };
+    if (t in r.stages) return { kind: 'stage', id: t };
+    if (t.indexOf('run:') === 0 && t.slice(4) in r.runs) return { kind: 'run', id: t.slice(4) };
+    if (t in r.ws) return { kind: 'ws', id: t };
+    if (t.indexOf('workstream:') === 0 && t.slice(11) in r.ws) return { kind: 'ws', id: t.slice(11) };
+    if (noAlias) return null;
+    if (t in r.aliases) return { kind: 'alias', id: 'a:' + t };
+    if (t in r.unresolved) return { kind: 'alias', id: 'u:' + t };
+    if (t in r.byValue) return { kind: 'alias', id: 'a:' + r.byValue[t] };
+    return null;
+  }
+  function runPage(runId) {
+    var list = sortRuns((data && data.runs) || []), at = -1;
+    list.forEach(function (r, i) { if (at < 0 && String(r.run_id) === String(runId)) at = i; });
+    return at < 0 ? 1 : Math.floor(at / PAGE) + 1;
+  }
+  function go(t) {
+    var s = readState();
+    if (t.kind === 'run') {
+      toggle(s.o, 'runs', true);
+      toggle(s.o, 'run:' + t.id, true);
+      s.q = '';
+      s.s = '';
+      s.p = runPage(t.id);
+      focusReq = { key: 'run-' + t.id };
+    } else if (t.kind === 'stage') {
+      s.g = t.id;
+      focusReq = { key: 'g-' + t.id };
+    } else if (t.kind === 'ws') {
+      focusReq = { id: 'ws-' + token(t.id) };
+    } else {
+      toggle(s.o, 'hist', true);
+      focusReq = { id: 'hist-' + token(t.id) };
+    }
+    writeState(s);
+    render();
+  }
+  function refNode(ref, noAlias) {
+    var t = refTarget(ref, noAlias);
+    if (!t) return el('code', 'wrap', String(ref));
+    var b = attr(el('button', 'reflink wrap', String(ref)), { type: 'button', 'data-k': 'ref-' + token(ref), title: 'Go to ' + t.kind });
+    b.addEventListener('click', function () { go(t); });
+    return b;
+  }
+  function applyFocus() {
+    var f = focusReq;
+    focusReq = null;
+    if (!f) return;
+    var node = null;
+    if (f.id) node = document.getElementById(f.id);
+    else {
+      var els = app.querySelectorAll('[data-k]');
+      for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-k') === f.key) { node = els[i]; break; }
+    }
+    if (!node) return;
+    node.classList.add('hit');
+    if (!node.hasAttribute('tabindex') && node.tabIndex < 0) node.tabIndex = -1;
+    node.focus();
+    if (node.scrollIntoView) node.scrollIntoView({ block: 'center' });
+  }
+
   /* 1. header */
   function vHeader(d) {
     var f = d.feature || {}, sm = d.summary || {}, na = f.next_action, stg = f.stage || {};
@@ -475,17 +562,16 @@
   }
 
   /* 4. stages over time (Gantt) */
-  function stageOpen(s) {
-    if (!s.first_start) return false;
-    if (!s.last_end) return true;
-    return (s.episodes || []).some(function (e) { return e.outcome === 'running' && !e.ended_at; });
-  }
+  /* Only the projection says a stage is open (a live run, a running episode or the active claim). A stage with a start and
+     no recorded end is "end unknown": it is drawn to its start and never grown to now. */
+  function stageOpen(s) { return s.open === true && !!s.first_start; }
+  function endUnknown(s) { return s.open !== true && !!s.first_start && !s.last_end; }
   function isFail(r) { return r.worker_status === 'failed' || r.worker_status === 'abandoned'; }
   function vStages(d, st) {
     var stages = (d.stages || []).filter(function (s) { return s.selected !== false && s.status !== 'excluded'; })
       .sort(function (a, b) { return (num(a.order) == null ? 1e9 : a.order) - (num(b.order) == null ? 1e9 : b.order); });
     var now = Date.now(), lo = Infinity, hi = -Infinity;
-    var fails = {};
+    var fails = dict();
     (d.runs || []).forEach(function (r) { if (isFail(r) && r.stage) (fails[r.stage] = fails[r.stage] || []).push(r); });
     function ext(t) { if (!isNaN(t)) { lo = Math.min(lo, t); hi = Math.max(hi, t); } }
     stages.forEach(function (s) {
@@ -503,13 +589,14 @@
     var span = Math.max(hi - lo, 60000);
     function pct(t) { return Math.max(0, Math.min(100, (t - lo) / span * 100)); }
     var rows = stages.map(function (s) {
-      var a = Date.parse(s.first_start), open = stageOpen(s);
-      var b = open ? now : Date.parse(s.last_end);
+      var a = Date.parse(s.first_start), open = stageOpen(s), unknownEnd = endUnknown(s);
+      var b = open ? now : unknownEnd ? a : Date.parse(s.last_end);
       var track = el('div', 'gtrack');
       if (!isNaN(a) && !isNaN(b)) {
-        var bar = el('i', 'gbar st-' + slug(s.status) + (open ? ' open' : '') + (fails[s.id] ? ' hasfail' : ''));
+        var bar = el('i', 'gbar st-' + slug(s.status) + (open ? ' open' : '') + (unknownEnd ? ' endunk' : '') + (fails[s.id] ? ' hasfail' : ''));
         bar.style.left = pct(a) + '%';
-        bar.style.width = Math.max(0.8, pct(b) - pct(a)) + '%';
+        bar.style.width = Math.max(unknownEnd ? 1.6 : 0.8, pct(b) - pct(a)) + '%';
+        if (unknownEnd) bar.title = 'end not recorded';
         track.appendChild(bar);
       } else {
         track.appendChild(el('span', 'gnone', s.status === 'pending' ? 'not started' : 'timing unknown'));
@@ -524,10 +611,10 @@
       });
       var sel = st.g === s.id;
       var nruns = num(s.run_count), nfail = num(s.failed_runs);
-      var label = el('span', 'glabel', [el('b', 'wrap', s.label || s.id), el('span', 'sub', (nruns == null ? 'runs unknown' : nruns + (nruns === 1 ? ' run' : ' runs')) + (nfail ? ' · ' + nfail + ' failed' : '') + (open ? ' · open' : ''))]);
+      var label = el('span', 'glabel', [el('b', 'wrap', s.label || s.id), el('span', 'sub', (nruns == null ? 'runs unknown' : nruns + (nruns === 1 ? ' run' : ' runs')) + (nfail ? ' · ' + nfail + ' failed' : '') + (open ? ' · open' : unknownEnd ? ' · end unknown' : ''))]);
       var btn = attr(el('button', 'grow' + (sel ? ' sel' : ''), [label, track]), {
         type: 'button', 'aria-expanded': String(sel), 'aria-controls': 'v3-ep', 'data-k': 'g-' + s.id,
-        'aria-label': (s.label || s.id) + ', ' + (s.status || 'unknown') + (open ? ', still open' : '') + ', ' + (nruns == null ? 'runs unknown' : nruns + ' runs') + (nfail ? ', ' + nfail + ' failed' : '') + '. Show episodes'
+        'aria-label': (s.label || s.id) + ', ' + (s.status || 'unknown') + (open ? ', still open' : unknownEnd ? ', end unknown' : '') + ', ' + (nruns == null ? 'runs unknown' : nruns + ' runs') + (nfail ? ', ' + nfail + ' failed' : '') + '. Show episodes'
       });
       btn.addEventListener('click', function () {
         var x = readState();
@@ -544,7 +631,7 @@
     scroll.tabIndex = 0;
     scroll.setAttribute('role', 'group');
     scroll.setAttribute('aria-label', 'Stage timeline, scrolls sideways');
-    body.push(el('p', 'note legend', 'Bar runs from the first start to the last end. A hatched bar is still open and is drawn to now. A cross marks a failed or abandoned run.'));
+    body.push(el('p', 'note legend', 'Bar runs from the first start to the last end. A hatched bar is still open and is drawn to now. A short bar with a broken edge has a start but no recorded end. A cross marks a failed or abandoned run.'));
     body.push(scroll);
     var det = el('div', 'epdetail');
     det.id = 'v3-ep';
@@ -555,7 +642,7 @@
     return vsec('v3-stages', 'Stages over time', body, 'stages');
   }
   function episodes(s, d) {
-    var byId = {};
+    var byId = dict();
     (d.runs || []).forEach(function (r) { byId[r.run_id] = r; });
     var eps = s.episodes || [], unknown = s.unknown_runs || [];
     var out = el('div', null, [el('h3', 'wrap', (s.label || s.id) + ': episodes'),
@@ -574,7 +661,7 @@
     if (unknown.length) {
       out.appendChild(el('div', 'epunknown', [el('h4', null, 'Episode unknown (' + unknown.length + ')'),
         el('p', 'note', 'These runs have no recorded claim, so they are not placed in an episode.'),
-        el('ul', null, unknown.map(function (id) { var r = byId[id]; return el('li', 'wrap', [el('code', null, id), r ? [' ', pill(r.worker_status), ' ', r.summary || ''] : ' (not in the run list)']); }))]));
+        el('ul', null, unknown.map(function (id) { var r = byId[id]; return el('li', 'wrap', [refNode(id), r ? [' ', pill(r.worker_status), ' ', r.summary || ''] : ' (not in the run list)']); }))]));
     }
     return out;
   }
@@ -591,7 +678,7 @@
       body.push(el('ol', 'tl', list.map(function (e) {
         var kind = ['stage', 'decision', 'failure', 'recovery', 'revalidation', 'note', 'blocker'].indexOf(e.kind) < 0 ? 'note' : e.kind;
         var det = keep(el('details', null, [attr(el('summary', null, [el('time', 'mono note', utc(e.at) || 'unknown time'), el('span', 'kd', kind), el('span', 'wrap', e.text || '')]), { 'data-k': 'tl-' + e.id }),
-          el('p', 'note', ['At ', stamp(e.at), e.fidelity ? el('span', 'fid', e.fidelity) : null, (e.refs || []).length ? [' · refs: ', (e.refs || []).map(function (r) { return el('code', 'wrap', r + ' '); })] : ' · no linked records'])]), 'tl:' + e.id, st);
+          el('p', 'note', ['At ', stamp(e.at), e.fidelity ? el('span', 'fid', e.fidelity) : null, (e.refs || []).length ? [' · refs: ', (e.refs || []).map(function (r) { return [refNode(r), ' ']; })] : ' · no linked records'])]), 'tl:' + e.id, st);
         return el('li', 'tl-row k-' + kind, det);
       })));
       if (bounded) {
@@ -629,19 +716,43 @@
         owners.length ? el('ul', 'owners', owners.map(function (o) { return el('li', 'wrap sub', [el('b', null, o.agent || 'unknown'), ' ', stamp(o.from), ' to ', o.to ? stamp(o.to) : 'now']); })) : el('p', 'sub', ['Owner ', unk()]),
         (w.conflicts || []).length ? el('p', 'note warn', 'Conflicts: ' + w.conflicts.map(function (c) { return typeof c === 'string' ? c : JSON.stringify(c); }).join('; ')) : null
       ]);
+      row.id = 'ws-' + token(w.id);
+      row.tabIndex = -1;
       body.push(row);
     });
     return vsec('v3-workstreams', 'Workstreams during Execute', body, 'workstreams');
   }
 
   /* 5c. decisions */
+  /* Option indexes an answer picks. A single-letter answer (A, B, ...) names the option at that position when the decision has
+     options; any other answer must equal an option exactly. There is no prefix match. */
+  function chosen(x) {
+    var ans = x.answer, opts = x.options || [], out = [];
+    if (!ans || ans.value == null) return out;
+    (Array.isArray(ans.value) ? ans.value : [ans.value]).forEach(function (v) {
+      var t = String(v), i = opts.length && /^[A-Za-z]$/.test(t.trim()) ? t.trim().toUpperCase().charCodeAt(0) - 65 : opts.indexOf(t);
+      if (i >= 0 && i < opts.length && out.indexOf(i) < 0) out.push(i);
+    });
+    return out;
+  }
   function v3Decision(x) {
     var ans = x.answer, val = ans && ans.value != null ? (Array.isArray(ans.value) ? ans.value.join(', ') : String(ans.value)) : null;
     var by = x.decided_by ? x.decided_by : 'editor not recorded';
     var li = el('li', null, [el('h3', 'wrap', [el('span', 'mono', x.source_id || x.key || '?'), ' ', x.question || el('span', 'unk', 'question not recorded')]), pill(x.state || 'unknown')]);
-    if ((x.options || []).length) li.appendChild(el('div', 'opts', x.options.map(function (o) { return el('span', 'wrap' + (val && String(o).indexOf(val) === 0 ? ' sel' : ''), o); })));
+    var picked = chosen(x);
+    if ((x.options || []).length) li.appendChild(el('div', 'opts', x.options.map(function (o, i) { return el('span', 'wrap' + (picked.indexOf(i) >= 0 ? ' sel' : ''), o); })));
     if (ans) li.appendChild(el('p', 'note', ['Answer ', el('strong', 'wrap', val == null ? 'unknown' : val), ' · ', by, ' · answered ', x.answered_at ? stamp(x.answered_at) : el('span', 'unk', 'time not recorded')]));
-    if (x.applied) li.appendChild(el('p', 'note', ['Applied ', stamp(x.applied.at), x.applied.evidence ? ' · ' + x.applied.evidence : null]));
+    if (x.applied) {
+      var ae = Array.isArray(x.applied.evidence) ? x.applied.evidence : x.applied.evidence ? [x.applied.evidence] : [];
+      li.appendChild(el('p', 'note', ['Applied ', stamp(x.applied.at), ae.length ? ' · ' + ae.map(String).join('; ') : null]));
+    }
+    var ev = Array.isArray(x.evidence) ? x.evidence : [], links = Array.isArray(x.evidence_links) ? x.evidence_links : [];
+    if (ev.length) {
+      li.appendChild(el('ul', 'evid', ev.map(function (t) {
+        var l = links.filter(function (k) { return k && k.text === t; })[0];
+        return el('li', 'wrap sub', l ? link(String(t), l.url) : String(t));
+      })));
+    }
     li.appendChild(el('p', 'note', ['Source ', x.source || 'unknown', x.stage ? ' · stage ' + x.stage : null, ' · ', x.url ? link('evidence', x.url) : el('span', 'unk', 'no evidence link')]));
     return li;
   }
@@ -659,6 +770,12 @@
   function runHay(r) {
     return [r.run_id, r.identity, r.stage, r.harness, r.requested_model, r.actual_model && r.actual_model.value, r.worker_status, r.workstream, (r.tasks || []).join(' '), r.summary].join(' ').toLowerCase();
   }
+  /* failures first, then newest first, then the order in the data */
+  function sortRuns(list) {
+    return list.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
+      return (isFail(b.r) ? 1 : 0) - (isFail(a.r) ? 1 : 0) || (Date.parse(b.r.started_at) || 0) - (Date.parse(a.r.started_at) || 0) || a.i - b.i;
+    }).map(function (x) { return x.r; });
+  }
   function vRuns(d, st) {
     var runs = d.runs || [], dispatch = d.dispatch || [];
     var statuses = [];
@@ -674,9 +791,7 @@
       var s = readState(), key = document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-k');
       var needle = s.q.toLowerCase();
       var list = runs.filter(function (r) { return (!s.s || r.worker_status === s.s) && (!needle || runHay(r).indexOf(needle) >= 0); });
-      list = list.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
-        return (isFail(b.r) ? 1 : 0) - (isFail(a.r) ? 1 : 0) || (Date.parse(b.r.started_at) || 0) - (Date.parse(a.r.started_at) || 0) || a.i - b.i;
-      }).map(function (x) { return x.r; });
+      list = sortRuns(list);
       var pages = Math.max(1, Math.ceil(list.length / PAGE)), pg = Math.min(Math.max(1, s.p), pages);
       var slice = list.slice((pg - 1) * PAGE, pg * PAGE);
       out.textContent = '';
@@ -759,7 +874,38 @@
     return sec;
   }
 
+  /* 7. history: legacy lane ids stay navigable */
+  function vHistory(d, st) {
+    var h = d.history || {}, al = h.lane_aliases || {}, un = Array.isArray(h.unresolved) ? h.unresolved : [];
+    var keys = Object.keys(al).sort();
+    var rows = keys.map(function (k) {
+      var li = el('li', null, [el('code', null, k), ' maps to ', refTarget(al[k], true) ? refNode(al[k], true) : el('span', 'wrap', String(al[k]))]);
+      li.id = 'hist-' + token('a:' + k);
+      li.tabIndex = -1;
+      return li;
+    });
+    var open = un.map(function (u) {
+      var owners = Array.isArray(u.owners) ? u.owners : [];
+      var li = el('li', null, [el('code', null, String(u.id)), ' ', el('span', 'wrap', u.label || ''), ' ',
+        el('span', 'sub', u.reason || 'no link recorded'),
+        owners.length ? el('div', 'sub wrap', ['Owners: ', owners.map(function (o, i) { return [i ? '; ' : '', String(o.agent || 'unknown'), ' ', stamp(o.from), ' to ', o.to ? stamp(o.to) : 'now']; })]) : null]);
+      li.id = 'hist-' + token('u:' + u.id);
+      li.tabIndex = -1;
+      return li;
+    });
+    var body = [
+      el('p', 'note', 'Older reports named lanes (L1, W7, ...). Each one that an explicit record links to a run, identity or workstream is listed with that link. The rest are kept here as unresolved, with their owner history.'),
+      el('p', 'sect', 'Aliases (' + keys.length + ')'), rows.length ? el('ul', 'hist', rows) : el('p', 'empty', 'No aliases.'),
+      el('p', 'sect', 'Unresolved (' + un.length + ')'), open.length ? el('ul', 'hist', open) : el('p', 'empty', 'None unresolved.')];
+    var det = keep(el('details', 'histsec', [attr(el('summary', null, 'History (' + keys.length + ' aliases, ' + un.length + ' unresolved)'), { 'data-k': 'hist' }), el('div', null, body)]), 'hist', st);
+    var sec = el('section', 'blk v3 history', el('div', 'body', det));
+    sec.id = 'v3-history';
+    sec.setAttribute('data-v3', 'v3-history');
+    return sec;
+  }
+
   function renderV3(d, st) {
+    REFS = buildRefs(d);
     var frag = document.createDocumentFragment();
     frag.appendChild(vHeader(d));
     frag.appendChild(vAttention(d));
@@ -767,6 +913,7 @@
     frag.appendChild(vStages(d, st));
     frag.appendChild(el('div', 'v3cols', [vTimeline(d, st), el('div', 'v3right', [vWorkstreams(d, st), vDecisions(d)])]));
     frag.appendChild(vRuns(d, st));
+    frag.appendChild(vHistory(d, st));
     return frag;
   }
 
@@ -806,6 +953,7 @@
         break;
       }
     }
+    applyFocus();
     updateBanners();
   }
 
@@ -815,6 +963,7 @@
     if (renderError) list.push(['banner', 'Render problem', renderError]);
     if (data) {
       var c = data.collection || {}, t = Date.parse(data.generated_at), lim = (data.stale_after_seconds || 600) * 1000;
+      if (Array.isArray(c.inconsistent_sources) && c.inconsistent_sources.length) list.push(['banner', 'Snapshot may mix generations', 'A source file changed while the report was being built (' + c.inconsistent_sources.join(', ') + '). A new refresh is pending.']);
       if (c.dirty) list.push(['banner', 'Stale', 'Updates are pending; this view is behind the latest activity.']);
       else if (!isNaN(t) && Date.now() - t > lim) list.push(['banner', 'Stale', 'Last generated ' + ago(data.generated_at) + '. Automatic refresh may have stopped.']);
       if (c.automatic === false) list.push(['banner info', 'Automatic collection unavailable', 'Values come from files only; run progress refresh to update them.']);

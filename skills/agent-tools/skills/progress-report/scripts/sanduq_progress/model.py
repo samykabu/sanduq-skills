@@ -250,11 +250,17 @@ def build(ctx, now, rev=1, state=None, plan=None, schema=None):
 
 def build_pair(ctx, now, rev=1, state=None, plan=None, want_v3=True):
     """(v3 document or None, v2 document). Both come from one read of the producers."""
-    v2, aux = _build_v2(ctx, now, rev, state, plan)
-    if not want_v3:
-        return None, v2
     from . import model_v3
-    return model_v3.build(ctx, now, rev, state or {}, v2, aux), v2
+    from .util import tracking
+    with tracking() as reads:  # every producer file read below is remembered by hash, size and read time
+        v2, aux = _build_v2(ctx, now, rev, state, plan)
+        if not want_v3:
+            return None, v2
+        aux['reads'] = reads
+        v3 = model_v3.build(ctx, now, rev, state or {}, v2, aux)
+    if v3['collection'].get('inconsistent_sources') and state is not None:
+        state['dirty'] = True  # a file changed while the others were read: the next refresh must run again
+    return v3, v2
 
 
 def _build_v2(ctx, now, rev=1, state=None, plan=None):

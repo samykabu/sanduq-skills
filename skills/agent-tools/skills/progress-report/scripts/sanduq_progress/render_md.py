@@ -24,6 +24,28 @@ def _t(value):
     return _cell(value if value is not None else 'unknown')
 
 
+def _tasks_v3(report):
+    """Every task grouped by phase, with its workstream and state (done, active, blocked or waiting). The checklist is the
+    list a reader of the Markdown export has no other way to get."""
+    state, label = {}, {}
+    for w in report['workstreams']:
+        label[w['id']] = w['label']
+        for name, ids in w['tasks'].items():
+            for tid in ids:
+                state[tid] = name
+    out, phase = ['', '## Tasks', ''], object()
+    for tid, t in report['tasks'].items():
+        if t['phase'] != phase:
+            phase = t['phase']
+            out += [f"### {phase or 'No phase'}", '']
+        deps = f" (after {', '.join(t['depends_on'])})" if t['depends_on'] else ''
+        where = label.get(t['workstream']) or t['workstream']
+        out.append(f"- [{'x' if t['done'] else ' '}] {tid} {t['title']}{deps} - {where}, {state.get(tid) or ('done' if t['done'] else 'waiting')}")
+    if not report['tasks']:
+        out.append('None.')
+    return out
+
+
 def render_v3(report):
     f, s = report['feature'], report['summary']
     stage = f.get('stage')
@@ -54,6 +76,7 @@ def render_v3(report):
         t = w['tasks']
         out.append(f"- {w['label']} ({w['origin']}): done {' '.join(t['done']) or '-'}; active {' '.join(t['active']) or '-'}; "
                    f"waiting {' '.join(t['waiting']) or '-'}; blocked {' '.join(t['blocked']) or '-'}")
+    out += _tasks_v3(report)
     out += ['', '## Decisions', '']
     for label, key in (('Pending', 'pending'), ('Made', 'made')):
         for d in report['decisions'][key]:
