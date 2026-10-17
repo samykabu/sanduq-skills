@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-17 — illustration-tools 3.4.2: stable render verification
+
+- Pause page clocks during render comparisons and advance them explicitly for declared reveal holds. JavaScript timers can no longer produce inconsistent clipping results between captures.
+- Restore SVG and ancestor styles exactly after capture, including when a capture fails.
+
 ## Unreleased — agent-tools 1.4.0
 
 - `progress-report` 1.2.0: v3 projection (stages, workstreams, runs, decisions, timeline), `--schema v2` compatibility, coordinator self-report and
