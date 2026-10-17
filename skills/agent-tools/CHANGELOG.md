@@ -9,6 +9,9 @@ Fixes from the review of the sanduq vendoring PR.
   `CHILD_ENUMERATION_UNAVAILABLE` if `/proc` cannot be read at all.
 - `delegate-task` on Windows: environment names are matched without regard to case, so a batch or per-check `PATH`
   replaces an inherited `Path` instead of sitting beside it. Order stays inherited, then batch, then per-check.
+- `delegate-task`: every check's launcher is resolved before the batch creates an attempt, so a missing executable
+  fails up front instead of partway through; on Unix the launcher must be executable. Public delegate summaries no
+  longer include the raw usage block.
 - `delegate-task` on Windows: a cancel request that arrives before the check is launched now starts nothing and reports a
   closed, not-started result.
 - `progress-report`: when two lanes in the facts log name the same delegation identity, they now fold into one lane
