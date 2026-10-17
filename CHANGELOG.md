@@ -7,7 +7,7 @@
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).
 
-## 2026-10-17 — agent-tools 1.2.3: progress-report correctness patch
+## 2026-10-17 — agent-tools 1.3.0: progress-report correctness patch
 
 - `progress-report`: stage from accepted receipts, stale pauses no longer block, frozen durations, one lane per run,
   attention-first layout with kind-filtered events. See [agent-tools CHANGELOG](skills/agent-tools/CHANGELOG.md#123--2026-10-17).

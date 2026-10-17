@@ -6,8 +6,6 @@
 - Bound public collection by UTF-8 bytes while retaining complete raw evidence and omission metadata.
 - Add bounded delegate summaries and startup diagnostics with an optional deadline; preserve legacy result semantics.
 
-## 1.2.3 — 2026-10-17
-
 - `progress-report` correctness patch, found on a real 23-task run (frozen as `tests/fixtures/run-842`):
   - The header names the stage from the latest accepted receipt when no claim is active (it was blank).
   - A checkpoint `pause` that later stages superseded is no longer a blocker.
