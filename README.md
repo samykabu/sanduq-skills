@@ -10,6 +10,12 @@ If you use [Spec Kit](https://github.com/github/spec-kit) and want these tools w
 lifecycle (QA, manuals, pull requests, project memory, issue-to-PR orchestration), see the
 companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 
+> $${\color{red}\text{CI runner exception: every job runs on the home office runner homek8-general except two cases. The windows-latest leg of the tests matrix in .github/workflows/ci.yml runs on GitHub-hosted Windows, and every ci.yml job of a pull request from a fork runs on ubuntu-latest.}}$$
+>
+> $${\color{red}\text{Why: Windows leg: the home office runners are Linux pods. Fork pull requests: this repository is public, and code from a fork must not run inside the home office cluster, so jobs of pull requests from forks run on ubuntu-latest.}}$$
+>
+> $${\color{red}\text{Removal: Windows leg: register a self-hosted Windows runner for samykabu/sanduq-skills and point the windows-latest leg at it. Fork pull requests: none planned; this exception is a security boundary, not a missing runner.}}$$
+
 ## The skills
 
 | Skill | What it does | Bundle (Claude Code plugin) |
