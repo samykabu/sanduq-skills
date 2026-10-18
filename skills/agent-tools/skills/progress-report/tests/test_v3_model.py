@@ -393,9 +393,8 @@ class Workstreams(Synthetic):
         self.assertEqual(by_id['L1']['origin'], 'facts-marked')
         self.assertEqual(by_id['L2']['tasks']['waiting'], ['T003'])
         self.assertNotIn('T003', by_id['L1']['tasks']['waiting'])
-        self.assertEqual(by_id['L1']['conflicts'], [])
-        conflicts = by_id['L2']['conflicts']
-        self.assertEqual(conflicts, [{'task': 'T003', 'workstreams': ['L1', 'L2']}])
+        want = [{'task': 'T003', 'workstreams': ['L1', 'L2']}]
+        self.assertEqual((by_id['L1']['conflicts'], by_id['L2']['conflicts']), (want, want))  # each workstream the conflict names shows it
 
     def test_an_unmarked_lane_is_not_a_workstream_even_when_it_lists_tasks(self):
         self.init()

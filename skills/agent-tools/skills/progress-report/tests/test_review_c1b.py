@@ -637,5 +637,145 @@ class LayoutEnvelope(helpers.Project):
         self.assertEqual(self.shown()['ui'], {'layout': 'timeline'})
 
 
+class SpreadsheetLabels(Synthetic):
+    @staticmethod
+    def scope_label(index):  # a copy of Scope's option_label (extensions/scope/scripts/clarification.py): 1 is A, 27 is AA
+        label = ''
+        while index:
+            index, remainder = divmod(index - 1, 26)
+            label = chr(65 + remainder) + label
+        return label
+
+    def test_every_label_scope_can_write_decodes_to_its_position(self):
+        from sanduq_progress.collect import clarifications as col
+        for n in range(1, 18279):  # A .. ZZZ
+            self.assertEqual(col._label_index(self.scope_label(n)), n - 1)
+        self.assertEqual([col._label_index(x) for x in ('A', 'Z', 'AA', 'AB', 'aa', 'zz', 'ZZZ')], [0, 25, 26, 27, 26, 701, 18277])
+        for odd in ('', 'AAAA', 'A1', 'ß', 'A A', 'Ａ'):
+            self.assertIsNone(col._label_index(odd), odd)
+
+    def test_aa_is_the_27th_option_when_it_exists_and_exact_text_when_it_does_not(self):
+        from sanduq_progress.collect import clarifications as col
+        options = [f'option {i}' for i in range(30)]
+        self.assertEqual(col._decode('AA', options), ('option 26', 26))
+        self.assertEqual(col._decode('ad', options), ('option 29', 29))
+        self.assertEqual(col._decode('AE', options), ('AE', None))  # index 30 is past the options
+        self.assertEqual(col._decode('AA', ['x', 'y']), ('AA', None))
+        self.assertEqual(col._decode('AA', ['AA', 'y']), ('AA', 0))  # out of range as a label, so exact text
+
+    def test_through_model_build_a_two_letter_answer_picks_the_27th_option(self):
+        options = [f'option {i}' for i in range(30)]
+        self.put('clarifications.json', {'v': 1, 'items': [{'source_id': 'C1', 'state': 'answered', 'options': options,
+                                                           'answer': {'kind': 'multiple', 'value': ['B', 'AA']}}]})
+        answer = next(d['answer'] for d in self.build()['decisions']['made'] if d['source'] == 'clarification')
+        self.assertEqual((answer['value'], answer['index']), (['option 1', 'option 26'], [1, 26]))
+
+    def test_workflow_decisions_use_single_letters_only(self):
+        from sanduq_progress.collect import workflow as wf
+        options = [f'option {i}' for i in range(30)]
+        self.assertEqual(wf._option_text('Z', options), ('option 25', 25))
+        self.assertEqual(wf._option_text('AA', options), ('AA', None))  # Workflow's labels are chr(65 + index), one letter
+
+
+class SelfReportSession(Synthetic):
+    def test_a_session_bound_report_needs_an_observed_matching_session(self):
+        from sanduq_progress import selfreport
+        fields = {'model': {'value': 'm', 'at': '2026-10-15T10:00:00Z'}}
+        bound = {'session_id': 's1', 'fields': fields}
+        unknown = {'session_id': None, 'fields': fields}
+        self.assertEqual(selfreport.applicable(bound, 's1'), fields)
+        self.assertEqual(selfreport.applicable(bound, 's2'), {})
+        self.assertEqual(selfreport.applicable(bound, None), {})  # no observed main session: not applied
+        self.assertEqual(selfreport.applicable(unknown, None), fields)  # session-unknown keeps its behaviour
+        self.assertEqual(selfreport.applicable(unknown, 's9'), fields)
+
+    def test_without_a_readable_host_snapshot_a_bound_report_is_not_shown(self):
+        self.init()
+        self.cli('bind', '--model', 'self-model', '--session', 'claude-sess-1')
+        o = self.build()['orchestrator']
+        self.assertNotEqual(o['model']['source'], 'self-report')
+        self.assertEqual(o['provenance']['model'], 'none')
+
+    def test_a_session_unknown_report_is_still_shown_without_a_snapshot(self):
+        self.init()
+        self.cli('bind', '--model', 'self-model')
+        o = self.build()['orchestrator']
+        self.assertEqual((o['model']['value'], o['provenance']['model']), ('self-model', 'self-report'))
+
+
+class AllTrackedReads(Synthetic):
+    def test_sources_list_every_file_the_build_read_with_dynamic_names(self):
+        self.init()
+        self.bind()
+        self.hook('pre_tool_use', self.payload('claude_pre_task.json'), now='2026-10-15T12:00:07Z')
+        report = self.build()
+        names = [s['name'] for s in report['sources']]
+        snapshot = [s for s in report['sources'] if s['path'].startswith('specs/001-demo/progress/.host/')]
+        self.assertTrue(snapshot, names)
+        self.assertEqual(snapshot[0]['name'], snapshot[0]['path'])  # a dynamic file is named by its relative path
+        self.assertIn('tasks', names)
+        self.assertTrue(all(not os.path.isabs(s['path']) or s['path'].startswith('external:') for s in report['sources']))
+        self.assertEqual(names[:1], ['tasks'])  # the named producer files come first, in a fixed order
+
+    def test_a_host_snapshot_that_changes_mid_build_marks_the_report_dirty(self):
+        self.init()
+        self.bind()
+        self.hook('pre_tool_use', self.payload('claude_pre_task.json'), now='2026-10-15T12:00:07Z')
+        snap = next(self.ctx.host_dir.glob('claude-*.json'))
+        rel = snap.relative_to(self.root).as_posix()
+        from sanduq_progress import model_v3
+        real = model_v3.clarcol.collect
+
+        def collect_then_touch(feature_dir):
+            out = real(feature_dir)
+            with open(snap, 'a', encoding='utf-8') as stream:  # a hook writes the snapshot after it was parsed
+                stream.write('\n')
+            return out
+        model_v3.clarcol.collect = collect_then_touch
+        self.addCleanup(setattr, model_v3.clarcol, 'collect', real)
+        state = {}
+        report, _ = model.build_pair(self.ctx, NOW, 1, state)
+        self.assertTrue(report['collection']['dirty'])
+        self.assertIn(rel, report['collection']['inconsistent_sources'])
+        self.assertTrue(state['dirty'])
+        self.assertFalse(next(s for s in report['sources'] if s['path'] == rel)['consistent'])
+
+    def test_a_delegate_run_journal_is_a_tracked_source(self):
+        runs = self.root / '.delegate' / 'runs' / 'r1'
+        runs.mkdir(parents=True)
+        (runs / 'meta.json').write_text(json.dumps({'run_id': 'r1', 'harness': 'codex', 'started_at': '2026-10-15T10:00:00Z'}), encoding='utf-8')
+        (runs / 'journal.jsonl').write_text(json.dumps({'state': 'running', 't': '2026-10-15T10:01:00Z'}) + '\n', encoding='utf-8')
+        from sanduq_progress.collect import runs as runscol
+        with tracking_reads() as reads:
+            runscol.collect_runs(self.root / '.delegate' / 'runs', now=NOW)
+        paths = {os.path.relpath(k, self.root).replace(os.sep, '/') for k in reads.rows}
+        self.assertIn('.delegate/runs/r1/journal.jsonl', paths)
+
+
+def tracking_reads():
+    from sanduq_progress.util import tracking
+    return tracking()
+
+
+class LosingWorkstream(Synthetic):
+    def test_the_losing_workstream_stays_visible_with_its_owner_and_the_conflict(self):
+        self.init()
+        self.cli('lane', 'L1', '--tasks', 'T003', '--owner', 'ann', '--workstream')
+        self.cli('lane', 'L2', '--tasks', 'T003', '--owner', 'bob', '--workstream')
+        by_id = {w['id']: w for w in self.build()['workstreams']}
+        self.assertIn('L1', by_id)  # it lost its only task but is still listed
+        self.assertEqual([o['agent'] for o in by_id['L1']['owners']], ['ann'])
+        self.assertEqual(by_id['L1']['tasks'], {'done': [], 'blocked': [], 'active': [], 'waiting': []})
+        self.assertEqual(by_id['L2']['tasks']['waiting'], ['T003'])  # the bucket stays on the winner
+        want = [{'task': 'T003', 'workstreams': ['L1', 'L2']}]
+        self.assertEqual((by_id['L1']['conflicts'], by_id['L2']['conflicts']), (want, want))
+        self.assertEqual(validate.validate(self.build()), [])
+
+    def test_a_marked_workstream_with_no_tasks_is_listed(self):
+        self.init()
+        self.cli('lane', 'L1', '--owner', 'ann', '--workstream')
+        self.assertIn('L1', {w['id'] for w in self.build()['workstreams']})
+
+
 if __name__ == '__main__':
     unittest.main()
