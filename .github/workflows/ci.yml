@@ -29,7 +29,29 @@ jobs:
                       sys.exit(f'{manifest}: missing {key}')
               if not any(bundle.glob('skills/*/SKILL.md')):
                   sys.exit(f'{bundle}: no skills/<name>/SKILL.md')
+              # Codex reads the Agent Plugins manifest at the bundle root; it must say the same.
+              portable = bundle / 'plugin.json'
+              if not portable.is_file():
+                  sys.exit(f'{bundle}: missing root plugin.json')
+              root = json.loads(portable.read_text(encoding='utf-8'))
+              if root.get('$schema') != 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json':
+                  sys.exit(f'{portable}: $schema must be the Agent Plugins 1.0.0 schema')
+              for key in ('name', 'version', 'description', 'author', 'license', 'keywords', 'repository'):
+                  if root.get(key) != data.get(key):
+                      sys.exit(f'{portable}: {key} differs from .claude-plugin/plugin.json')
           PY
+      # The validator lives in samykabu/sanduq (extensions/scripts/validate_skills.py).
+      - uses: actions/checkout@v4
+        with:
+          repository: samykabu/sanduq
+          ref: main
+          path: .sanduq
+          sparse-checkout: extensions/scripts/validate_skills.py
+          sparse-checkout-cone-mode: false
+      - name: Skills follow the Agent Skills frontmatter rules
+        run: |
+          python3 -m pip install --user pyyaml==6.0.3
+          python3 .sanduq/extensions/scripts/validate_skills.py skills
       - name: Claude Code validates each plugin bundle
         run: for b in skills/*/; do npx -y @anthropic-ai/claude-code plugin validate "$b"; done
 
