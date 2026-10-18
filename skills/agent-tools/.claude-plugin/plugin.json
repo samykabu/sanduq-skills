@@ -1,7 +1,7 @@
 {
   "name": "agent-tools",
   "description": "Delegate one task to an external agent CLI and get back a measured, normalised result; and keep a live, deterministic progress report for a Markdown plan or Spec Kit feature, with native Claude Code and Codex hooks",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "Samy K. Abushanab"
   },

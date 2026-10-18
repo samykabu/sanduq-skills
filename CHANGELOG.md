@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 — agent-tools 1.4.1: README for the Timeline page
+
+- `progress-report` README describes the Timeline page; no code changes. See the
+  [bundle changelog](skills/agent-tools/CHANGELOG.md#141--2026-10-18).
+
 ## 2026-10-18 — agent-tools 1.4.0: Progress Timeline
 
 - `progress-report` 1.2.0: v3 projection (stages, workstreams, runs, decisions, timeline) with the Timeline view as the
