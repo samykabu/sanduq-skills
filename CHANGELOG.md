@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18 — agent-tools 1.4.2: fixes from the sanduq #90 review
+
+- `progress-report` decodes Scope's spreadsheet-style option labels (`AA` is the 27th option), applies a session-bound self-report
+  only when the observed session matches, lists every file a build read as a source, and keeps a losing workstream visible. See the
+  [bundle changelog](skills/agent-tools/CHANGELOG.md#142--2026-10-18).
+
 ## 2026-10-18 — agent-tools 1.4.1: README for the Timeline page
 
 - `progress-report` README describes the Timeline page; no code changes. See the

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.2 — 2026-10-18
+
+Fixes from the sanduq #90 review of the vendored `progress-report` code.
+
+- Clarification answers decode Scope's `option_label` exactly: `A`..`Z`, then `AA`, `AB`, and so on (`AA` is index 26), one to three
+  ASCII letters in either case, and only when the label is in range. Anything else stays exact text with a null index. Scope
+  options are kept up to 100 (they were cut at 20, which hid every label past `T`). Workflow decisions use single letters, so they
+  are unchanged.
+- A self-report bound to a session applies only when the host snapshot names the same main session. With no snapshot, or an
+  unreadable one, it is not applied; a session-unknown report still is. The reader also stops treating `self-report.json` as a host
+  snapshot, which had given the report a main session of its own.
+- `sources` lists every file the build read (host snapshots, delegate run journals, project config) instead of a fixed list, naming
+  a dynamic file by its repository-relative path. A change to any of them during a build sets `collection.dirty` and is listed in
+  `inconsistent_sources`.
+- When two marked workstreams claim the same task, the one that loses it stays in the report with its owners and the conflict, and
+  each workstream the conflict names shows it. The task's bucket stays on the winner.
+
 ## 1.4.1 — 2026-10-18
 
 Docs only. No code changes.
