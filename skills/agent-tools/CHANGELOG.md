@@ -1,9 +1,13 @@
 # Changelog
 
-## 1.4.0 — 2026-10-17
+## 1.4.0 — 2026-10-18
 
-`progress-report` 1.2.0: a v3 projection with stages, workstreams, runs and a timeline. This entry covers the data side; the
-Timeline view ships in the same release.
+`progress-report` 1.2.0: a v3 projection with stages, workstreams, runs and a timeline, and a Timeline view that replaces
+the lane boards as the default page.
+
+- The page now reads top to bottom: what needs attention, the orchestrator, a Gantt of stages over time with episode detail,
+  what happened next to the workstreams and decisions, a History section for retired lanes, and a collapsed, searchable runs
+  table. It works at 360 px, keeps focus and open sections across refreshes, and switches layout on an open page.
 
 - `progress status --json` now prints `sanduq.progress.v3` by default. `--schema v2` prints the v2 document unchanged, and the
   Workflow shim, the one-line summary, `progress export --schema v2` and the `classic` layout use it. `report.json` holds v3.
@@ -21,6 +25,11 @@ Timeline view ships in the same release.
 - Every source file read is listed with a content fingerprint and generation.
 - `progress export` accepts `--schema`; `status` rejects an unknown schema with `PROGRESS_USAGE`.
 - Fixture `tests/fixtures/run-842` gains the tasks.md legend and a derived `workflow/clarifications.json` (C1Q1).
+- Checkpoint receipts and recoveries are matched to lifecycle events only by the same stage, kind and `claim_id`; records
+  without one are always kept. Only `accepted` and post-check `rejected-completion` events decide candidate acceptance.
+- Reads of `lifecycle.jsonl` (8 MiB tail) and `clarifications.json` (2 MiB) are capped, fingerprints come from the bytes
+  actually parsed, and ids such as `constructor` or `__proto__` cannot break the page.
+- Reviewed over four cycles by Claude Fable 5.1 and Codex gpt-6-astra.
 
 ## 1.3.1 — 2026-10-17
 
