@@ -448,24 +448,106 @@ class MixedVersion(unittest.TestCase):
         self.assertEqual(len(self.recoveries(report)), 7)  # stage equality alone never hides history
         self.assertEqual(validate.validate(report), [])
 
-    def test_a_recovery_is_dropped_only_when_a_lifecycle_event_records_the_same_instant(self):
+    def test_legacy_records_without_a_claim_id_are_never_dropped_even_at_the_same_instant(self):
         base = self.build([])
         first = next(e for s in base['stages'] if s['id'] == 'clarify' for e in s['episodes'] if e['source'] == 'checkpoint-recovery')
-        report = self.build([self.event(1, 'recovered', 'clarify', first['ended_at'], episode_id='c1', claim_id='x')])
-        self.assertEqual(len(self.recoveries(report)), 6)
-        clarify = next(s for s in report['stages'] if s['id'] == 'clarify')
-        self.assertEqual([e['source'] for e in clarify['episodes']].count('workflow-lifecycle'), 1)
-        near = self.build([self.event(1, 'recovered', 'clarify', '2026-10-16T18:38:53Z', episode_id='c1', claim_id='x')])
-        self.assertEqual(len(self.recoveries(near)), 7)  # one second apart is not the same record
-
-    def test_a_receipt_is_dropped_only_for_an_accepted_event_at_the_same_instant(self):
-        base = self.build([])
         at = next(s for s in base['stages'] if s['id'] == 'scope')['accepted_at']
-        same = self.build([self.event(1, 'accepted', 'scope', at, episode_id='s1')])
-        self.assertEqual([e['source'] for e in next(s for s in same['stages'] if s['id'] == 'scope')['episodes']], ['workflow-lifecycle'])
-        other = self.build([self.event(1, 'accepted', 'scope', '2026-10-17T13:30:00Z', episode_id='s1')])
-        self.assertEqual(sorted(e['source'] for e in next(s for s in other['stages'] if s['id'] == 'scope')['episodes']),
-                         ['checkpoint-receipt', 'workflow-lifecycle'])
+        report = self.build([self.event(1, 'recovered', 'clarify', first['ended_at'], episode_id='c1', claim_id='x'),
+                             self.event(2, 'accepted', 'scope', at, episode_id='s1', claim_id='y')])
+        self.assertEqual(len(self.recoveries(report)), 7)
+        scope = next(s for s in report['stages'] if s['id'] == 'scope')
+        self.assertEqual(sorted(e['source'] for e in scope['episodes']), ['checkpoint-receipt', 'workflow-lifecycle'])
+
+
+class ProducerShapedDuplicates(Synthetic):
+    """Workflow 1.12.0 writes claim_id on each receipt and on each recovery's claim, and the same id on its lifecycle events."""
+
+    def checkpoint(self, claim='claim-a', recovery_claim='claim-a'):
+        self.put('checkpoint.json', {
+            'feature': 'specs/001-demo', 'status': 'in-progress', 'generation': 5,
+            'receipts': {'plan': {'stage': 'plan', 'outcome': 'passed', 'completed_at': '2026-10-15T09:30:00.100000+00:00', 'claim_id': claim}},
+            'recoveries': [{'claim': {'stage': 'plan', 'claim_id': recovery_claim, 'claimed_at': '2026-10-15T08:00:00+00:00',
+                                      'token': 'secret-token', 'delegation': {'identity': 'specs/001-demo/stage:plan'}},
+                            'reason': 'worker died', 'at': '2026-10-15T08:20:00.100000+00:00'}]})
+
+    def rows(self, report, kind):
+        return [e for e in report['timeline'] if e['kind'] == kind and e['text'].startswith('Plan')]
+
+    def test_the_same_claim_id_means_one_episode_and_one_timeline_row_for_each(self):
+        self.checkpoint()
+        self.lifecycle(self.event(1, 'claim', stage='plan', episode_id='ep1', claim_id='claim-a', at='2026-10-15T08:00:00Z'),
+                       self.event(2, 'recovered', stage='plan', episode_id='ep1', claim_id='claim-a', at='2026-10-15T08:20:00.100312+00:00'),
+                       self.event(3, 'accepted', stage='plan', episode_id='ep2', claim_id='claim-a', at='2026-10-15T09:30:00.100845+00:00'))
+        report = self.build()
+        plan = self.stage(report, 'plan')
+        self.assertEqual(sorted(e['source'] for e in plan['episodes']), ['workflow-lifecycle', 'workflow-lifecycle'])  # no checkpoint copies
+        self.assertEqual(len(self.rows(report, 'recovery')), 1)
+        self.assertEqual(len([e for e in self.rows(report, 'stage') if 'accepted' in e['text']]), 1)
+        self.assertNotIn('secret-token', json.dumps(report))
+
+    def test_a_different_claim_at_the_identical_instant_does_not_suppress(self):
+        self.checkpoint(claim='claim-a', recovery_claim='claim-a')
+        self.lifecycle(self.event(1, 'recovered', stage='plan', episode_id='ep1', claim_id='claim-b', at='2026-10-15T08:20:00.100000+00:00'),
+                       self.event(2, 'accepted', stage='plan', episode_id='ep2', claim_id='claim-b', at='2026-10-15T09:30:00.100000+00:00'))
+        report = self.build()
+        sources = sorted(e['source'] for e in self.stage(report, 'plan')['episodes'])
+        self.assertEqual(sources, ['checkpoint-receipt', 'checkpoint-recovery', 'workflow-lifecycle', 'workflow-lifecycle'])
+        self.assertEqual(len(self.rows(report, 'recovery')), 2)
+
+    def test_the_kind_must_match_a_recovered_event_does_not_hide_a_receipt(self):
+        self.checkpoint()
+        self.lifecycle(self.event(1, 'recovered', stage='plan', episode_id='ep1', claim_id='claim-a', at='2026-10-15T08:20:00Z'))
+        sources = sorted(e['source'] for e in self.stage(self.build(), 'plan')['episodes'])
+        self.assertEqual(sources, ['checkpoint-receipt', 'workflow-lifecycle'])  # only the recovery is a duplicate
+
+    def test_the_stage_must_match_too(self):
+        self.checkpoint()
+        self.lifecycle(self.event(1, 'accepted', stage='tasks', episode_id='ep1', claim_id='claim-a', at='2026-10-15T09:30:00Z'))
+        self.assertEqual(sorted(e['source'] for e in self.stage(self.build(), 'plan')['episodes']), ['checkpoint-receipt', 'checkpoint-recovery'])
+
+    def test_the_claim_id_is_read_from_receipts_and_recoveries(self):
+        from sanduq_progress.collect import workflow as wf
+        self.assertEqual(wf.accepted_receipts({'plan': {'stage': 'plan', 'outcome': 'passed', 'completed_at': '2026-10-15T09:00:00Z', 'claim_id': 'c'}})[0]['claim_id'], 'c')
+        self.assertIsNone(wf.accepted_receipts({'plan': {'stage': 'plan', 'outcome': 'passed', 'completed_at': '2026-10-15T09:00:00Z'}})[0]['claim_id'])
+        got = wf.recoveries([{'claim': {'stage': 'plan', 'claim_id': 'c'}, 'reason': 'r', 'at': '2026-10-15T09:00:00Z'}])
+        self.assertEqual(got[0]['claim_id'], 'c')
+
+
+class UnicodeAnswers(Synthetic):
+    ODD = ['\u00df', '\ufb01', '\u0149', '\u0130', '\u00c5', '\uff21', 'ab', '']
+
+    def test_collectors_never_raise_on_non_ascii_single_characters(self):
+        from sanduq_progress.collect import clarifications as col, workflow as wf
+        for value in self.ODD:
+            self.assertEqual(wf._option_text(value, ['x', 'y']), (value.strip(), None))
+            text, index = col._decode(value, ['x', 'y', 'z'])
+            self.assertEqual((text, index), (value, None))
+        self.assertEqual(col._decode('\u00df', ['\u00df']), ('\u00df', 0))  # exact text still matches
+        self.assertEqual(wf._option_text('\u00df', ['a', '\u00df']), ('\u00df', 1))
+
+    def test_non_ascii_answers_through_model_build_on_the_842_fixture(self):
+        with tempfile.TemporaryDirectory() as base:
+            ctx = helpers.run842_ctx(base)
+            path = ctx.feature_dir / 'workflow' / 'clarifications.json'
+            doc = json.loads(path.read_text(encoding='utf-8'))
+            item = doc['items'][0]
+            item['answer'] = {'kind': 'multiple', 'value': ['\u00df', '\ufb01', '\u0149', 'A', 'a', 'Z']}
+            doc['items'].append(dict(item, source_id='C9', answer={'kind': 'single', 'value': '\u00df'}))
+            doc['items'].append(dict(item, source_id='C10', answer={'kind': 'text', 'value': '\ufb01'}))
+            path.write_text(json.dumps(doc), encoding='utf-8')
+            report = model.build(ctx, parse(helpers.RUN842_NOW), 1, {}, schema='v3')
+        by = {d['source_id']: d['answer'] for d in report['decisions']['made'] + report['decisions']['pending'] if d['source'] == 'clarification'}
+        self.assertEqual(by['C1Q1']['value'], ['\u00df', '\ufb01', '\u0149', item['options'][0], item['options'][0], 'Z'])
+        self.assertIsNone(by['C1Q1']['index'])  # not every value names an option
+        self.assertEqual((by['C9']['value'], by['C9']['index']), ('\u00df', None))
+        self.assertEqual((by['C10']['value'], by['C10']['index']), ('\ufb01', None))
+        self.assertEqual(validate.validate(report), [])
+
+    def test_a_non_ascii_workflow_choice_does_not_crash_the_decision_collector(self):
+        self.put('decisions.json', {'decisions': [{'id': 'SD1', 'status': 'answered', 'options': ['x', 'y'], 'selected': ['\u00df'],
+                                                   'answers': [{'author': 'a', 'updated_at': '2026-10-15T10:00:00Z'}]}]})
+        answer = {d['source']: d['answer'] for d in self.build()['decisions']['made']}['workflow']
+        self.assertEqual((answer['value'], answer['index']), ('\u00df', None))
 
 
 class TimingCompleteness(Synthetic):
@@ -474,10 +556,17 @@ class TimingCompleteness(Synthetic):
         stage = self.stage(self.build(), 'execute')
         self.assertEqual((stage['timing'], stage['last_end'], stage['open']), ('end-unknown', '2026-10-15T10:10:00Z', False))
 
-    def test_an_unknown_end_that_started_before_the_last_known_end_does_not_hide_it(self):
+    def test_an_earlier_overlapping_run_with_no_end_still_leaves_the_end_unknown(self):
         self.ledger(self.attempt('lost', status='failed', started='2026-10-15T09:00:00Z', ended=None), self.attempt('late', started='2026-10-15T10:00:00Z'))
         stage = self.stage(self.build(), 'execute')
-        self.assertEqual((stage['timing'], stage['last_end']), ('closed', '2026-10-15T10:10:00Z'))
+        self.assertEqual((stage['timing'], stage['last_end']), ('end-unknown', '2026-10-15T10:10:00Z'))  # the observed end is kept apart
+
+    def test_a_run_with_no_end_is_bounded_by_an_ended_episode_of_its_own(self):
+        self.ledger(self.attempt('lost', status='failed', claim_id='c1', ended=None))
+        self.lifecycle(self.event(1, 'claim', episode_id='ep1', claim_id='c1', delegation_run_ids=['lost'], at='2026-10-15T09:59:00Z'),
+                       self.event(2, 'recovered', episode_id='ep1', claim_id='c1', delegation_run_ids=['lost'], at='2026-10-15T10:30:00Z'))
+        stage = self.stage(self.build(), 'execute')
+        self.assertEqual((stage['timing'], stage['last_end']), ('closed', '2026-10-15T10:30:00Z'))
 
     def test_an_unended_run_with_no_start_is_treated_as_possibly_later(self):
         self.ledger(self.attempt('early'), self.attempt('odd', status='failed', started=None, ended=None))

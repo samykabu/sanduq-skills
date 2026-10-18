@@ -95,6 +95,11 @@ def next_action(value):
             'generation': _int(value.get('generation'))}
 
 
+def _claim_id(value):
+    """The non-credential claim id Workflow 1.12.0 writes on receipts and recoveries, or None (a legacy record)."""
+    return clean(value, 120) if isinstance(value, str) and value.strip() else None
+
+
 def recoveries(value):
     """Recorded recoveries. Workflow stores each as `{claim: {stage, claimed_at, mode, delegation: {identity}, ...}, reason, at}`
     (an older flat `{stage, reason, at}` is read too). The claim's `claimed_at` is kept as the episode start and its
@@ -111,7 +116,7 @@ def recoveries(value):
         identity = delegation.get('identity')
         started = claim.get('claimed_at')
         out.append({'stage': str(stage) if stage else None, 'reason': clean(r.get('reason'), 120), 'at': r.get('at'),
-                    'started_at': started if parse_time(started) else None,
+                    'started_at': started if parse_time(started) else None, 'claim_id': _claim_id(claim.get('claim_id')),
                     'mode': claim.get('mode') if claim.get('mode') in ('initial', 'revalidate', 'resume') else None,
                     'identity': clean(identity, 160) if isinstance(identity, str) and identity.strip() else None})
     return out
@@ -129,6 +134,7 @@ def accepted_receipts(receipts):
         if when:
             rows.append((when, index, {'stage': str(item.get('stage') or key), 'at': at, '_when': when, '_stale': bool(item.get('stale')),
                                     'mode': item.get('mode') if isinstance(item.get('mode'), str) else None,
+                                    'claim_id': _claim_id(item.get('claim_id')),
                                     'created_at': item.get('created_at') if parse_time(item.get('created_at')) else None}))
     return [r[2] for r in sorted(rows, key=lambda r: (r[0], r[1]))]
 
@@ -159,7 +165,7 @@ def _option_text(value, options):
     position; the text is returned here so no later stage decodes it again. Anything else is the cleaned text, with its
     index only when it equals an option exactly."""
     text = value.strip()
-    letter = ord(text.upper()) - 65 if len(text) == 1 and text.isalpha() else -1
+    letter = ord(text.upper()) - 65 if re.fullmatch(r'[A-Za-z]', text) else -1  # ASCII letters only
     if 0 <= letter < len(options):
         return options[letter], letter
     shown = clean(text, 80)

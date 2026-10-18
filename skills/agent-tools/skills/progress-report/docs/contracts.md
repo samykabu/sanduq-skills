@@ -306,19 +306,23 @@ when it has one, and otherwise count as selected only if some record mentions th
   event, and an event that names only a claim feed validity and the timeline but create no episode. An episode starts at its
   `claim` or `resume` event and never at an invalidation. A `rejected-completion` does not end the episode. For a stage with no
   lifecycle events, the episodes come from the passed receipt and from `recoveries` (`source` `checkpoint-receipt` /
-  `checkpoint-recovery`, `fidelity` `partial`). A stage that also has lifecycle events keeps these historical episodes: one is
-  dropped only when a lifecycle event records the same fact (same stage, `accepted`/`revalidated` for a receipt or `recovered`
-  for a recovery, at the very same instant). Sharing a stage never hides history. A recovery is read from Workflow's `{claim: {stage, claimed_at, mode,
+  `checkpoint-recovery`, `fidelity` `partial`). A stage that also has lifecycle events keeps these historical episodes. Workflow
+  1.12.0 writes the same `claim_id` on a receipt (`receipts[stage].claim_id`), on a recovery (`claim.claim_id`) and on the lifecycle
+  events of that claim. A checkpoint receipt episode is dropped only when an `accepted` or `revalidated` event of the same stage
+  carries the same `claim_id`, and a checkpoint recovery episode only when a `recovered` event of the same stage does. The same
+  rule keeps the timeline to one row per fact. A record with no `claim_id` (older Workflow) is always kept. A shared stage or a
+  shared timestamp never suppresses anything; the checkpoint episodes carry the record's `claim_id` when it has one. A recovery is read from Workflow's `{claim: {stage, claimed_at, mode,
   delegation: {identity}}, reason, at}` record (a flat `{stage, reason, at}` too): `claimed_at` is its start, the delegation
   identity is kept as `identity`, and the claim token is never read. Runs of a stage that no event or shared claim places in an
   episode are listed in `unknown_runs`.
 - A run joins an episode only when a lifecycle event names it in `delegation_run_ids`, or when its `claim_id` matches exactly
   one episode. A failed worker does not reject a stage.
 - `open` is true only when something confirms the stage is running now: a live run, a running episode or the active claim.
-  `timing` is `open`, `closed` (a start and an end), `end-unknown` or `unknown` (no start). A stage is `closed` only when no
-  run that is not live and has no recorded end, and no episode that is neither running nor ended, could have run after the last
-  known end (one with no start counts as possibly later). Otherwise it is `end-unknown` and `last_end` keeps the last end that
-  was recorded. `first_start` and `last_end` take the runs and the episode boundaries; `last_end` is `null` while the stage is `open`. The UI
+  `timing` is `open`, `closed` (a start and an end), `end-unknown` or `unknown` (no start). A stage is `closed` only when
+  every relevant run and episode has a resolved end, whatever its start: a run that is not live and records no end is unresolved
+  unless its own episode has an end (an `accepted`, `recovered` or `invalidated` event bounds it), and an episode that is neither
+  running nor ended is unresolved. Otherwise it is `end-unknown`, and `last_end` keeps the last end that was recorded, apart from
+  the verdict. `first_start` and `last_end` take the runs and the episode boundaries; `last_end` is `null` while the stage is `open`. The UI
   extends a bar to the snapshot time only when `open` is true and draws `end-unknown` as a short bar with a broken edge.
 - `feature.stage.status` is the status of that stage's entry; `checkpoint_status` is the checkpoint's own.
 
@@ -344,7 +348,8 @@ the rest of the states in `clarifications.json`; a lower revision of the same `s
 characters) and `evidence_links` holds the `{text, url}` of those that carry an https URL. `answer.value` is always option text
 (or a list of texts) and `answer.index` is the explicit position (an int, a list for `multiple`, or `null` when the text names no
 option). The adapters decode once: Workflow's ledger and Scope's records store choices as letters (`A`, `B`, ...), and an in-range
-letter becomes the option at that position; facts and free-text answers are matched by exact option text only. The UI highlights by
+ASCII letter (`A`-`Z`, `a`-`z`) becomes the option at that position (any other character, such as `ß`, is kept as exact text with
+`index` `null`, and never raises); facts and free-text answers are matched by exact option text only. The UI highlights by
 `index`, else by exact option text. It never decodes a letter, so with options `S`, `M`, `L` the answer `M` is the option `M`. `pending` holds `pending` and `conflict`. `sources` states which
 adapters ran; "none recorded" is only true for the sources that were `available`.
 
@@ -546,7 +551,7 @@ source's `note`. Read cap: at most 8 MiB. A larger file is read from its tail, s
 `next_action: {text, stage, kind, evaluated_at, generation}` where `kind` is `active-claim` or `next-stage`; Progress shows it
 with its age and never computes one. `generation` is the checkpoint generation. Read as before: `receipts`, `recoveries`,
 `pause`, `active`, `branch_history`, and `policy.processes.qa` / `.user_manual` when present. Each `recoveries` entry is
-`{claim: {stage, claimed_at, mode, delegation: {identity}, …}, reason, at}`; Progress reads only those fields, never the claim
+`{claim: {stage, claim_id, claimed_at, mode, delegation: {identity}, …}, reason, at}` and each receipt may carry `claim_id`; Progress reads only those fields, never the claim
 `token`.
 
 **`workflow/delegations.json`**, new attempt fields: `intent_id`, `claim_id` (non-credential), `parent_run_id` and

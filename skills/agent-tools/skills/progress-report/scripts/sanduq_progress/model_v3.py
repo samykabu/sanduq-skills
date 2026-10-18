@@ -226,24 +226,25 @@ def _fallback_episodes(cp, events):
     """Episodes older producers leave evidence for: a passed receipt (with its creation time when it has one) and each
     recorded recovery. Their start is unknown unless the record states it, and their fidelity says so.
 
-    History is kept when a stage also has lifecycle events. A checkpoint record is dropped only when a lifecycle event
-    records the same fact: same stage, same kind (`accepted`/`revalidated` for a receipt, `recovered` for a recovery) and the
-    very same instant. Sharing a stage never suppresses it."""
+    History is kept when a stage also has lifecycle events. A checkpoint record is dropped only when a lifecycle event of the
+    same stage and kind (`accepted`/`revalidated` for a receipt, `recovered` for a recovery) carries the same `claim_id`: the
+    id Workflow 1.12.0 writes on both. A record with no claim id (legacy) is always kept, and neither a shared stage nor a
+    shared timestamp ever suppresses anything."""
     out = []
     if not cp:
         return out
-    seen = {(e['stage'], 'accepted' if e['event'] in ('accepted', 'revalidated') else e['event'], parse_time(e['at']))
-            for e in events if e['stage']}
+    seen = {(e['stage'], 'accepted' if e['event'] in ('accepted', 'revalidated') else e['event'], e['claim_id'])
+            for e in events if e['stage'] and e['claim_id']}
     for rec in wf.accepted_receipts(cp.get('_receipts')):
-        if (rec['stage'], 'accepted', parse_time(rec['at'])) in seen:
+        if rec.get('claim_id') and (rec['stage'], 'accepted', rec['claim_id']) in seen:
             continue
         out.append({'id': f"{rec['stage']}#receipt", 'stage': rec['stage'], 'source': 'checkpoint-receipt', 'fidelity': 'partial',
-                    'claim_id': None, 'started_at': rec.get('created_at'), 'ended_at': rec['at'], 'outcome': 'accepted', 'runs': [],
+                    'claim_id': rec.get('claim_id'), 'started_at': rec.get('created_at'), 'ended_at': rec['at'], 'outcome': 'accepted', 'runs': [],
                     'reason': 'revalidation receipt' if rec.get('mode') == 'revalidate' else None})
     for index, rec in enumerate(cp.get('recoveries') or []):
-        if rec['stage'] and (rec['stage'], 'recovered', parse_time(rec['at'])) not in seen:
+        if rec['stage'] and not (rec.get('claim_id') and (rec['stage'], 'recovered', rec['claim_id']) in seen):
             out.append({'id': f"{rec['stage']}#recovery-{index + 1}", 'stage': rec['stage'], 'source': 'checkpoint-recovery',
-                        'fidelity': 'partial', 'claim_id': None, 'started_at': rec.get('started_at'), 'ended_at': rec['at'],
+                        'fidelity': 'partial', 'claim_id': rec.get('claim_id'), 'started_at': rec.get('started_at'), 'ended_at': rec['at'],
                         'outcome': 'recovered', 'runs': [], 'reason': rec['reason'] or None,
                         **({'identity': rec['identity']} if rec.get('identity') else {})})
     return out
@@ -321,13 +322,13 @@ def build_stages(now, x, lifecycle, runs):
                                 or any(e['outcome'] == 'running' for e in eps))
         first_start = min(starts, key=parse_time) if starts else None
         last_end = None if is_open or not ends else max(ends, key=parse_time)
-        # Completeness: a known end only closes the stage when nothing that could run after it has an unknown end. A run that is
-        # not live and records no end, or an episode that is neither running nor ended, with a start at or after the last known
-        # end (or no start at all), leaves the end unknown. `last_end` then stays the last end that was recorded.
-        known = max((parse_time(t) for t in ends), default=None)
-        loose_ends = [r['started_at'] for r in mine if r['worker_status'] not in LIVE and not parse_time(r['ended_at'])]
-        loose_ends += [e['started_at'] for e in eps if e['outcome'] in ('unknown', 'rejected-completion') and not e['ended_at']]
-        partial = known is not None and any(parse_time(t) is None or parse_time(t) >= known for t in loose_ends)
+        # Completeness: a known end closes the stage only when every relevant run and episode has a resolved end, whatever its
+        # start. A run that is not live and records no end is unresolved unless its episode has an end (a lifecycle accepted,
+        # recovered or invalidated event bounds it). An episode that is neither running nor ended is unresolved. `last_end`
+        # keeps the last end that was recorded.
+        ended_episodes = {e['id'] for e in eps if e['ended_at']}
+        partial = (any(r['worker_status'] not in LIVE and not parse_time(r['ended_at']) and r['episode_id'] not in ended_episodes for r in mine)
+                   or any(e['outcome'] in ('unknown', 'rejected-completion') and not e['ended_at'] for e in eps))
         timing = ('open' if is_open else 'unknown' if not first_start else 'end-unknown' if (not last_end or partial) else 'closed')
         stage_rows.append({
             'id': sid, 'label': label or _label(sid), 'order': position + 1, 'selected': selected, 'status': status,

@@ -16,6 +16,7 @@ as a link in `evidence_links` ({text, url}) when it is an https URL. Nothing is 
 Input size. The file is read up to `READ_CAP` bytes. A larger file is reported as `invalid` with `truncated` set and is not
 parsed, so a runaway file cannot consume memory during a refresh."""
 import json
+import re
 from pathlib import Path
 
 from ..util import clean, read_capped
@@ -39,7 +40,7 @@ def _decode(text, options):
     """(option text, index). Scope records a choice as a letter (A, B, ...) that names the option at that position; a
     letter in range is decoded here, once, so nothing downstream guesses. Otherwise the text counts only when it equals an
     option exactly. Free text (kind `text`) is never decoded."""
-    if len(text) == 1 and text.isalpha() and ord(text.upper()) - 65 < len(options):
+    if re.fullmatch(r'[A-Za-z]', text) and ord(text.upper()) - 65 < len(options):  # ASCII letters only; anything else is exact text
         i = ord(text.upper()) - 65
         return options[i], i
     return text, options.index(text) if text in options else None
