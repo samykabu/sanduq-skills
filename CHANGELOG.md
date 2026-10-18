@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 — illustration-tools 3.4.3, dev-tools 1.1.2, agent-tools 1.4.3: portable plugin manifests
+
+- Every bundle gains a root `plugin.json` in the Agent Plugins 1.0.0 format, mirroring its `.claude-plugin/plugin.json`, so Codex (`codex plugin marketplace add samykabu/sanduq`, then `codex plugin add <bundle>@sanduq`) and Claude Code install the same bundle. CI checks the two manifests agree and validates every SKILL.md against the Agent Skills frontmatter rules. No skill content changes.
+
 ## 2026-10-18 — agent-tools 1.4.2: fixes from the sanduq #90 review
 
 - `progress-report` decodes Scope's spreadsheet-style option labels (`AA` is the 27th option), applies a session-bound self-report
