@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.1 — 2026-10-18
+
+Docs only. No code changes.
+
+- The `progress-report` README describes the Timeline page, `--workstream`, `--schema v2`, `bind --model --effort` and
+  `theme --layout`, and quotes the token benchmark from `docs/token-benchmark.md`.
+
 ## 1.4.0 — 2026-10-18
 
 `progress-report` 1.2.0: a v3 projection with stages, workstreams, runs and a timeline, and a Timeline view that replaces
