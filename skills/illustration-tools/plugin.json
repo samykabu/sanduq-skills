@@ -1,0 +1,32 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "illustration-tools",
+  "version": "3.4.3",
+  "description": "Generate, import, and export forty-four kinds of technical, product, architecture, process, and data illustrations through one unified skill",
+  "author": {
+    "name": "Samy K. Abushanab"
+  },
+  "license": "MIT",
+  "keywords": [
+    "diagrams",
+    "illustrate",
+    "architecture",
+    "process-flow",
+    "workflow",
+    "svg",
+    "html",
+    "visualization",
+    "illustration",
+    "documentation",
+    "feature-docs",
+    "qa",
+    "user-manual",
+    "light-theme",
+    "dark-theme",
+    "project-theme",
+    "custom-fonts",
+    "hand-drawn",
+    "technical-color"
+  ],
+  "repository": "https://github.com/samykabu/sanduq-skills"
+}

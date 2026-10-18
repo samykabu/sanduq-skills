@@ -1,0 +1,33 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agent-tools",
+  "version": "1.4.3",
+  "description": "Delegate one task to an external agent CLI and get back a measured, normalised result; and keep a live, deterministic progress report for a Markdown plan or Spec Kit feature, with native Claude Code and Codex hooks",
+  "author": {
+    "name": "Samy K. Abushanab"
+  },
+  "license": "MIT",
+  "keywords": [
+    "delegate",
+    "agent",
+    "cli",
+    "harness",
+    "claude-code",
+    "codex",
+    "opencode",
+    "copilot",
+    "orchestration",
+    "background",
+    "tokens",
+    "second-opinion",
+    "progress",
+    "progress-report",
+    "plan",
+    "checklist",
+    "dashboard",
+    "hooks",
+    "lanes",
+    "telemetry"
+  ],
+  "repository": "https://github.com/samykabu/sanduq-skills"
+}

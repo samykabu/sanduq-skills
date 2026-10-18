@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3 — 2026-10-18
+
+Adds the Agent Plugins root manifest (`plugin.json`, schema 1.0.0) beside `.claude-plugin/plugin.json` so Codex can install the bundle from a marketplace. No skill content changes.
+
 ## 1.4.2 — 2026-10-18
 
 Fixes from the sanduq #90 review of the vendored `progress-report` code.
