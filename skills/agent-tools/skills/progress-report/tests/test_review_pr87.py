@@ -19,7 +19,7 @@ class DuplicateIdentityLanes(unittest.TestCase):
                  + fact_lane('L2', STAGE, '2026-10-17T13:01:00Z', '2026-10-17T13:10:00Z', REQ))
         attempts = [attempt(STAGE, 'codex-20261017130500-aaaa', '2026-10-17T13:02:00Z', '2026-10-17T13:09:00Z')]
         with tempfile.TemporaryDirectory() as base:
-            report = model.build(synth(base, facts, attempts), parse('2026-10-17T14:00:00Z'), 1, {})
+            report = model.build_v2(synth(base, facts, attempts), parse('2026-10-17T14:00:00Z'), 1, {})
         lanes = [l for l in report['lanes'] if l['owner'] == STAGE]
         self.assertEqual([l['id'] for l in lanes], ['L1'])
         self.assertEqual(len(lanes[0]['attempts']), 1)
@@ -36,7 +36,7 @@ class StaleReceipts(unittest.TestCase):
             cp = wf.checkpoint(ctx.feature_dir)
             self.assertEqual(cp['last_accepted']['stage'], 'plan')
             self.assertEqual([r['stage'] for r in cp['receipts']], ['plan', 'implement'])
-            self.assertEqual(model.build(ctx, parse('2026-10-17T14:00:00Z'), 1, {})['feature']['stage']['value'], 'plan')
+            self.assertEqual(model.build_v2(ctx, parse('2026-10-17T14:00:00Z'), 1, {})['feature']['stage']['value'], 'plan')
 
     def test_a_stale_receipt_still_supersedes_a_pause_it_followed(self):
         with tempfile.TemporaryDirectory() as base:

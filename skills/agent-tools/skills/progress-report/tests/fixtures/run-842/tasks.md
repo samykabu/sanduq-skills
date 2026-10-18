@@ -1,5 +1,16 @@
 # Tasks: Persist and publish versioned project workflow graphs
 ## Execution configuration
+
+| Marker | Work |
+|---|---|
+| `[Impl]` | General coding, including the unit and integration tests that belong to that code |
+| `[QA]` | End-to-end planning, scenarios, fixtures and the API sample exporter |
+| `[Collect]` | Run the authors' fixed commands and collect evidence |
+| `[Docs]` | Manuals and illustrations |
+| `[Review]` | The one final independent review |
+| `[P]` | Runs in parallel with the other task named in its line |
+| `[A]` / `[B]` | Coding lane: **A** owns schema, SQL and server paths; **B** owns rules, browser modules, seeds and consumer tests. Lanes never edit each other's files |
+
 ## Phase 1: Setup
 - [x] T001 [Impl] [A] Record the implementation baseline in `…` from `…`, `…`, `…` and `…`.
 ## Phase 2: Shared contracts (settled before either lane builds on them)

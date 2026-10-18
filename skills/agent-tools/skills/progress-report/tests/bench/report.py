@@ -98,6 +98,9 @@ def render(data):
                 declared_totals["NEW"], declared_totals["MD-EDIT"], ratio, declared_totals["MD-EDIT-LEAN"]),
             "- NEW setup is %d tokens (the skill text plus `init`). The skill loads again after a restart or compaction." % declared_setup["NEW"],
             "- `unblock`, `block`, `decision` and note verbs cost tens of tokens because their command line is the whole cost.",
+            "- MD-RENDER is the size of the real export, and it is only comparable when it carries the same content. The first v3 export dropped the Tasks checklist, "
+            "which cut a re-read from 1349 to 557 tokens (resume). That was information loss, not a saving. The export now lists every task by phase with its workstream and state, "
+            "and the MD-RENDER column is reported as measured with that section included.",
             "- The per-verb prefix `python .claude/skills/progress-report/scripts/progress.py` is %d tokens of each NEW line. A shorter entry point would reduce every NEW figure." % prefix_tokens,
             "", "## Reproduce", "",
             "```bash", "python -m pip install tiktoken==0.14.0",

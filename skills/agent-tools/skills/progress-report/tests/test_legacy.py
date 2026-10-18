@@ -15,7 +15,7 @@ class LegacyAttempts(Project):
         return str(path)
 
     def report(self):
-        code, text = self.cli('status', '--json')
+        code, text = self.cli('status', '--json', '--schema', 'v2')
         self.assertEqual(code, 0, text)
         return json.loads(text)
 

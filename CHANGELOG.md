@@ -1,13 +1,15 @@
 # Changelog
 
+## 2026-10-18 — agent-tools 1.4.0: Progress Timeline
+
+- `progress-report` 1.2.0: v3 projection (stages, workstreams, runs, decisions, timeline) with the Timeline view as the
+  default page, `--schema v2` compatibility, coordinator self-report and `theme --layout`. See the
+  [bundle changelog](skills/agent-tools/CHANGELOG.md#140--2026-10-18).
+
 ## 2026-10-17 — illustration-tools 3.4.2: stable render verification
 
 - Pause page clocks during render comparisons and advance them explicitly for declared reveal holds. JavaScript timers can no longer produce inconsistent clipping results between captures.
 - Restore SVG and ancestor styles exactly after capture, including when a capture fails.
-
-## Unreleased — agent-tools 1.3.1
-
-- Native check batches, bounded collection, explicit retries and startup diagnostics. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
 
 Bundles are versioned independently and tagged `<bundle>-vX.Y.Z`. History before this repository
 existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHANGELOG.md).

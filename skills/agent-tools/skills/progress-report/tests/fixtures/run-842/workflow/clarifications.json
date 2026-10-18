@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "items": [
+    {
+      "source_id": "C1Q1",
+      "revision": 1,
+      "question": "When a publish attempt is refused after its whole-graph save, what should the server keep as the stored draft?",
+      "options": [
+        "Reset the stored draft to the latest published graph (or the blank authoring graph when only v1 exists), so the read never shows unpublished content",
+        "Keep the refused graph as the stored draft, shown in the read as a refused, unpublished attempt with who saved it and when, until the next save replaces it"
+      ],
+      "answer": {
+        "kind": "single",
+        "value": "A"
+      },
+      "state": "applied",
+      "url": "https://github.com/example-org/example-app/issues/842#issuecomment-6222010489",
+      "editor": null,
+      "observed_at": "2026-10-16T20:46:11Z",
+      "answered_at": null,
+      "applied": {
+        "at": "2026-10-16T18:34:25Z",
+        "evidence": [
+          "comment 6222206213: round 1 ready, C1Q1 answered by option A",
+          "spec.md: FR-004, Clarifications Q1 row, stored-draft entity, refused-publication edge case"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "comment",
+          "url": "https://github.com/example-org/example-app/issues/842#issuecomment-6222010489",
+          "comment_id": "6222010489",
+          "explanation": null
+        },
+        {
+          "kind": "disposition",
+          "url": null,
+          "comment_id": null,
+          "explanation": "clarify receipt: single checked original option in the native selection state; actor not claimed"
+        }
+      ]
+    }
+  ]
+}

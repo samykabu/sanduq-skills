@@ -1,0 +1,4477 @@
+{
+ "schema": "sanduq.progress.v3",
+ "rev": 40,
+ "generated_at": "2026-10-17T14:05:00Z",
+ "stale_after_seconds": 600,
+ "collection": {
+  "automatic": true,
+  "dirty": false
+ },
+ "feature": {
+  "id": "842-signal-quality",
+  "title": "Signal quality scoring for ingest pipelines",
+  "dir": "specs/842-signal-quality",
+  "branch": "842-signal-quality",
+  "issue": {
+   "number": 842,
+   "url": "https://github.com/example/repo/issues/842"
+  },
+  "workflow": "sanduq",
+  "started_at": {
+   "value": "2026-10-16T17:10:00Z",
+   "source": "checkpoint",
+   "observed_at": "2026-10-17T14:05:00Z",
+   "fidelity": "partial"
+  },
+  "stage": {
+   "value": "pr",
+   "status": "in-progress",
+   "validity": "current",
+   "source": "workflow-checkpoint"
+  },
+  "next_action": {
+   "text": "Merge the pull request after checks pass",
+   "stage": "pr",
+   "kind": "active-claim",
+   "evaluated_at": "2026-10-17T13:58:00Z",
+   "generation": 61,
+   "source": "workflow"
+  }
+ },
+ "orchestrator": {
+  "host": "codex",
+  "session_id": "sess-842-a",
+  "model": {
+   "value": "gpt-6.1-sol",
+   "source": "self-report",
+   "observed_at": "2026-10-17T14:05:00Z",
+   "fidelity": "estimated"
+  },
+  "effort": {
+   "value": "high",
+   "source": "self-report",
+   "observed_at": "2026-10-17T14:05:00Z",
+   "fidelity": "estimated"
+  },
+  "context": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "host_elapsed": {
+   "value": 72300,
+   "source": "host-hook",
+   "observed_at": "2026-10-17T14:05:00Z",
+   "fidelity": "exact"
+  },
+  "active": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "since": "2026-10-16T17:05:00Z",
+  "provenance": {
+   "model": "self-report",
+   "effort": "self-report",
+   "context": "none",
+   "host_elapsed": "host-hook",
+   "active": "none"
+  },
+  "note": "Codex hooks are not approved in this worktree; model and effort are the coordinator's own report."
+ },
+ "attention": [
+  {
+   "id": "a1",
+   "kind": "telemetry",
+   "severity": "info",
+   "text": "codex hooks not approved: model and effort are coordinator self-reported",
+   "refs": [],
+   "since": "2026-10-16T17:05:00Z"
+  },
+  {
+   "id": "a2",
+   "kind": "failure",
+   "severity": "medium",
+   "text": "Abandoned run on Tasks to issues has no recovery recorded",
+   "refs": [],
+   "since": "2026-10-17T06:40:00Z"
+  }
+ ],
+ "stages": [
+  {
+   "id": "scope",
+   "label": "Scope",
+   "order": 1,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-16T17:52:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-scope-1",
+     "n": 1,
+     "claim_id": "claim-scope-1",
+     "started_at": "2026-10-16T17:10:00Z",
+     "ended_at": "2026-10-16T17:52:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-001",
+      "run-002",
+      "run-003"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 2340,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T17:10:00Z",
+   "last_end": "2026-10-16T17:52:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "specify",
+   "label": "Specify",
+   "order": 2,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-16T18:14:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-specify-1",
+     "n": 1,
+     "claim_id": "claim-specify-1",
+     "started_at": "2026-10-16T17:55:00Z",
+     "ended_at": "2026-10-16T18:14:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-004",
+      "run-005",
+      "run-006",
+      "run-007"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 4,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T17:55:00Z",
+   "last_end": "2026-10-16T18:14:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "clarify",
+   "label": "Clarify",
+   "order": 3,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-16T20:50:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-clarify-1",
+     "n": 1,
+     "claim_id": "claim-clarify-1",
+     "started_at": "2026-10-16T18:16:00Z",
+     "ended_at": "2026-10-16T20:50:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-008",
+      "run-009",
+      "run-010"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 3600,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T18:16:00Z",
+   "last_end": "2026-10-16T20:50:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "plan",
+   "label": "Plan",
+   "order": 4,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-16T21:10:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-plan-1",
+     "n": 1,
+     "claim_id": "claim-plan-1",
+     "started_at": "2026-10-16T20:52:00Z",
+     "ended_at": "2026-10-16T21:10:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-011",
+      "run-012",
+      "run-013",
+      "run-014",
+      "run-015"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 5,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 600,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T20:52:00Z",
+   "last_end": "2026-10-16T21:10:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "order": 5,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T05:38:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-tasks-1",
+     "n": 1,
+     "claim_id": "claim-tasks-1",
+     "started_at": "2026-10-16T21:10:00Z",
+     "ended_at": "2026-10-16T21:24:00Z",
+     "outcome": "invalidated",
+     "runs": [
+      "run-016"
+     ],
+     "reason": "Upstream scope change invalidated the receipt"
+    },
+    {
+     "source": "receipt-revalidation",
+     "fidelity": "partial",
+     "id": "ep-tasks-2",
+     "n": 2,
+     "claim_id": null,
+     "started_at": "2026-10-17T04:58:00Z",
+     "ended_at": "2026-10-17T05:38:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-017",
+      "run-018",
+      "run-019",
+      "run-020",
+      "run-021"
+     ],
+     "reason": "Revalidated after upstream changes"
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 6,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 7200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T21:10:00Z",
+   "last_end": "2026-10-17T05:38:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "analyze",
+   "label": "Analyze",
+   "order": 6,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T05:20:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-analyze-1",
+     "n": 1,
+     "claim_id": "claim-analyze-1",
+     "started_at": "2026-10-16T21:24:00Z",
+     "ended_at": "2026-10-16T21:38:00Z",
+     "outcome": "invalidated",
+     "runs": [
+      "run-024"
+     ],
+     "reason": "Upstream scope change invalidated the receipt"
+    },
+    {
+     "source": "receipt-revalidation",
+     "fidelity": "partial",
+     "id": "ep-analyze-2",
+     "n": 2,
+     "claim_id": null,
+     "started_at": "2026-10-17T04:40:00Z",
+     "ended_at": "2026-10-17T05:20:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-025",
+      "run-026"
+     ],
+     "reason": "Revalidated after upstream changes"
+    }
+   ],
+   "unknown_runs": [
+    "run-022",
+    "run-023"
+   ],
+   "run_count": 5,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 6000,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T21:24:00Z",
+   "last_end": "2026-10-17T05:20:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "assure",
+   "label": "Assure",
+   "order": 7,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-16T21:37:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-assure-1",
+     "n": 1,
+     "claim_id": "claim-assure-1",
+     "started_at": "2026-10-16T21:31:00Z",
+     "ended_at": "2026-10-16T21:37:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-027",
+      "run-028",
+      "run-029"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 360,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T21:31:00Z",
+   "last_end": "2026-10-16T21:37:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "execute",
+   "label": "Execute",
+   "order": 8,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T01:30:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-execute-1",
+     "n": 1,
+     "claim_id": "claim-execute-1",
+     "started_at": "2026-10-16T21:37:00Z",
+     "ended_at": "2026-10-17T01:30:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-030",
+      "run-031",
+      "run-032",
+      "run-033",
+      "run-034",
+      "run-035",
+      "run-036",
+      "run-037",
+      "run-038",
+      "run-039",
+      "run-040",
+      "run-041",
+      "run-042",
+      "run-043",
+      "run-044",
+      "run-045",
+      "run-046",
+      "run-047",
+      "run-048",
+      "run-049",
+      "run-050",
+      "run-051",
+      "run-052",
+      "run-053",
+      "run-054",
+      "run-055",
+      "run-056"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [
+    "run-057",
+    "run-058",
+    "run-059",
+    "run-060"
+   ],
+   "run_count": 31,
+   "failed_runs": 3,
+   "run_time": {
+    "value": 28680,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-16T21:37:00Z",
+   "last_end": "2026-10-17T01:30:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "converge",
+   "label": "Converge",
+   "order": 9,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T02:17:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-converge-1",
+     "n": 1,
+     "claim_id": "claim-converge-1",
+     "started_at": "2026-10-17T01:31:00Z",
+     "ended_at": "2026-10-17T02:17:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-061",
+      "run-062",
+      "run-063"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 2520,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T01:31:00Z",
+   "last_end": "2026-10-17T02:17:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "verify",
+   "label": "Verify",
+   "order": 10,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T03:40:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-verify-1",
+     "n": 1,
+     "claim_id": "claim-verify-1",
+     "started_at": "2026-10-17T02:17:00Z",
+     "ended_at": "2026-10-17T03:40:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-064",
+      "run-065",
+      "run-066",
+      "run-067",
+      "run-068",
+      "run-069"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 6,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 4320,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T02:17:00Z",
+   "last_end": "2026-10-17T03:40:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "review",
+   "label": "Review",
+   "order": 11,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T05:38:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-review-1",
+     "n": 1,
+     "claim_id": "claim-review-1",
+     "started_at": "2026-10-17T03:40:00Z",
+     "ended_at": "2026-10-17T05:38:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-070",
+      "run-071",
+      "run-072",
+      "run-073",
+      "run-074",
+      "run-075",
+      "run-076",
+      "run-077",
+      "run-078"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 9,
+   "failed_runs": 1,
+   "run_time": {
+    "value": 5760,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T03:40:00Z",
+   "last_end": "2026-10-17T05:38:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "manual",
+   "label": "User manual",
+   "order": 12,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T06:10:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-manual-1",
+     "n": 1,
+     "claim_id": "claim-manual-1",
+     "started_at": "2026-10-17T05:40:00Z",
+     "ended_at": "2026-10-17T06:10:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-079",
+      "run-080",
+      "run-081"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 1620,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T05:40:00Z",
+   "last_end": "2026-10-17T06:10:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "issues",
+   "label": "Tasks to issues",
+   "order": 13,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T06:50:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-issues-1",
+     "n": 1,
+     "claim_id": "claim-issues-1",
+     "started_at": "2026-10-17T06:22:00Z",
+     "ended_at": "2026-10-17T06:50:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-082",
+      "run-083",
+      "run-084",
+      "run-085"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 4,
+   "failed_runs": 1,
+   "run_time": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-sonnet-5-5",
+    "gpt-6-astra",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T06:22:00Z",
+   "last_end": "2026-10-17T06:50:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "ready",
+   "label": "Ready",
+   "order": 14,
+   "selected": true,
+   "status": "accepted",
+   "validity": "current",
+   "accepted_at": "2026-10-17T07:40:00Z",
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-ready-1",
+     "n": 1,
+     "claim_id": "claim-ready-1",
+     "started_at": "2026-10-17T07:00:00Z",
+     "ended_at": "2026-10-17T07:40:00Z",
+     "outcome": "accepted",
+     "runs": [
+      "run-086",
+      "run-087",
+      "run-088"
+     ],
+     "reason": ""
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 3,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 2160,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "claude-opus-5-5",
+    "gpt-6.1-sol"
+   ],
+   "first_start": "2026-10-17T07:00:00Z",
+   "last_end": "2026-10-17T07:40:00Z",
+   "open": false,
+   "timing": "closed"
+  },
+  {
+   "id": "pr",
+   "label": "Pull request",
+   "order": 15,
+   "selected": true,
+   "status": "running",
+   "validity": "current",
+   "accepted_at": null,
+   "episodes": [
+    {
+     "source": "workflow-lifecycle",
+     "fidelity": "exact",
+     "id": "ep-pr-1",
+     "n": 1,
+     "claim_id": "claim-pr-1",
+     "started_at": "2026-10-17T13:20:00Z",
+     "ended_at": null,
+     "outcome": "running",
+     "runs": [
+      "run-089"
+     ],
+     "reason": "Claim still open"
+    }
+   ],
+   "unknown_runs": [],
+   "run_count": 1,
+   "failed_runs": 0,
+   "run_time": {
+    "value": 1500,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "models": [
+    "gpt-6-astra"
+   ],
+   "first_start": "2026-10-17T13:20:00Z",
+   "last_end": null,
+   "open": true,
+   "timing": "open"
+  },
+  {
+   "id": "finalize",
+   "label": "Finalize",
+   "order": 16,
+   "selected": true,
+   "status": "pending",
+   "validity": "unknown",
+   "accepted_at": null,
+   "episodes": [],
+   "unknown_runs": [],
+   "run_count": 0,
+   "failed_runs": 0,
+   "run_time": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "models": [],
+   "first_start": null,
+   "last_end": null,
+   "open": false,
+   "timing": "unknown"
+  }
+ ],
+ "workstreams": [
+  {
+   "id": "A",
+   "label": "Workstream A",
+   "origin": "facts-marked",
+   "tasks": {
+    "done": [
+     "T001",
+     "T002",
+     "T003",
+     "T004",
+     "T005",
+     "T006",
+     "T007",
+     "T008",
+     "T009"
+    ],
+    "blocked": [],
+    "active": [],
+    "waiting": []
+   },
+   "owners": [
+    {
+     "agent": "codex gpt-6.1-sol",
+     "from": "2026-10-16T21:37:00Z",
+     "to": "2026-10-17T00:10:00Z"
+    },
+    {
+     "agent": "codex gpt-6-astra",
+     "from": "2026-10-17T00:10:00Z",
+     "to": null
+    }
+   ],
+   "run_ids": [
+    "run-030",
+    "run-031",
+    "run-032",
+    "run-033",
+    "run-034",
+    "run-035",
+    "run-036",
+    "run-037",
+    "run-038"
+   ],
+   "conflicts": []
+  },
+  {
+   "id": "B",
+   "label": "Workstream B",
+   "origin": "facts-marked",
+   "tasks": {
+    "done": [
+     "T010",
+     "T011",
+     "T012",
+     "T013",
+     "T014",
+     "T015",
+     "T016",
+     "T017",
+     "T018"
+    ],
+    "blocked": [],
+    "active": [],
+    "waiting": []
+   },
+   "owners": [
+    {
+     "agent": "claude claude-sonnet-5-5",
+     "from": "2026-10-16T21:37:00Z",
+     "to": null
+    }
+   ],
+   "run_ids": [
+    "run-039",
+    "run-040",
+    "run-041",
+    "run-042",
+    "run-043",
+    "run-044",
+    "run-045",
+    "run-046",
+    "run-047",
+    "run-048",
+    "run-049",
+    "run-050",
+    "run-051"
+   ],
+   "conflicts": []
+  },
+  {
+   "id": "Shared",
+   "label": "Shared",
+   "origin": "shared",
+   "tasks": {
+    "done": [
+     "T019",
+     "T020",
+     "T021",
+     "T022",
+     "T023"
+    ],
+    "blocked": [],
+    "active": [],
+    "waiting": []
+   },
+   "owners": [
+    {
+     "agent": "coordinator",
+     "from": "2026-10-16T21:37:00Z",
+     "to": null
+    }
+   ],
+   "run_ids": [
+    "run-052",
+    "run-053",
+    "run-054",
+    "run-055",
+    "run-056",
+    "run-057",
+    "run-058",
+    "run-059",
+    "run-060"
+   ],
+   "conflicts": []
+  }
+ ],
+ "runs": [
+  {
+   "run_id": "run-001",
+   "identity": "specs/842-signal-quality/scope",
+   "stage": "scope",
+   "tasks": [],
+   "episode_id": "ep-scope-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T17:10:00Z",
+   "ended_at": "2026-10-16T17:23:00Z",
+   "duration": {
+    "value": 780,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "scope run for scope"
+  },
+  {
+   "run_id": "run-002",
+   "identity": "specs/842-signal-quality/scope",
+   "stage": "scope",
+   "tasks": [],
+   "episode_id": "ep-scope-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T17:24:00Z",
+   "ended_at": "2026-10-16T17:37:00Z",
+   "duration": {
+    "value": 780,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "scope run for scope"
+  },
+  {
+   "run_id": "run-003",
+   "identity": "specs/842-signal-quality/scope",
+   "stage": "scope",
+   "tasks": [],
+   "episode_id": "ep-scope-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T17:39:00Z",
+   "ended_at": "2026-10-16T17:52:00Z",
+   "duration": {
+    "value": 780,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "scope run for scope"
+  },
+  {
+   "run_id": "run-004",
+   "identity": "specs/842-signal-quality/specify",
+   "stage": "specify",
+   "tasks": [],
+   "episode_id": "ep-specify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T17:55:00Z",
+   "ended_at": "2026-10-16T17:58:00Z",
+   "duration": {
+    "value": 180,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "specify run for specify"
+  },
+  {
+   "run_id": "run-005",
+   "identity": "specs/842-signal-quality/specify",
+   "stage": "specify",
+   "tasks": [],
+   "episode_id": "ep-specify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T17:59:00Z",
+   "ended_at": "2026-10-16T18:02:00Z",
+   "duration": {
+    "value": 180,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "specify run for specify"
+  },
+  {
+   "run_id": "run-006",
+   "identity": "specs/842-signal-quality/specify",
+   "stage": "specify",
+   "tasks": [],
+   "episode_id": "ep-specify-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T18:03:00Z",
+   "ended_at": "2026-10-16T18:06:00Z",
+   "duration": {
+    "value": 180,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "specify run for specify"
+  },
+  {
+   "run_id": "run-007",
+   "identity": "specs/842-signal-quality/specify",
+   "stage": "specify",
+   "tasks": [],
+   "episode_id": "ep-specify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T18:11:00Z",
+   "ended_at": "2026-10-16T18:14:00Z",
+   "duration": {
+    "value": 180,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "specify run for specify"
+  },
+  {
+   "run_id": "run-008",
+   "identity": "specs/842-signal-quality/clarify",
+   "stage": "clarify",
+   "tasks": [],
+   "episode_id": "ep-clarify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T18:16:00Z",
+   "ended_at": "2026-10-16T18:36:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "clarify run for clarify"
+  },
+  {
+   "run_id": "run-009",
+   "identity": "specs/842-signal-quality/clarify",
+   "stage": "clarify",
+   "tasks": [],
+   "episode_id": "ep-clarify-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T19:07:00Z",
+   "ended_at": "2026-10-16T19:27:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "clarify run for clarify"
+  },
+  {
+   "run_id": "run-010",
+   "identity": "specs/842-signal-quality/clarify",
+   "stage": "clarify",
+   "tasks": [],
+   "episode_id": "ep-clarify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T20:30:00Z",
+   "ended_at": "2026-10-16T20:50:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "clarify run for clarify"
+  },
+  {
+   "run_id": "run-011",
+   "identity": "specs/842-signal-quality/plan",
+   "stage": "plan",
+   "tasks": [],
+   "episode_id": "ep-plan-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T20:52:00Z",
+   "ended_at": "2026-10-16T20:54:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "plan run for plan"
+  },
+  {
+   "run_id": "run-012",
+   "identity": "specs/842-signal-quality/plan",
+   "stage": "plan",
+   "tasks": [],
+   "episode_id": "ep-plan-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T20:55:00Z",
+   "ended_at": "2026-10-16T20:57:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "plan run for plan"
+  },
+  {
+   "run_id": "run-013",
+   "identity": "specs/842-signal-quality/plan",
+   "stage": "plan",
+   "tasks": [],
+   "episode_id": "ep-plan-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T20:58:00Z",
+   "ended_at": "2026-10-16T21:00:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "plan run for plan"
+  },
+  {
+   "run_id": "run-014",
+   "identity": "specs/842-signal-quality/plan",
+   "stage": "plan",
+   "tasks": [],
+   "episode_id": "ep-plan-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:01:00Z",
+   "ended_at": "2026-10-16T21:03:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "plan run for plan"
+  },
+  {
+   "run_id": "run-015",
+   "identity": "specs/842-signal-quality/plan",
+   "stage": "plan",
+   "tasks": [],
+   "episode_id": "ep-plan-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T21:08:00Z",
+   "ended_at": "2026-10-16T21:10:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "plan run for plan"
+  },
+  {
+   "run_id": "run-016",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:10:00Z",
+   "ended_at": "2026-10-16T21:30:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-017",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-2",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:34:00Z",
+   "ended_at": "2026-10-16T22:54:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-018",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-2",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:58:00Z",
+   "ended_at": "2026-10-17T00:18:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-019",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-2",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T01:22:00Z",
+   "ended_at": "2026-10-17T01:42:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-020",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-2",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T02:46:00Z",
+   "ended_at": "2026-10-17T03:06:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-021",
+   "identity": "specs/842-signal-quality/tasks",
+   "stage": "tasks",
+   "tasks": [],
+   "episode_id": "ep-tasks-2",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T05:18:00Z",
+   "ended_at": "2026-10-17T05:38:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "tasks run for tasks"
+  },
+  {
+   "run_id": "run-022",
+   "identity": "specs/842-signal-quality/analyze",
+   "stage": "analyze",
+   "tasks": [],
+   "episode_id": null,
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:24:00Z",
+   "ended_at": "2026-10-16T21:44:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "analyze run for analyze"
+  },
+  {
+   "run_id": "run-023",
+   "identity": "specs/842-signal-quality/analyze",
+   "stage": "analyze",
+   "tasks": [],
+   "episode_id": null,
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:59:00Z",
+   "ended_at": "2026-10-16T23:19:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "analyze run for analyze"
+  },
+  {
+   "run_id": "run-024",
+   "identity": "specs/842-signal-quality/analyze",
+   "stage": "analyze",
+   "tasks": [],
+   "episode_id": "ep-analyze-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:34:00Z",
+   "ended_at": "2026-10-17T00:54:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "analyze run for analyze"
+  },
+  {
+   "run_id": "run-025",
+   "identity": "specs/842-signal-quality/analyze",
+   "stage": "analyze",
+   "tasks": [],
+   "episode_id": "ep-analyze-2",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T02:09:00Z",
+   "ended_at": "2026-10-17T02:29:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "analyze run for analyze"
+  },
+  {
+   "run_id": "run-026",
+   "identity": "specs/842-signal-quality/analyze",
+   "stage": "analyze",
+   "tasks": [],
+   "episode_id": "ep-analyze-2",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T05:00:00Z",
+   "ended_at": "2026-10-17T05:20:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "analyze run for analyze"
+  },
+  {
+   "run_id": "run-027",
+   "identity": "specs/842-signal-quality/assure",
+   "stage": "assure",
+   "tasks": [],
+   "episode_id": "ep-assure-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:31:00Z",
+   "ended_at": "2026-10-16T21:33:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "assure run for assure"
+  },
+  {
+   "run_id": "run-028",
+   "identity": "specs/842-signal-quality/assure",
+   "stage": "assure",
+   "tasks": [],
+   "episode_id": "ep-assure-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:33:00Z",
+   "ended_at": "2026-10-16T21:35:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "assure run for assure"
+  },
+  {
+   "run_id": "run-029",
+   "identity": "specs/842-signal-quality/assure",
+   "stage": "assure",
+   "tasks": [],
+   "episode_id": "ep-assure-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:35:00Z",
+   "ended_at": "2026-10-16T21:37:00Z",
+   "duration": {
+    "value": 120,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "assure run for assure"
+  },
+  {
+   "run_id": "run-030",
+   "identity": "specs/842-signal-quality/T001",
+   "stage": "execute",
+   "tasks": [
+    "T001"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T21:37:00Z",
+   "ended_at": "2026-10-16T21:49:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T001"
+  },
+  {
+   "run_id": "run-031",
+   "identity": "specs/842-signal-quality/T002",
+   "stage": "execute",
+   "tasks": [
+    "T002"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:44:00Z",
+   "ended_at": "2026-10-16T21:58:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T002"
+  },
+  {
+   "run_id": "run-032",
+   "identity": "specs/842-signal-quality/T003",
+   "stage": "execute",
+   "tasks": [
+    "T003"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:51:00Z",
+   "ended_at": "2026-10-16T22:07:00Z",
+   "duration": {
+    "value": 960,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T003"
+  },
+  {
+   "run_id": "run-033",
+   "identity": "specs/842-signal-quality/T004",
+   "stage": "execute",
+   "tasks": [
+    "T004"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T21:58:00Z",
+   "ended_at": "2026-10-16T22:16:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T004"
+  },
+  {
+   "run_id": "run-034",
+   "identity": "specs/842-signal-quality/T005",
+   "stage": "execute",
+   "tasks": [
+    "T005"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:05:00Z",
+   "ended_at": "2026-10-16T22:25:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T005"
+  },
+  {
+   "run_id": "run-035",
+   "identity": "specs/842-signal-quality/T006",
+   "stage": "execute",
+   "tasks": [
+    "T006"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T22:12:00Z",
+   "ended_at": "2026-10-16T22:24:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T006"
+  },
+  {
+   "run_id": "run-036",
+   "identity": "specs/842-signal-quality/T007",
+   "stage": "execute",
+   "tasks": [
+    "T007"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:19:00Z",
+   "ended_at": "2026-10-16T22:33:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T007"
+  },
+  {
+   "run_id": "run-037",
+   "identity": "specs/842-signal-quality/T008",
+   "stage": "execute",
+   "tasks": [
+    "T008"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:26:00Z",
+   "ended_at": "2026-10-16T22:42:00Z",
+   "duration": {
+    "value": 960,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T008"
+  },
+  {
+   "run_id": "run-038",
+   "identity": "specs/842-signal-quality/T009",
+   "stage": "execute",
+   "tasks": [
+    "T009"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "A",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:33:00Z",
+   "ended_at": "2026-10-16T22:51:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T009"
+  },
+  {
+   "run_id": "run-039",
+   "identity": "specs/842-signal-quality/T010",
+   "stage": "execute",
+   "tasks": [
+    "T010"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:40:00Z",
+   "ended_at": "2026-10-16T23:00:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T010"
+  },
+  {
+   "run_id": "run-040",
+   "identity": "specs/842-signal-quality/T011",
+   "stage": "execute",
+   "tasks": [
+    "T011"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T22:47:00Z",
+   "ended_at": "2026-10-16T22:59:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T011"
+  },
+  {
+   "run_id": "run-041",
+   "identity": "specs/842-signal-quality/T012",
+   "stage": "execute",
+   "tasks": [
+    "T012"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T22:54:00Z",
+   "ended_at": "2026-10-16T23:08:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T012"
+  },
+  {
+   "run_id": "run-042",
+   "identity": "specs/842-signal-quality/T013",
+   "stage": "execute",
+   "tasks": [
+    "T013"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:01:00Z",
+   "ended_at": "2026-10-16T23:17:00Z",
+   "duration": {
+    "value": 960,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T013"
+  },
+  {
+   "run_id": "run-043",
+   "identity": "specs/842-signal-quality/T014",
+   "stage": "execute",
+   "tasks": [
+    "T014"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:08:00Z",
+   "ended_at": "2026-10-16T23:26:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T014"
+  },
+  {
+   "run_id": "run-044",
+   "identity": "specs/842-signal-quality/T015",
+   "stage": "execute",
+   "tasks": [
+    "T015"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:15:00Z",
+   "ended_at": "2026-10-16T23:35:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "failed",
+   "evidence_accepted": false,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "Run did not pass its own checks"
+  },
+  {
+   "run_id": "run-045",
+   "identity": "specs/842-signal-quality/T015",
+   "stage": "execute",
+   "tasks": [
+    "T015"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T23:22:00Z",
+   "ended_at": "2026-10-16T23:36:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": "run-044",
+   "summary": "Retry of run-044"
+  },
+  {
+   "run_id": "run-046",
+   "identity": "specs/842-signal-quality/T016",
+   "stage": "execute",
+   "tasks": [
+    "T016"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:29:00Z",
+   "ended_at": "2026-10-16T23:43:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "failed",
+   "evidence_accepted": false,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "Run did not pass its own checks"
+  },
+  {
+   "run_id": "run-047",
+   "identity": "specs/842-signal-quality/T016",
+   "stage": "execute",
+   "tasks": [
+    "T016"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:36:00Z",
+   "ended_at": "2026-10-16T23:50:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": "run-046",
+   "summary": "Retry of run-046"
+  },
+  {
+   "run_id": "run-048",
+   "identity": "specs/842-signal-quality/T017",
+   "stage": "execute",
+   "tasks": [
+    "T017"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:43:00Z",
+   "ended_at": "2026-10-17T00:01:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T017"
+  },
+  {
+   "run_id": "run-049",
+   "identity": "specs/842-signal-quality/T018",
+   "stage": "execute",
+   "tasks": [
+    "T018"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-16T23:50:00Z",
+   "ended_at": "2026-10-17T00:10:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T018"
+  },
+  {
+   "run_id": "run-050",
+   "identity": "specs/842-signal-quality/T018",
+   "stage": "execute",
+   "tasks": [
+    "T018"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-16T23:57:00Z",
+   "ended_at": "2026-10-17T00:09:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T018"
+  },
+  {
+   "run_id": "run-051",
+   "identity": "specs/842-signal-quality/T018",
+   "stage": "execute",
+   "tasks": [
+    "T018"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "B",
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:04:00Z",
+   "ended_at": null,
+   "duration": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "worker_status": "abandoned",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "Review-fix round abandoned"
+  },
+  {
+   "run_id": "run-052",
+   "identity": "specs/842-signal-quality/T019",
+   "stage": "execute",
+   "tasks": [
+    "T019"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:11:00Z",
+   "ended_at": "2026-10-17T00:27:00Z",
+   "duration": {
+    "value": 960,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T019"
+  },
+  {
+   "run_id": "run-053",
+   "identity": "specs/842-signal-quality/T020",
+   "stage": "execute",
+   "tasks": [
+    "T020"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:18:00Z",
+   "ended_at": "2026-10-17T00:36:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T020"
+  },
+  {
+   "run_id": "run-054",
+   "identity": "specs/842-signal-quality/T021",
+   "stage": "execute",
+   "tasks": [
+    "T021"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "Shared",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:25:00Z",
+   "ended_at": "2026-10-17T00:45:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T021"
+  },
+  {
+   "run_id": "run-055",
+   "identity": "specs/842-signal-quality/T022",
+   "stage": "execute",
+   "tasks": [
+    "T022"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T00:32:00Z",
+   "ended_at": "2026-10-17T00:44:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T022"
+  },
+  {
+   "run_id": "run-056",
+   "identity": "specs/842-signal-quality/T023",
+   "stage": "execute",
+   "tasks": [
+    "T023"
+   ],
+   "episode_id": "ep-execute-1",
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:39:00Z",
+   "ended_at": "2026-10-17T00:53:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T023"
+  },
+  {
+   "run_id": "run-057",
+   "identity": "specs/842-signal-quality/T019",
+   "stage": "execute",
+   "tasks": [
+    "T019"
+   ],
+   "episode_id": null,
+   "workstream": "Shared",
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:46:00Z",
+   "ended_at": "2026-10-17T01:02:00Z",
+   "duration": {
+    "value": 960,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T019"
+  },
+  {
+   "run_id": "run-058",
+   "identity": "specs/842-signal-quality/T020",
+   "stage": "execute",
+   "tasks": [
+    "T020"
+   ],
+   "episode_id": null,
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T00:53:00Z",
+   "ended_at": "2026-10-17T01:11:00Z",
+   "duration": {
+    "value": 1080,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T020"
+  },
+  {
+   "run_id": "run-059",
+   "identity": "specs/842-signal-quality/T021",
+   "stage": "execute",
+   "tasks": [
+    "T021"
+   ],
+   "episode_id": null,
+   "workstream": "Shared",
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T01:00:00Z",
+   "ended_at": "2026-10-17T01:20:00Z",
+   "duration": {
+    "value": 1200,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T021"
+  },
+  {
+   "run_id": "run-060",
+   "identity": "specs/842-signal-quality/T023",
+   "stage": "execute",
+   "tasks": [
+    "T023"
+   ],
+   "episode_id": null,
+   "workstream": "Shared",
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T01:07:00Z",
+   "ended_at": "2026-10-17T01:19:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "execute run for T023"
+  },
+  {
+   "run_id": "run-061",
+   "identity": "specs/842-signal-quality/converge",
+   "stage": "converge",
+   "tasks": [],
+   "episode_id": "ep-converge-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T01:31:00Z",
+   "ended_at": "2026-10-17T01:45:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "converge run for converge"
+  },
+  {
+   "run_id": "run-062",
+   "identity": "specs/842-signal-quality/converge",
+   "stage": "converge",
+   "tasks": [],
+   "episode_id": "ep-converge-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T01:46:00Z",
+   "ended_at": "2026-10-17T02:00:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "converge run for converge"
+  },
+  {
+   "run_id": "run-063",
+   "identity": "specs/842-signal-quality/converge",
+   "stage": "converge",
+   "tasks": [],
+   "episode_id": "ep-converge-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T02:03:00Z",
+   "ended_at": "2026-10-17T02:17:00Z",
+   "duration": {
+    "value": 840,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "converge run for converge"
+  },
+  {
+   "run_id": "run-064",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T02:17:00Z",
+   "ended_at": "2026-10-17T02:29:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-065",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T02:30:00Z",
+   "ended_at": "2026-10-17T02:42:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-066",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T02:43:00Z",
+   "ended_at": "2026-10-17T02:55:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-067",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T02:56:00Z",
+   "ended_at": "2026-10-17T03:08:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-068",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T03:09:00Z",
+   "ended_at": "2026-10-17T03:21:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "unverified",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-069",
+   "identity": "specs/842-signal-quality/verify",
+   "stage": "verify",
+   "tasks": [],
+   "episode_id": "ep-verify-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T03:28:00Z",
+   "ended_at": "2026-10-17T03:40:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "verify run for verify"
+  },
+  {
+   "run_id": "run-070",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T03:40:00Z",
+   "ended_at": "2026-10-17T03:52:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-071",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T03:53:00Z",
+   "ended_at": "2026-10-17T04:05:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-072",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T04:06:00Z",
+   "ended_at": "2026-10-17T04:18:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-073",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T04:19:00Z",
+   "ended_at": null,
+   "duration": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "worker_status": "abandoned",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-074",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T04:32:00Z",
+   "ended_at": "2026-10-17T04:44:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-075",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T04:45:00Z",
+   "ended_at": "2026-10-17T04:57:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-076",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T04:58:00Z",
+   "ended_at": "2026-10-17T05:10:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-077",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T05:11:00Z",
+   "ended_at": "2026-10-17T05:23:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "unverified",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-078",
+   "identity": "specs/842-signal-quality/review",
+   "stage": "review",
+   "tasks": [],
+   "episode_id": "ep-review-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T05:26:00Z",
+   "ended_at": "2026-10-17T05:38:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "review run for review"
+  },
+  {
+   "run_id": "run-079",
+   "identity": "specs/842-signal-quality/manual",
+   "stage": "manual",
+   "tasks": [],
+   "episode_id": "ep-manual-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T05:40:00Z",
+   "ended_at": "2026-10-17T05:49:00Z",
+   "duration": {
+    "value": 540,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "manual run for manual"
+  },
+  {
+   "run_id": "run-080",
+   "identity": "specs/842-signal-quality/manual",
+   "stage": "manual",
+   "tasks": [],
+   "episode_id": "ep-manual-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T05:50:00Z",
+   "ended_at": "2026-10-17T05:59:00Z",
+   "duration": {
+    "value": 540,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "manual run for manual"
+  },
+  {
+   "run_id": "run-081",
+   "identity": "specs/842-signal-quality/manual",
+   "stage": "manual",
+   "tasks": [],
+   "episode_id": "ep-manual-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T06:01:00Z",
+   "ended_at": "2026-10-17T06:10:00Z",
+   "duration": {
+    "value": 540,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "unverified",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "manual run for manual"
+  },
+  {
+   "run_id": "run-082",
+   "identity": "specs/842-signal-quality/issues",
+   "stage": "issues",
+   "tasks": [],
+   "episode_id": "ep-issues-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T06:22:00Z",
+   "ended_at": "2026-10-17T06:28:00Z",
+   "duration": {
+    "value": 360,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "issues run for issues"
+  },
+  {
+   "run_id": "run-083",
+   "identity": "specs/842-signal-quality/issues",
+   "stage": "issues",
+   "tasks": [],
+   "episode_id": "ep-issues-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T06:29:00Z",
+   "ended_at": null,
+   "duration": {
+    "value": null,
+    "source": "none",
+    "observed_at": null,
+    "fidelity": "unknown"
+   },
+   "worker_status": "abandoned",
+   "evidence_accepted": null,
+   "candidate_accepted": null,
+   "retry_of": null,
+   "summary": "issues run for issues"
+  },
+  {
+   "run_id": "run-084",
+   "identity": "specs/842-signal-quality/issues",
+   "stage": "issues",
+   "tasks": [],
+   "episode_id": "ep-issues-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-sonnet-5-5",
+   "actual_model": {
+    "value": "claude-sonnet-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T06:36:00Z",
+   "ended_at": "2026-10-17T06:42:00Z",
+   "duration": {
+    "value": 360,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "issues run for issues"
+  },
+  {
+   "run_id": "run-085",
+   "identity": "specs/842-signal-quality/issues",
+   "stage": "issues",
+   "tasks": [],
+   "episode_id": "ep-issues-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "started_at": "2026-10-17T06:44:00Z",
+   "ended_at": "2026-10-17T06:50:00Z",
+   "duration": {
+    "value": 360,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "issues run for issues"
+  },
+  {
+   "run_id": "run-086",
+   "identity": "specs/842-signal-quality/ready",
+   "stage": "ready",
+   "tasks": [],
+   "episode_id": "ep-ready-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T07:00:00Z",
+   "ended_at": "2026-10-17T07:12:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "ready run for ready"
+  },
+  {
+   "run_id": "run-087",
+   "identity": "specs/842-signal-quality/ready",
+   "stage": "ready",
+   "tasks": [],
+   "episode_id": "ep-ready-1",
+   "workstream": null,
+   "harness": "claude",
+   "requested_model": "claude-opus-5-5",
+   "actual_model": {
+    "value": "claude-opus-5-5",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T07:13:00Z",
+   "ended_at": "2026-10-17T07:25:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "ready run for ready"
+  },
+  {
+   "run_id": "run-088",
+   "identity": "specs/842-signal-quality/ready",
+   "stage": "ready",
+   "tasks": [],
+   "episode_id": "ep-ready-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6.1-sol",
+   "actual_model": {
+    "value": "gpt-6.1-sol",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T07:28:00Z",
+   "ended_at": "2026-10-17T07:40:00Z",
+   "duration": {
+    "value": 720,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "ready run for ready"
+  },
+  {
+   "run_id": "run-089",
+   "identity": "specs/842-signal-quality/pr",
+   "stage": "pr",
+   "tasks": [],
+   "episode_id": "ep-pr-1",
+   "workstream": null,
+   "harness": "codex",
+   "requested_model": "gpt-6-astra",
+   "actual_model": {
+    "value": "gpt-6-astra",
+    "source": "driver-result",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "effort": {
+    "value": "high",
+    "source": "attempt",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "partial"
+   },
+   "started_at": "2026-10-17T13:20:00Z",
+   "ended_at": "2026-10-17T13:45:00Z",
+   "duration": {
+    "value": 1500,
+    "source": "delegation-ledger",
+    "observed_at": "2026-10-17T14:05:00Z",
+    "fidelity": "exact"
+   },
+   "worker_status": "successful",
+   "evidence_accepted": true,
+   "candidate_accepted": true,
+   "retry_of": null,
+   "summary": "Open the pull request"
+  }
+ ],
+ "dispatch": [
+  {
+   "intent_id": "intent-9",
+   "identity": "specs/842-signal-quality/pr",
+   "created_at": "2026-10-17T13:52:00Z",
+   "state": "queued"
+  }
+ ],
+ "decisions": {
+  "pending": [],
+  "made": [
+   {
+    "key": "842-signal-quality:clarifications:C1Q1",
+    "source": "clarifications",
+    "source_id": "C1Q1",
+    "question": "Which retry policy applies to failed ingest batches?",
+    "options": [
+     "A: exponential backoff",
+     "B: fixed delay",
+     "C: no retry"
+    ],
+    "answer": {
+     "kind": "single",
+     "value": "A"
+    },
+    "state": "applied",
+    "revision": 2,
+    "answer_digest": "sha256:9d1c",
+    "evidence": [
+     "spec.md#retry"
+    ],
+    "url": "https://github.com/example/repo/issues/842#issuecomment-1",
+    "decided_by": null,
+    "observed_at": "2026-10-16T20:50:00Z",
+    "answered_at": null,
+    "applied": {
+     "at": "2026-10-16T20:52:00Z",
+     "evidence": "plan.md updated"
+    },
+    "stage": "clarify"
+   }
+  ],
+  "sources": [
+   {
+    "name": "workflow decisions",
+    "state": "available"
+   },
+   {
+    "name": "facts",
+    "state": "absent"
+   },
+   {
+    "name": "clarifications",
+    "state": "available"
+   },
+   {
+    "name": "legacy board",
+    "state": "unsupported"
+   }
+  ]
+ },
+ "timeline": [
+  {
+   "id": "tl-01",
+   "at": "2026-10-16T17:52:00Z",
+   "kind": "stage",
+   "text": "Scope accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-02",
+   "at": "2026-10-16T18:14:00Z",
+   "kind": "stage",
+   "text": "Specify accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-03",
+   "at": "2026-10-16T18:16:00Z",
+   "kind": "decision",
+   "text": "Clarify asked C1Q1: which retry policy applies?",
+   "refs": [
+    "842-signal-quality:clarifications:C1Q1"
+   ],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-04",
+   "at": "2026-10-16T20:46:00Z",
+   "kind": "decision",
+   "text": "C1Q1 answered: option A (editor not recorded)",
+   "refs": [
+    "842-signal-quality:clarifications:C1Q1"
+   ],
+   "fidelity": "partial"
+  },
+  {
+   "id": "tl-05",
+   "at": "2026-10-16T20:50:00Z",
+   "kind": "stage",
+   "text": "Clarify accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-06",
+   "at": "2026-10-16T21:36:00Z",
+   "kind": "stage",
+   "text": "Plan, tasks, analyze and assure accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-07",
+   "at": "2026-10-16T21:37:00Z",
+   "kind": "note",
+   "text": "Execute started: workstreams A and B in parallel",
+   "refs": [],
+   "fidelity": "estimated"
+  },
+  {
+   "id": "tl-08",
+   "at": "2026-10-16T23:52:00Z",
+   "kind": "failure",
+   "text": "T015 run failed",
+   "refs": [
+    "run-044"
+   ],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-09",
+   "at": "2026-10-16T23:59:00Z",
+   "kind": "recovery",
+   "text": "T015 retried by a linked run",
+   "refs": [
+    "run-045"
+   ],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-10",
+   "at": "2026-10-17T00:03:00Z",
+   "kind": "failure",
+   "text": "T016 run failed",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-11",
+   "at": "2026-10-17T00:36:00Z",
+   "kind": "failure",
+   "text": "T018 review fixes needed three runs; one abandoned",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-12",
+   "at": "2026-10-17T01:30:00Z",
+   "kind": "stage",
+   "text": "Execute accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-13",
+   "at": "2026-10-17T02:17:00Z",
+   "kind": "stage",
+   "text": "Converge accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-14",
+   "at": "2026-10-17T04:50:00Z",
+   "kind": "revalidation",
+   "text": "Tasks and analyze invalidated by an upstream change",
+   "refs": [],
+   "fidelity": "partial"
+  },
+  {
+   "id": "tl-15",
+   "at": "2026-10-17T05:38:00Z",
+   "kind": "revalidation",
+   "text": "Tasks and analyze revalidated",
+   "refs": [],
+   "fidelity": "partial"
+  },
+  {
+   "id": "tl-16",
+   "at": "2026-10-17T05:38:00Z",
+   "kind": "stage",
+   "text": "Verify and Review accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-17",
+   "at": "2026-10-17T06:10:00Z",
+   "kind": "stage",
+   "text": "User manual accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-18",
+   "at": "2026-10-17T06:40:00Z",
+   "kind": "failure",
+   "text": "Tasks to issues: one abandoned run, no recovery recorded",
+   "refs": [],
+   "fidelity": "partial"
+  },
+  {
+   "id": "tl-19",
+   "at": "2026-10-17T06:50:00Z",
+   "kind": "stage",
+   "text": "Tasks to issues accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-20",
+   "at": "2026-10-17T07:40:00Z",
+   "kind": "stage",
+   "text": "Ready accepted",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-21",
+   "at": "2026-10-17T09:00:00Z",
+   "kind": "note",
+   "text": "Coordinator note: waiting for the review window",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-22",
+   "at": "2026-10-17T13:20:00Z",
+   "kind": "stage",
+   "text": "Pull request stage claimed",
+   "refs": [],
+   "fidelity": "exact"
+  },
+  {
+   "id": "tl-23",
+   "at": "2026-10-17T13:57:00Z",
+   "kind": "stage",
+   "text": "PR opened",
+   "refs": [],
+   "fidelity": "exact"
+  }
+ ],
+ "history": {
+  "lane_aliases": {
+   "L1": "A",
+   "L2": "run:run-044",
+   "W7": "identity:codex-worker-7"
+  },
+  "unresolved": [
+   {
+    "id": "L9",
+    "label": "Retired scratch lane",
+    "reason": "no run id or delegation identity names this lane",
+    "owners": [
+     {
+      "agent": "codex-worker-3",
+      "from": "2026-10-16T22:00:00Z",
+      "to": "2026-10-16T23:30:00Z"
+     }
+    ]
+   }
+  ]
+ },
+ "sources": [
+  {
+   "name": "checkpoint",
+   "path": "workflow/checkpoint.json",
+   "fingerprint": "ab12",
+   "generation": 61,
+   "read_at": "2026-10-17T14:05:00Z"
+  }
+ ],
+ "summary": {
+  "tasks_total": 23,
+  "tasks_done": 23,
+  "stages_selected": 16,
+  "stages_accepted": 14,
+  "runs_total": 89,
+  "runs_failed": 5,
+  "decisions_pending": 0,
+  "blockers_open": 0
+ }
+}

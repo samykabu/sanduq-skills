@@ -39,7 +39,7 @@ class Run842(unittest.TestCase):
             ctx = helpers.run842_ctx(base)
             if edit:
                 edit(ctx.feature_dir)
-            return model.build(ctx, parse(now), 1, {})
+            return model.build_v2(ctx, parse(now), 1, {})
 
     # ---- 1. stage ---------------------------------------------------------------------------------------------------
     def test_stage_comes_from_the_last_accepted_receipt_when_no_claim_is_active(self):

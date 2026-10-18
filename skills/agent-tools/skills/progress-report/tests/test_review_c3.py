@@ -28,7 +28,7 @@ class Children(Project):
         return json.loads(snapshot.snapshot_path(self.ctx, 'claude', session).read_text(encoding='utf-8'))['children']
 
     def build(self):
-        return model.build(self.ctx, NOW, 1, {})
+        return model.build_v2(self.ctx, NOW, 1, {})
 
     def owners(self, report):
         return {l['owner']: l['id'] for l in child_lanes(report)}

@@ -135,7 +135,7 @@ class F03ChildTerminalEvidence(Project):
         for child in snap['children'].values():
             child.update(status=status, ended_at=ended)
         path.write_text(json.dumps(snap))
-        return model.build(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
+        return model.build_v2(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
 
     def lane(self, report):
         return next(l for l in report['lanes'] if l['id'] == 'L1')
@@ -155,7 +155,7 @@ class F03ChildTerminalEvidence(Project):
     def test_open_lane_blocker_outranks_a_finished_child(self):
         self.child_events('done')
         self.cli('block', 'L1', '--by', 'ext:waiting-on-review')
-        report = model.build(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
+        report = model.build_v2(self.ctx, NOW, 1, json.loads(self.ctx.state.read_text()))
         self.assertEqual(self.lane(report)['status'], 'blocked')
 
     def test_running_child_keeps_the_lane_active(self):
@@ -209,7 +209,7 @@ class F07NewestObservationWins(Project):
         snap = json.loads(path.read_text())
         snap['children']['k-second']['agent_id'] = 'agent-9f'
         path.write_text(json.dumps(snap))
-        report = model.build(self.ctx, NOW, 1, {})
+        report = model.build_v2(self.ctx, NOW, 1, {})
         lane = next(l for l in report['lanes'] if l['id'] == 'L1')
         self.assertEqual(lane['observed']['model']['value'], 'model-new')
         self.assertEqual([l for l in report['lanes'] if l['origin'] == 'host-child'], [])
@@ -224,7 +224,7 @@ class F08AmbiguousDescription(Project):
             snapshot.merge(self.ctx, 'claude', 'claude-sess-1', NOW, child={'key': f'agent-{i}', 'update': {
                 'agent_id': f'agent-{i}', 'description': text, 'started_at': f'2026-10-15T12:0{i}:00Z',
                 'model': {'value': f'm{i}', 'source': 'hook', 'observed_at': f'2026-10-15T12:1{i}:00Z', 'fidelity': 'exact'}}})
-        return model.build(self.ctx, NOW, 1, {})
+        return model.build_v2(self.ctx, NOW, 1, {})
 
     def test_two_children_with_the_same_description_stay_separate(self):
         report = self.setup_children('Explore the parser', ['Explore the parser', 'explore the PARSER'])
@@ -232,7 +232,7 @@ class F08AmbiguousDescription(Project):
         lane = next(l for l in report['lanes'] if l['id'] == 'L1')
         self.assertIsNone(lane['observed']['model']['value'])
         self.assertIn('matches 2 children', self.ctx.diag.read_text(encoding='utf-8'))
-        model.build(self.ctx, NOW, 2, {})  # rebuilding does not repeat the diagnostic
+        model.build_v2(self.ctx, NOW, 2, {})  # rebuilding does not repeat the diagnostic
         self.assertEqual(self.ctx.diag.read_text(encoding='utf-8').count('matches 2 children'), 1)
 
     def test_stable_id_still_merges_when_descriptions_collide(self):
