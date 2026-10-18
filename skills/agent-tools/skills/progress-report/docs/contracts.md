@@ -261,8 +261,11 @@ When no explicit record supports a fact, the field is `null` (or an `unknown` me
 `unknown`; `source` says where the value came from (`host-hook`, `self-report`, `delegation-ledger`, `harness`,
 `timestamps`, `workflow-checkpoint`, `earliest-evidence`). An aggregate (`run_time`) also carries `complete` (false when a
 run has no duration), `sources` and a `label`. A decision is
-`D = {key, source, source_id, question, options, answer:{kind:single|multiple|text, value}|null, state, revision, answer_digest,
+`D = {key, source, source_id, question, options, answer:{kind:single|multiple|text, value, index}|null, state, revision, answer_digest,
 evidence:["display text"], evidence_links:[{text, url}], url, decided_by, observed_at, answered_at, applied:{at, evidence:["…"]}|null, stage}`.
+
+`data.js` also carries `ui: {layout}` (`timeline` or `classic`) beside the document, so an open page switches renderer with the next
+data revision after `progress theme --layout`; `report.json` does not have it.
 
 `rev` rises on every refresh and on the cheap patch a debounced hook event makes; the UI uses it as its refresh counter.
 `collection`, `rev`, `generated_at` and `stale_after_seconds` mean what they mean in v2.
@@ -303,15 +306,19 @@ when it has one, and otherwise count as selected only if some record mentions th
   event, and an event that names only a claim feed validity and the timeline but create no episode. An episode starts at its
   `claim` or `resume` event and never at an invalidation. A `rejected-completion` does not end the episode. For a stage with no
   lifecycle events, the episodes come from the passed receipt and from `recoveries` (`source` `checkpoint-receipt` /
-  `checkpoint-recovery`, `fidelity` `partial`). A recovery is read from Workflow's `{claim: {stage, claimed_at, mode,
+  `checkpoint-recovery`, `fidelity` `partial`). A stage that also has lifecycle events keeps these historical episodes: one is
+  dropped only when a lifecycle event records the same fact (same stage, `accepted`/`revalidated` for a receipt or `recovered`
+  for a recovery, at the very same instant). Sharing a stage never hides history. A recovery is read from Workflow's `{claim: {stage, claimed_at, mode,
   delegation: {identity}}, reason, at}` record (a flat `{stage, reason, at}` too): `claimed_at` is its start, the delegation
   identity is kept as `identity`, and the claim token is never read. Runs of a stage that no event or shared claim places in an
   episode are listed in `unknown_runs`.
 - A run joins an episode only when a lifecycle event names it in `delegation_run_ids`, or when its `claim_id` matches exactly
   one episode. A failed worker does not reject a stage.
 - `open` is true only when something confirms the stage is running now: a live run, a running episode or the active claim.
-  `timing` is `open`, `closed` (a start and an end), `end-unknown` (a start and no recorded end) or `unknown` (no start).
-  `first_start` and `last_end` take the runs and the episode boundaries; `last_end` is `null` while the stage is `open`. The UI
+  `timing` is `open`, `closed` (a start and an end), `end-unknown` or `unknown` (no start). A stage is `closed` only when no
+  run that is not live and has no recorded end, and no episode that is neither running nor ended, could have run after the last
+  known end (one with no start counts as possibly later). Otherwise it is `end-unknown` and `last_end` keeps the last end that
+  was recorded. `first_start` and `last_end` take the runs and the episode boundaries; `last_end` is `null` while the stage is `open`. The UI
   extends a bar to the snapshot time only when `open` is true and draws `end-unknown` as a short bar with a broken edge.
 - `feature.stage.status` is the status of that stage's entry; `checkpoint_status` is the checkpoint's own.
 
@@ -334,9 +341,11 @@ workstreams, whatever Workflow version is installed.
 the rest of the states in `clarifications.json`; a lower revision of the same `source_id` is shown as `superseded` under the key
 `<source id>@r<revision>`. `decided_by` is set only from a recorded author or editor; a checkbox edit has none, and the UI says
 "editor not recorded". A missing answer time stays `null`. `evidence` is a list of display strings (each at most 200
-characters) and `evidence_links` holds the `{text, url}` of those that carry an https URL. In the UI a single-letter answer
-(`A`) marks the option at that position when the decision has options; any other answer must equal an option exactly, with no prefix
-match. `pending` holds `pending` and `conflict`. `sources` states which
+characters) and `evidence_links` holds the `{text, url}` of those that carry an https URL. `answer.value` is always option text
+(or a list of texts) and `answer.index` is the explicit position (an int, a list for `multiple`, or `null` when the text names no
+option). The adapters decode once: Workflow's ledger and Scope's records store choices as letters (`A`, `B`, ...), and an in-range
+letter becomes the option at that position; facts and free-text answers are matched by exact option text only. The UI highlights by
+`index`, else by exact option text. It never decodes a letter, so with options `S`, `M`, `L` the answer `M` is the option `M`. `pending` holds `pending` and `conflict`. `sources` states which
 adapters ran; "none recorded" is only true for the sources that were `available`.
 
 **Attention.** Open blockers (high); pending and conflicting decisions (medium); failed or abandoned runs with no later

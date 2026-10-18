@@ -75,8 +75,8 @@ class Run842V3(unittest.TestCase):
         decisions = self.report['decisions']
         self.assertEqual(decisions['pending'], [])
         c1q1 = next(d for d in decisions['made'] if d['source_id'] == 'C1Q1')
-        self.assertEqual((c1q1['state'], c1q1['answer'], c1q1['decided_by'], c1q1['answered_at']),
-                         ('applied', {'kind': 'single', 'value': 'A'}, None, None))
+        self.assertEqual((c1q1['state'], c1q1['decided_by'], c1q1['answered_at']), ('applied', None, None))
+        self.assertEqual((c1q1['answer']['kind'], c1q1['answer']['index'], c1q1['answer']['value']), ('single', 0, c1q1['options'][0]))  # letter A, decoded once
         self.assertTrue(c1q1['url'].startswith('https://github.com/'))
         self.assertTrue(c1q1['applied']['evidence'])
         sources = {s['name']: s['state'] for s in decisions['sources']}

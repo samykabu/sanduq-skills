@@ -222,20 +222,26 @@ def _episodes(events, active_stage):
     return out, loose
 
 
-def _fallback_episodes(cp, stages_with_lifecycle):
+def _fallback_episodes(cp, events):
     """Episodes older producers leave evidence for: a passed receipt (with its creation time when it has one) and each
-    recorded recovery. Their start is unknown unless the record states it, and their fidelity says so."""
+    recorded recovery. Their start is unknown unless the record states it, and their fidelity says so.
+
+    History is kept when a stage also has lifecycle events. A checkpoint record is dropped only when a lifecycle event
+    records the same fact: same stage, same kind (`accepted`/`revalidated` for a receipt, `recovered` for a recovery) and the
+    very same instant. Sharing a stage never suppresses it."""
     out = []
     if not cp:
         return out
+    seen = {(e['stage'], 'accepted' if e['event'] in ('accepted', 'revalidated') else e['event'], parse_time(e['at']))
+            for e in events if e['stage']}
     for rec in wf.accepted_receipts(cp.get('_receipts')):
-        if rec['stage'] in stages_with_lifecycle:
+        if (rec['stage'], 'accepted', parse_time(rec['at'])) in seen:
             continue
         out.append({'id': f"{rec['stage']}#receipt", 'stage': rec['stage'], 'source': 'checkpoint-receipt', 'fidelity': 'partial',
                     'claim_id': None, 'started_at': rec.get('created_at'), 'ended_at': rec['at'], 'outcome': 'accepted', 'runs': [],
                     'reason': 'revalidation receipt' if rec.get('mode') == 'revalidate' else None})
     for index, rec in enumerate(cp.get('recoveries') or []):
-        if rec['stage'] and rec['stage'] not in stages_with_lifecycle:
+        if rec['stage'] and (rec['stage'], 'recovered', parse_time(rec['at'])) not in seen:
             out.append({'id': f"{rec['stage']}#recovery-{index + 1}", 'stage': rec['stage'], 'source': 'checkpoint-recovery',
                         'fidelity': 'partial', 'claim_id': None, 'started_at': rec.get('started_at'), 'ended_at': rec['at'],
                         'outcome': 'recovered', 'runs': [], 'reason': rec['reason'] or None,
@@ -262,7 +268,7 @@ def build_stages(now, x, lifecycle, runs):
     events = lifecycle['events']
     episodes, loose = _episodes(events, active_stage)
     with_lifecycle = {e['stage'] for e in events if e['stage']}
-    episodes += _fallback_episodes(dict(cp or {}, _receipts=x['receipts']), with_lifecycle)
+    episodes += _fallback_episodes(dict(cp or {}, _receipts=x['receipts']), events)
     evidence = set(receipts) | {r['stage'] for r in runs if r['stage']} | with_lifecycle | ({active_stage} if active_stage else set())
     if plan['state'] == 'available':
         order = [(s['id'], s['label']) for s in plan['stages']]
@@ -315,7 +321,14 @@ def build_stages(now, x, lifecycle, runs):
                                 or any(e['outcome'] == 'running' for e in eps))
         first_start = min(starts, key=parse_time) if starts else None
         last_end = None if is_open or not ends else max(ends, key=parse_time)
-        timing = 'open' if is_open else 'unknown' if not first_start else 'closed' if last_end else 'end-unknown'
+        # Completeness: a known end only closes the stage when nothing that could run after it has an unknown end. A run that is
+        # not live and records no end, or an episode that is neither running nor ended, with a start at or after the last known
+        # end (or no start at all), leaves the end unknown. `last_end` then stays the last end that was recorded.
+        known = max((parse_time(t) for t in ends), default=None)
+        loose_ends = [r['started_at'] for r in mine if r['worker_status'] not in LIVE and not parse_time(r['ended_at'])]
+        loose_ends += [e['started_at'] for e in eps if e['outcome'] in ('unknown', 'rejected-completion') and not e['ended_at']]
+        partial = known is not None and any(parse_time(t) is None or parse_time(t) >= known for t in loose_ends)
+        timing = ('open' if is_open else 'unknown' if not first_start else 'end-unknown' if (not last_end or partial) else 'closed')
         stage_rows.append({
             'id': sid, 'label': label or _label(sid), 'order': position + 1, 'selected': selected, 'status': status,
             'validity': validity, 'accepted_at': accepted_at, 'episodes': eps, 'unknown_runs': unknown_runs,
@@ -451,6 +464,18 @@ def build_workstreams(x, member, marked, conflicts, runs, blockers):
 
 # ---- decisions ----------------------------------------------------------------------------------------------------------
 
+def _answer(kind, value, options):
+    """An answer as option text plus its explicit index when known (`index` is an int, a list for multiple, or null). The UI
+    highlights by that index, or by exact option text; it never decodes a letter. A value that names no option keeps
+    `index: null` and highlights nothing."""
+    def one(v):
+        return options.index(v) if isinstance(v, str) and v in options else None
+    if isinstance(value, list):
+        idx = [one(v) for v in value]
+        return {'kind': kind, 'value': value, 'index': None if None in idx else idx}
+    return {'kind': kind, 'value': value, 'index': one(value)}
+
+
 def _decision(fid, source, source_id, **kw):
     base = {'key': f'{fid}:{source}:{source_id}', 'source': source, 'source_id': source_id, 'question': None, 'options': [],
             'answer': None, 'state': 'pending', 'revision': 1, 'answer_digest': None, 'evidence': [], 'evidence_links': [], 'url': None,
@@ -472,7 +497,7 @@ def build_decisions(ctx, now, x, fid, clar):
         answered = status == 'made' and rec.get('selected')
         out.append(_decision(
             fid, 'facts', rec['id'], question=clean(rec.get('question'), 200) or None, options=rec.get('options') or [],
-            answer={'kind': 'single', 'value': rec['selected']} if answered else None,
+            answer=_answer('single', rec['selected'], rec.get('options') or []) if answered else None,
             state='withdrawn' if status == 'withdrawn' else 'answered' if answered else 'pending', revision=revisions.get(rec['id'], 1),
             evidence=[clean(evidence, 200)] if evidence else [], url=evidence if evidence.startswith('http') else None,
             decided_by=rec.get('decided_by') if answered else None, observed_at=rec.get('ts'),
@@ -485,7 +510,7 @@ def build_decisions(ctx, now, x, fid, clar):
             answered = raw_status in ('answered', 'applied') and d['selected'] is not None
             out.append(_decision(
                 fid, 'workflow', d['id'], question=d['question'], options=d['options'],
-                answer={'kind': 'multiple' if d['multiple'] else 'single', 'value': d['selected']} if answered else None,
+                answer={'kind': 'multiple' if d['multiple'] else 'single', 'value': d['selected'], 'index': d['selected_index']} if answered else None,
                 state=raw_status, revision=max(1, d['revision']), answer_digest=d['answer_digest'],
                 evidence=d['applied_evidence'], url=d['url'], decided_by=d['author'] if answered else None,
                 observed_at=iso(now), answered_at=d['at'] if answered else None,

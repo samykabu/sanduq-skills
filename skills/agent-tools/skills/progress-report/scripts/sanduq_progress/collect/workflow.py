@@ -155,10 +155,15 @@ def identity_tasks(attempt):
 
 
 def _option_text(value, options):
-    """A letter answer (A, B, ...) names the option at that position; anything else is shown as the cleaned text."""
+    """(option text, option index or None). The ledger stores choices as letters (A, B, ...), which name the option at that
+    position; the text is returned here so no later stage decodes it again. Anything else is the cleaned text, with its
+    index only when it equals an option exactly."""
     text = value.strip()
-    letter = ord(text.upper()) - 65 if len(text) == 1 else -1
-    return options[letter] if 0 <= letter < len(options) else clean(text, 80)
+    letter = ord(text.upper()) - 65 if len(text) == 1 and text.isalpha() else -1
+    if 0 <= letter < len(options):
+        return options[letter], letter
+    shown = clean(text, 80)
+    return shown, options.index(shown) if shown in options else None
 
 
 def decisions(feature_dir):
@@ -182,15 +187,18 @@ def decisions(feature_dir):
         if not picked and item.get('option'):
             picked = [item['option']]
         multiple = item.get('mode') == 'multiple' or (item.get('mode') is None and len(picked) > 1)
-        chosen = [] if pending else [_option_text(p, options) for p in picked if isinstance(p, str) and p.strip()]
+        pairs = [] if pending else [_option_text(p, options) for p in picked if isinstance(p, str) and p.strip()]
+        chosen = [t for t, _ in pairs]
+        indexes = [i for _, i in pairs]
         selected = (chosen if multiple else chosen[0]) if chosen else None
+        selected_index = (None if None in indexes else indexes if multiple else indexes[0]) if indexes else None
         stamps = [str(x.get(k)) for x in answers for k in ('updated_at', 'created_at', 'at') if x.get(k)]
         stamp = max(stamps) if stamps else None
         authors = [clean(x.get('author'), 80) for x in answers if isinstance(x.get('author'), str) and x['author'].strip()]
         application = item.get('application') if isinstance(item.get('application'), dict) else None
         evidence = application.get('evidence') if application and isinstance(application.get('evidence'), dict) else {}
         out.append({'id': str(item['id']), 'question': clean(item.get('question') or f"Workflow decision {item['id']}", 200),
-                    'options': options, 'selected': selected, 'decided_by': 'user' if selected else None,
+                    'options': options, 'selected': selected, 'selected_index': selected_index, 'decided_by': 'user' if selected else None,
                     'at': stamp, 'url': item.get('question_url'), 'source': 'workflow',
                     'pending': pending,
                     # v3 adapter inputs: the ledger's own status and mode, answer digest, recorded author, application evidence

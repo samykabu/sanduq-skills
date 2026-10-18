@@ -34,7 +34,7 @@ def refresh(ctx, now=None):
         collected = plan.persist(ctx)  # the plan is read once; the projection reuses it
     classic = layout(ctx) == 'classic'
     report, v2 = model.build_pair(ctx, now, state['rev'], state, plan=collected)
-    render_data.write(ctx, report, display=v2 if classic else None)
+    render_data.write(ctx, report, display=v2 if classic else None, layout='classic' if classic else 'timeline')
     state['last_refresh_ts'] = time.time()
     state['last_refresh_at'] = iso(now)
     write_json(ctx.state, state)

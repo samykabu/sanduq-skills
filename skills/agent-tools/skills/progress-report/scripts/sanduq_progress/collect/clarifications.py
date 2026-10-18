@@ -35,15 +35,34 @@ def _https(value):
     return value.strip()[:500] if isinstance(value, str) and value.strip().startswith('https://') else None
 
 
-def _answer(value):
+def _decode(text, options):
+    """(option text, index). Scope records a choice as a letter (A, B, ...) that names the option at that position; a
+    letter in range is decoded here, once, so nothing downstream guesses. Otherwise the text counts only when it equals an
+    option exactly. Free text (kind `text`) is never decoded."""
+    if len(text) == 1 and text.isalpha() and ord(text.upper()) - 65 < len(options):
+        i = ord(text.upper()) - 65
+        return options[i], i
+    return text, options.index(text) if text in options else None
+
+
+def _answer(value, options):
     if not isinstance(value, dict) or value.get('kind') not in KINDS:
         return None
     raw = value.get('value')
     if value['kind'] == 'multiple':
         items = [clean(x, 200) for x in raw if isinstance(x, str) and x.strip()] if isinstance(raw, list) else []
-        return {'kind': 'multiple', 'value': items} if items else None
+        if not items:
+            return None
+        pairs = [_decode(x, options) for x in items]
+        idx = [i for _, i in pairs]
+        return {'kind': 'multiple', 'value': [t for t, _ in pairs], 'index': None if None in idx else idx}
     text = _str(raw, 400)
-    return {'kind': value['kind'], 'value': text} if text else None
+    if not text:
+        return None
+    if value['kind'] == 'text':
+        return {'kind': 'text', 'value': text, 'index': options.index(text) if text in options else None}
+    shown, i = _decode(text, options)
+    return {'kind': value['kind'], 'value': shown, 'index': i}
 
 
 def _evidence_one(entry):
@@ -82,7 +101,7 @@ def _item(item):
             'revision': revision if isinstance(revision, int) and not isinstance(revision, bool) else 1,
             'question': _str(item.get('question'), 200),
             'options': [clean(o, 200) for o in options[:20] if isinstance(o, str)] if isinstance(options, list) else [],
-            'answer': _answer(item.get('answer')), 'state': item['state'],
+            'answer': _answer(item.get('answer'), [clean(o, 200) for o in options[:20] if isinstance(o, str)] if isinstance(options, list) else []), 'state': item['state'],
             'url': _https(item.get('url')),
             'editor': _str(item.get('editor'), 80), 'observed_at': _str(item.get('observed_at'), 40),
             'answered_at': _str(item.get('answered_at'), 40),

@@ -721,27 +721,31 @@ class TimingAndDecisionTests(V3Test):
         self.assertEqual(self.page.locator("#v3-stages .gbar.open").count(), 0)
         self.assertEqual(self.page.locator("button[data-k='g-pr'] .gbar.endunk").count(), 1)
 
-    def selected(self, options, value, kind="single"):
+    def selected(self, options, value, kind="single", index="absent"):
         p = fresh(load("ui_v3_sample.json"))
         made = p["decisions"]["made"][0]
         made["options"], made["answer"] = options, {"kind": kind, "value": value}
+        if index != "absent":
+            made["answer"]["index"] = index
         self.open(p)
         return self.page.evaluate(
             "(id)=>{const li=[...document.querySelectorAll('#v3-decisions li')].find(l=>l.querySelector('h3')&&l.querySelector('h3').textContent.includes(id));"
             "return [...li.querySelectorAll('.opts span')].map(e=>e.classList.contains('sel'))}", made["source_id"])
 
-    def test_a_letter_answer_picks_the_option_at_that_position(self):
-        self.assertEqual(self.selected(["First choice", "Second choice", "Third choice"], "B"), [False, True, False])
+    def test_the_explicit_index_wins_and_a_letter_is_never_decoded_by_the_page(self):
+        self.assertEqual(self.selected(["First", "Second", "Third"], "Second", index=1), [False, True, False])
+        self.assertEqual(self.selected(["S", "M", "L"], "M", index=1), [False, True, False])  # "M" is the option M, not letter 13
+        self.assertEqual(self.selected(["S", "M", "L"], "M"), [False, True, False])  # no index: exact text
+        self.assertEqual(self.selected(["First choice", "Second choice"], "B"), [False, False])  # a bare letter matches nothing
+        self.assertEqual(self.selected(["Because it is safe", "Another way"], "B", index=None), [False, False])
 
-    def test_an_option_that_starts_with_the_letter_is_not_picked_by_prefix(self):
-        self.assertEqual(self.selected(["Because it is safe", "Another way"], "A"), [True, False])  # position A is the first option
-        self.assertEqual(self.selected(["Always retry", "Other", "Bad idea"], "B"), [False, True, False])  # not "Bad idea" (starts with B)
-
-    def test_without_options_the_answer_matches_nothing_and_free_text_must_be_exact(self):
+    def test_no_prefix_match_and_free_text_must_be_exact(self):
         self.assertEqual(self.selected([], "A"), [])
-        self.assertEqual(self.selected(["Retry once", "Retry"], "Retry", kind="text"), [False, True])  # exact, never the prefix "Retry once"
+        self.assertEqual(self.selected(["Retry once", "Retry"], "Retry", kind="text"), [False, True])
         self.assertEqual(self.selected(["Retry once", "Other"], "Ret", kind="text"), [False, False])
-        self.assertEqual(self.selected(["alpha", "beta", "gamma"], ["A", "C"], kind="multiple"), [True, False, True])
+        self.assertEqual(self.selected(["alpha", "beta", "gamma"], ["alpha", "gamma"], kind="multiple", index=[0, 2]), [True, False, True])
+        self.assertEqual(self.selected(["alpha", "beta", "gamma"], ["alpha", "gamma"], kind="multiple"), [True, False, True])
+        self.assertEqual(self.selected(["a", "b"], "a", index=7), [False, False])  # an out-of-range index highlights nothing
 
     def test_decision_evidence_renders_with_links_only_for_safe_urls(self):
         p = fresh(load("ui_v3_sample.json"))
@@ -762,6 +766,84 @@ class TimingAndDecisionTests(V3Test):
         p["collection"]["inconsistent_sources"] = ["facts"]
         self.open(p)
         self.assertIn("Snapshot may mix generations", self.text("#banners"))
+
+
+class OpenPageTests(V3Test):
+    """A page left open while `progress theme --layout` changes the layout."""
+
+    def layout_doc(self, doc, layout, rev):
+        d = copy.deepcopy(doc)
+        d["rev"] = rev
+        d["ui"] = {"layout": layout}
+        return d
+
+    def test_an_open_classic_page_follows_a_switch_to_timeline_and_back(self):
+        v3 = fresh(load("ui_v3_sample.json"), rev=10)
+        self.layout = "classic"
+        (self.view / "layout.js").write_text('window.__SANDUQ_PROGRESS_LAYOUT__={"layout":"classic"};\n', encoding="utf-8")
+        self.open(self.layout_doc(v3, "classic", 10))
+        self.assertIn("classic layout needs a v2 report", self.text("#app"))  # a v3 report under the classic layout
+        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=11), "timeline", 11))
+        self.page.wait_for_selector("#v3-stages", timeout=UPDATE_WAIT)  # no reload
+        self.assertNotIn("classic layout needs a v2 report", self.text("#app"))
+        self.assertEqual(self.page.eval_on_selector_all("[data-v3]", "els=>els.map(e=>e.id)"), ORDER)
+        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=12), "classic", 12))
+        self.wait_text("#app", "classic layout needs a v2 report")
+        self.assertEqual(self.page.locator("#v3-stages").count(), 0)
+        self.assertEqual(self.errors, [])
+
+    def test_an_open_timeline_page_follows_a_switch_to_a_v2_document_and_back(self):
+        timeline = fresh(load("ui_v3_sample.json"), rev=20)
+        self.open(self.layout_doc(timeline, "timeline", 20))
+        self.page.wait_for_selector("#v3-stages")
+        classic = {"schema": "sanduq.progress.v2", "rev": 21, "generated_at": timeline["generated_at"], "stale_after_seconds": 600,
+                   "collection": {"automatic": True, "dirty": False}, "ui": {"layout": "classic"},
+                   "feature": {"id": "f", "title": "Switched to classic", "branch": "b", "issue": None, "stage": None},
+                   "orchestrator": {"host": None, "model": {"value": None}, "effort": {"value": None}, "context": {"value": None}, "elapsed": {"value": None}, "active": {"value": None}},
+                   "lanes": [], "unassigned_tasks": {"active": [], "waiting": [], "blocked": [], "done": []}, "tasks": {},
+                   "decisions": {"pending": [], "made": []}, "blockers": [], "events": [],
+                   "summary": {"tasks_total": 0, "tasks_done": 0, "lanes_active": 0, "blocked": 0, "decisions_pending": 0}}
+        write_data(self.view, classic)
+        self.wait_text("h1", "Switched to classic")
+        self.assertEqual(self.page.locator("#v3-stages").count(), 0)
+        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=22), "timeline", 22))
+        self.page.wait_for_selector("#v3-stages", timeout=UPDATE_WAIT)
+        self.assertEqual(self.errors, [])
+
+
+class EpisodeEndTests(V3Test):
+    def test_an_unknown_episode_is_end_unknown_not_open_and_a_running_one_is_open(self):
+        ids = ["plan", "execute"]
+        ledger = [attempt("r-" + i, i, status="successful", claim_id="c-" + i) for i in ids]
+        events = [life(1, "claim", "plan", "2026-10-17T09:00:00Z", episode_id="ep-plan", claim_id="c-plan"),
+                  life(2, "claim", "execute", "2026-10-17T10:00:00Z", episode_id="ep-exec", claim_id="c-execute")]
+        report = synthetic_report(ledger, events)
+        plan = next(s for s in report["stages"] if s["id"] == "plan")
+        self.assertEqual([(e["outcome"], e["ended_at"]) for e in plan["episodes"]], [("unknown", None)])
+        self.assertFalse(plan["open"])
+        self.open(fresh(report))
+        self.page.click("button[data-k='g-plan']")
+        detail = self.text("#v3-ep")
+        self.assertIn("end unknown", detail)
+        self.assertNotIn("to open", detail)
+        running = fresh(report)
+        for s in running["stages"]:
+            if s["id"] == "plan":
+                s["open"] = True
+                s["episodes"][0]["outcome"] = "running"
+        running["rev"] = report["rev"] + 5
+        write_data(self.view, running)
+        self.wait_text("#v3-ep", "to open")
+        self.assertNotIn("end unknown", self.text("#v3-ep"))
+
+    def test_a_known_end_followed_by_a_run_with_no_end_draws_as_end_unknown(self):
+        ledger = [attempt("early", "execute", status="successful"), attempt("late", "execute", status="failed", start="2026-10-17T11:00:00Z", end=None)]
+        report = fresh(synthetic_report(ledger, []))
+        execute = next(s for s in report["stages"] if s["id"] == "execute")
+        self.assertEqual((execute["timing"], execute["last_end"] is not None), ("end-unknown", True))
+        self.open(report)
+        self.assertEqual(self.page.locator("button[data-k='g-execute'] .gbar.endunk").count(), 1)
+        self.assertIn("end unknown", self.text("button[data-k='g-execute']"))
 
 
 if __name__ == "__main__":

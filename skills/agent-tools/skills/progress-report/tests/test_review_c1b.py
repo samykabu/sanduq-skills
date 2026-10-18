@@ -422,5 +422,131 @@ class VersionAndDocs(unittest.TestCase):
         self.assertEqual(VERSION, '1.2.0')
 
 
+class MixedVersion(unittest.TestCase):
+    """Checkpoint history from an older Workflow plus lifecycle events from a newer one."""
+
+    def build(self, events):
+        with tempfile.TemporaryDirectory() as base:
+            ctx = helpers.run842_ctx(base)
+            rows = ''.join(json.dumps(e) + '\n' for e in events)
+            (ctx.feature_dir / 'workflow' / 'lifecycle.jsonl').write_text(rows, encoding='utf-8')
+            return model.build(ctx, parse(helpers.RUN842_NOW), 1, {}, schema='v3')
+
+    def event(self, n, event, stage, at, **extra):
+        row = {'v': 1, 'event_id': f'e{n}', 'workflow_run_id': 'wr', 'generation': n, 'at': at, 'stage': stage, 'event': event,
+               'episode_id': None, 'claim_id': None, 'caused_by_claim_id': None, 'candidate_run_id': None, 'delegation_run_ids': [], 'reason': None}
+        row.update(extra)
+        return row
+
+    def recoveries(self, report):
+        return [(s['id'], e['ended_at']) for s in report['stages'] for e in s['episodes'] if e['source'] == 'checkpoint-recovery']
+
+    def test_a_new_lifecycle_event_on_a_stage_keeps_every_historical_recovery(self):
+        report = self.build([self.event(1, 'invalidated', 'execute', '2026-10-17T13:00:00Z', reason='upstream changed'),
+                             self.event(2, 'claim', 'plan', '2026-10-17T13:10:00Z', episode_id='p1', claim_id='c1'),
+                             self.event(3, 'recovered', 'qa_document', '2026-10-17T13:20:00Z', episode_id='q1', claim_id='c2')])
+        self.assertEqual(len(self.recoveries(report)), 7)  # stage equality alone never hides history
+        self.assertEqual(validate.validate(report), [])
+
+    def test_a_recovery_is_dropped_only_when_a_lifecycle_event_records_the_same_instant(self):
+        base = self.build([])
+        first = next(e for s in base['stages'] if s['id'] == 'clarify' for e in s['episodes'] if e['source'] == 'checkpoint-recovery')
+        report = self.build([self.event(1, 'recovered', 'clarify', first['ended_at'], episode_id='c1', claim_id='x')])
+        self.assertEqual(len(self.recoveries(report)), 6)
+        clarify = next(s for s in report['stages'] if s['id'] == 'clarify')
+        self.assertEqual([e['source'] for e in clarify['episodes']].count('workflow-lifecycle'), 1)
+        near = self.build([self.event(1, 'recovered', 'clarify', '2026-10-16T18:38:53Z', episode_id='c1', claim_id='x')])
+        self.assertEqual(len(self.recoveries(near)), 7)  # one second apart is not the same record
+
+    def test_a_receipt_is_dropped_only_for_an_accepted_event_at_the_same_instant(self):
+        base = self.build([])
+        at = next(s for s in base['stages'] if s['id'] == 'scope')['accepted_at']
+        same = self.build([self.event(1, 'accepted', 'scope', at, episode_id='s1')])
+        self.assertEqual([e['source'] for e in next(s for s in same['stages'] if s['id'] == 'scope')['episodes']], ['workflow-lifecycle'])
+        other = self.build([self.event(1, 'accepted', 'scope', '2026-10-17T13:30:00Z', episode_id='s1')])
+        self.assertEqual(sorted(e['source'] for e in next(s for s in other['stages'] if s['id'] == 'scope')['episodes']),
+                         ['checkpoint-receipt', 'workflow-lifecycle'])
+
+
+class TimingCompleteness(Synthetic):
+    def test_a_known_end_followed_by_a_run_with_no_end_is_not_closed(self):
+        self.ledger(self.attempt('early'), self.attempt('late', status='failed', started='2026-10-15T11:00:00Z', ended=None))
+        stage = self.stage(self.build(), 'execute')
+        self.assertEqual((stage['timing'], stage['last_end'], stage['open']), ('end-unknown', '2026-10-15T10:10:00Z', False))
+
+    def test_an_unknown_end_that_started_before_the_last_known_end_does_not_hide_it(self):
+        self.ledger(self.attempt('lost', status='failed', started='2026-10-15T09:00:00Z', ended=None), self.attempt('late', started='2026-10-15T10:00:00Z'))
+        stage = self.stage(self.build(), 'execute')
+        self.assertEqual((stage['timing'], stage['last_end']), ('closed', '2026-10-15T10:10:00Z'))
+
+    def test_an_unended_run_with_no_start_is_treated_as_possibly_later(self):
+        self.ledger(self.attempt('early'), self.attempt('odd', status='failed', started=None, ended=None))
+        self.assertEqual(self.stage(self.build(), 'execute')['timing'], 'end-unknown')
+
+    def test_an_episode_with_an_unknown_end_after_the_last_run_end_is_not_closed(self):
+        self.ledger(self.attempt('early'))
+        self.lifecycle(self.event(1, 'claim', episode_id='ep1', claim_id='c1', at='2026-10-15T12:00:00Z'))
+        stage = self.stage(self.build(), 'execute')
+        self.assertEqual((stage['timing'], stage['last_end']), ('end-unknown', '2026-10-15T10:10:00Z'))
+
+    def test_all_ends_known_is_closed(self):
+        self.ledger(self.attempt('a'), self.attempt('b', started='2026-10-15T11:00:00Z', ended='2026-10-15T11:05:00Z'))
+        self.assertEqual(self.stage(self.build(), 'execute')['timing'], 'closed')
+
+
+class AnswerEncoding(Synthetic):
+    OPTIONS = ['S', 'M', 'L']
+
+    def answers(self, report):
+        return {d['source']: d['answer'] for d in report['decisions']['made']}
+
+    def test_every_source_carries_option_text_and_an_explicit_index(self):
+        self.init()
+        self.cli('decide', 'ask', 'Size?', '--options', 'S,M,L')
+        self.assertEqual(self.cli('decide', 'made', 'D1', 'M', '--by', 'user')[0], 0)  # facts first: Workflow owns decisions once its ledger exists
+        self.put('decisions.json', {'decisions': [{'id': 'SD1', 'status': 'answered', 'options': self.OPTIONS, 'option': 'B', 'selected': ['B'],
+                                                   'answers': [{'author': 'a', 'updated_at': '2026-10-15T10:00:00Z'}]}]})
+        self.put('clarifications.json', {'v': 1, 'items': [{'source_id': 'C1', 'state': 'answered', 'options': self.OPTIONS,
+                                                           'answer': {'kind': 'single', 'value': 'B'}}]})
+        got = self.answers(self.build())
+        for source in ('workflow', 'clarification', 'facts'):
+            self.assertEqual((got[source]['value'], got[source]['index']), ('M', 1), source)
+
+    def test_a_letter_is_decoded_once_by_the_adapter_and_free_text_never(self):
+        self.put('clarifications.json', {'v': 1, 'items': [
+            {'source_id': 'C1', 'state': 'answered', 'options': self.OPTIONS, 'answer': {'kind': 'single', 'value': 'S'}},
+            {'source_id': 'C2', 'state': 'answered', 'options': ['B', 'A'], 'answer': {'kind': 'single', 'value': 'B'}},
+            {'source_id': 'C3', 'state': 'answered', 'options': self.OPTIONS, 'answer': {'kind': 'multiple', 'value': ['A', 'C']}},
+            {'source_id': 'C4', 'state': 'answered', 'options': self.OPTIONS, 'answer': {'kind': 'text', 'value': 'M'}},
+            {'source_id': 'C5', 'state': 'answered', 'options': self.OPTIONS, 'answer': {'kind': 'single', 'value': 'Z'}}]})
+        got = {d['source_id']: d['answer'] for d in self.build()['decisions']['made']}
+        self.assertEqual((got['C1']['value'], got['C1']['index']), ('S', 0))  # letter S is past the 3 options: exact text S
+        self.assertEqual((got['C2']['value'], got['C2']['index']), ('A', 1))  # Scope writes letters: B is the second option
+        self.assertEqual((got['C3']['value'], got['C3']['index']), (['S', 'L'], [0, 2]))
+        self.assertEqual((got['C4']['value'], got['C4']['index']), ('M', 1))  # free text is matched by exact text only
+        self.assertEqual((got['C5']['value'], got['C5']['index']), ('Z', None))
+
+    def test_workflow_multiple_answers_carry_a_list_of_indexes(self):
+        self.put('decisions.json', {'decisions': [{'id': 'SD2', 'status': 'answered', 'mode': 'multiple', 'options': self.OPTIONS,
+                                                   'selected': ['A', 'C'], 'answers': [{'author': 'a', 'updated_at': '2026-10-15T10:00:00Z'}]}]})
+        answer = self.answers(self.build())['workflow']
+        self.assertEqual((answer['value'], answer['index']), (['S', 'L'], [0, 2]))
+
+
+class LayoutEnvelope(helpers.Project):
+    def shown(self):
+        text = (self.ctx.view / 'data.js').read_text(encoding='utf-8')
+        return json.loads(text[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
+
+    def test_each_data_revision_carries_the_layout_in_force(self):
+        self.init()
+        self.assertEqual(self.shown()['ui'], {'layout': 'timeline'})
+        self.cli('theme', '--layout', 'classic')
+        self.assertEqual((self.shown()['schema'], self.shown()['ui']), ('sanduq.progress.v2', {'layout': 'classic'}))
+        self.assertNotIn('ui', self.stored_report())  # report.json stays the plain projection
+        self.cli('theme', '--layout', 'timeline')
+        self.assertEqual(self.shown()['ui'], {'layout': 'timeline'})
+
+
 if __name__ == '__main__':
     unittest.main()

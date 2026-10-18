@@ -115,6 +115,7 @@ class Projection(Project):
         data = (self.ctx.view / 'data.js').read_text(encoding='utf-8')
         self.assertTrue(data.startswith('window.__SANDUQ_PROGRESS__ = {'))
         payload = json.loads(data[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
+        self.assertEqual(payload.pop('ui'), {'layout': 'timeline'})  # the layout rides beside the document
         self.assertEqual(payload, self.stored_report())  # data.js feeds the browser the stored v3 projection
         self.assertEqual(payload['schema'], 'sanduq.progress.v3')
         self.assertEqual(self.report()['schema'], 'sanduq.progress.v2')

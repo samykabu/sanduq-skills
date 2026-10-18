@@ -368,7 +368,9 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var PAGE = 10, TL_LIMIT = 12;
   function isV3(d) { return !!d && d.schema === 'sanduq.progress.v3'; }
-  function timelineLayout(d) { return isV3(d) && LAYOUT.layout !== 'classic'; }
+  /* the layout rides with each data revision (`ui.layout`), so a page left open follows `progress theme --layout` */
+  function layoutOf(d) { return d && d.ui && typeof d.ui.layout === 'string' ? d.ui.layout : LAYOUT.layout; }
+  function timelineLayout(d) { return isV3(d) && layoutOf(d) !== 'classic'; }
   function utc(iso) {
     var t = Date.parse(iso);
     if (isNaN(t)) return null;
@@ -565,7 +567,7 @@
   /* Only the projection says a stage is open (a live run, a running episode or the active claim). A stage with a start and
      no recorded end is "end unknown": it is drawn to its start and never grown to now. */
   function stageOpen(s) { return s.open === true && !!s.first_start; }
-  function endUnknown(s) { return s.open !== true && !!s.first_start && !s.last_end; }
+  function endUnknown(s) { return s.open !== true && !!s.first_start && (!s.last_end || s.timing === 'end-unknown'); }
   function isFail(r) { return r.worker_status === 'failed' || r.worker_status === 'abandoned'; }
   function vStages(d, st) {
     var stages = (d.stages || []).filter(function (s) { return s.selected !== false && s.status !== 'excluded'; })
@@ -590,13 +592,13 @@
     function pct(t) { return Math.max(0, Math.min(100, (t - lo) / span * 100)); }
     var rows = stages.map(function (s) {
       var a = Date.parse(s.first_start), open = stageOpen(s), unknownEnd = endUnknown(s);
-      var b = open ? now : unknownEnd ? a : Date.parse(s.last_end);
+      var b = open ? now : s.last_end ? Date.parse(s.last_end) : a;
       var track = el('div', 'gtrack');
       if (!isNaN(a) && !isNaN(b)) {
         var bar = el('i', 'gbar st-' + slug(s.status) + (open ? ' open' : '') + (unknownEnd ? ' endunk' : '') + (fails[s.id] ? ' hasfail' : ''));
         bar.style.left = pct(a) + '%';
         bar.style.width = Math.max(unknownEnd ? 1.6 : 0.8, pct(b) - pct(a)) + '%';
-        if (unknownEnd) bar.title = 'end not recorded';
+        if (unknownEnd) bar.title = s.last_end ? 'a later run or episode has no recorded end' : 'end not recorded';
         track.appendChild(bar);
       } else {
         track.appendChild(el('span', 'gnone', s.status === 'pending' ? 'not started' : 'timing unknown'));
@@ -650,7 +652,7 @@
     if (eps.length) {
       out.appendChild(el('ol', 'eps', eps.map(function (e) {
         return el('li', null, [el('b', null, 'Episode ' + (e.n == null ? '?' : e.n)), ' ', pill(e.outcome || 'unknown'), ' ',
-          el('span', 'sub', [stamp(e.started_at), ' to ', e.ended_at ? stamp(e.ended_at) : el('b', null, 'open'),
+          el('span', 'sub', [stamp(e.started_at), ' to ', e.ended_at ? stamp(e.ended_at) : e.outcome === 'running' ? el('b', null, 'open') : el('b', null, 'end unknown'),
             ' · ', (e.runs || []).length + ' runs', ' · ', e.source || 'source unknown', e.fidelity ? el('span', 'fid', e.fidelity) : null,
             e.claim_id ? [' · claim ', el('code', null, e.claim_id)] : null]),
           e.reason ? el('div', 'wrap sub', e.reason) : null]);
@@ -724,15 +726,14 @@
   }
 
   /* 5c. decisions */
-  /* Option indexes an answer picks. A single-letter answer (A, B, ...) names the option at that position when the decision has
-     options; any other answer must equal an option exactly. There is no prefix match. */
+  /* Option indexes an answer picks. The projection already carries the answer as option text and, when known, its explicit
+     `index`. The UI uses that index, else exact option text. It never decodes a letter: "M" is the option "M". */
   function chosen(x) {
     var ans = x.answer, opts = x.options || [], out = [];
     if (!ans || ans.value == null) return out;
-    (Array.isArray(ans.value) ? ans.value : [ans.value]).forEach(function (v) {
-      var t = String(v), i = opts.length && /^[A-Za-z]$/.test(t.trim()) ? t.trim().toUpperCase().charCodeAt(0) - 65 : opts.indexOf(t);
-      if (i >= 0 && i < opts.length && out.indexOf(i) < 0) out.push(i);
-    });
+    function add(i) { if (typeof i === 'number' && Math.floor(i) === i && i >= 0 && i < opts.length && out.indexOf(i) < 0) out.push(i); }
+    if (ans.index != null) { (Array.isArray(ans.index) ? ans.index : [ans.index]).forEach(add); return out; }
+    (Array.isArray(ans.value) ? ans.value : [ans.value]).forEach(function (v) { add(opts.indexOf(String(v))); });
     return out;
   }
   function v3Decision(x) {
