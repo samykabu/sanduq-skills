@@ -126,5 +126,121 @@ class ShippedAssets(unittest.TestCase):
         self.assertEqual(sorted(known - failing), [], "stale self-check-baseline.txt entries (remove them)")
 
 
+# A diagram that passes --strict: svg min-width = viewBox width, nodes on the 4px grid, one accent node,
+# the legend strip below every node and inside the viewBox, fonts per role, an orthogonal connector.
+STRICT = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>T</title>
+  <style>
+    body { background: #f5f5f5; }
+    .wrap { overflow-x: auto; box-shadow: none; }
+    svg { width: 100%; min-width: 400px; display: block; }
+    .node-name { font-family: 'Geist', sans-serif; }
+    .sublabel { font-family: 'Geist Mono', monospace; }
+    .focal { fill: rgba(235,108,54,0.08); stroke: #eb6c36; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t-title t-desc">
+  <title id="t-title">Title</title><desc id="t-desc">Description.</desc>
+  <defs><marker id="t-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f5d75"/></marker></defs>
+  <rect x="0" y="0" width="400" height="240" fill="#f5f5f5"/>
+  <path d="M 200 92 H 240" fill="none" stroke="#4f5d75" marker-end="url(#t-arrow)"/>
+  <rect x="40" y="60" width="160" height="64" rx="6" fill="#f5f5f5" stroke="#2d3142"/>
+  <rect class="focal" x="240" y="60" width="120" height="64" rx="6"/>
+  <text class="node-name" x="120" y="88">Name</text>
+  <text class="sublabel" x="120" y="104">port 443</text>
+  <g class="legend">
+    <line x1="40" y1="168" x2="360" y2="168" stroke="#e0e0e0"/>
+    <rect x="40" y="184" width="12" height="8" fill="#eb6c36"/>
+    <text class="sublabel" x="60" y="192">Focal</text>
+  </g>
+</svg>
+</div>
+</body>
+</html>
+"""
+
+
+def verify_strict(source: str) -> list[str]:
+    with tempfile.TemporaryDirectory() as scratch:
+        candidate = Path(scratch) / "candidate.html"
+        candidate.write_text(source, encoding="utf-8")
+        return self_check.verify(candidate, strict=True)
+
+
+class StrictContract(unittest.TestCase):
+    """--strict: the mechanical taste-gate boxes, one passing fixture and one failing edit per rule."""
+
+    FAILING = [
+        ("<text class=\"node-name\"", '<circle cx="80" cy="92" r="20" fill="#eb6c36"/><circle cx="160" cy="92" r="20" '
+         'fill="#eb6c36"/><text class="node-name"', "accent is used on 3"),
+        ('y1="168" x2="360" y2="168"', 'y1="100" x2="360" y2="100"', "legend starts"),
+        ('viewBox="0 0 400 240"', 'viewBox="0 0 400 180"', "expand the viewBox"),
+        ("min-width: 400px", "min-width: 360px", "does not equal the viewBox width"),
+        ("min-width: 400px;", "", "no min-width on the svg"),
+        ('<text class="node-name"', '<text style="writing-mode: vertical-rl" class="node-name"', "writing-mode"),
+        ("box-shadow: none", "box-shadow: 0 1px 2px #cccccc", "box-shadow"),
+        ('height="64" rx="6" fill="#f5f5f5"', 'height="64" rx="16" fill="#f5f5f5"', "rx=16"),
+        ('<rect x="40" y="60"', '<rect x="42" y="60"', "off the 4px grid (x=42)"),
+        (".node-name { font-family: 'Geist', sans-serif; }", ".node-name { font-family: 'Geist Mono', monospace; }",
+         ".node-name must use the sans"),
+        ('<text class="sublabel" x="120"', '<text class="sublabel" font-family="Instrument Serif, serif" x="120"',
+         ".sublabel must use the mono"),
+        ('stroke="#2d3142"', 'stroke="#000"', "pure-black"),
+        ('d="M 200 92 H 240"', 'd="M 200 92 L 240 100"', "not orthogonal"),
+    ]
+
+    def test_strict_fixture_passes(self):
+        self.assertEqual(verify(STRICT), [])
+        self.assertEqual(verify_strict(STRICT), [])
+
+    def test_each_rule_fails_strict_only(self):
+        for old, new, needle in self.FAILING:
+            with self.subTest(needle=needle):
+                self.assertEqual(STRICT.count(old), 1, old)
+                source = STRICT.replace(old, new, 1)
+                errors = verify_strict(source)
+                self.assertTrue(any(needle in error for error in errors), f"wanted {needle!r} in {errors}")
+                self.assertEqual(verify(source), [], "the default run must not change")
+
+    def test_documented_exceptions_pass(self):
+        cases = [
+            # a full pill is a terminator, not a rounded box
+            ('height="64" rx="6" fill="#f5f5f5"', 'height="64" rx="32" fill="#f5f5f5"'),
+            # data-bound rects (bars, cells) are positioned by their value, off the grid by design
+            ('<rect x="40" y="60"', '<rect data-value="42" x="42" y="60"'),
+            # .5 offsets keep 1px strokes crisp
+            ('<rect x="40" y="60"', '<rect x="40.5" y="60.5"'),
+            # accent on the headline connector, on series dots and on aria-hidden decoration does not count
+            ('stroke="#4f5d75" marker-end', 'stroke="#eb6c36" marker-end'),
+            ('<text class="node-name"', '<circle cx="80" cy="140" r="4" fill="#eb6c36"/><circle cx="96" cy="140" r="4" '
+             'fill="#eb6c36"/><circle aria-hidden="true" cx="120" cy="92" r="24" fill="#eb6c36"/><text class="node-name"'),
+            # a comment that names a banned property is not a declaration
+            ("<g class=\"legend\">", "<!-- never writing-mode --><g class=\"legend\">"),
+            # a rounded elbow is orthogonal
+            ('d="M 200 92 H 240"', 'd="M 200 92 H 212 Q 220 92 220 100 V 108 Q 220 116 228 116 H 240"'),
+        ]
+        for old, new in cases:
+            with self.subTest(new=new):
+                self.assertEqual(verify_strict(STRICT.replace(old, new, 1)), [])
+
+    def test_terminal_variant_is_mono(self):
+        source = STRICT.replace('<div class="wrap">', '<div class="wrap terminal">', 1).replace(
+            ".node-name { font-family: 'Geist', sans-serif; }", ".node-name { font-family: 'Geist Mono', monospace; }", 1
+        )
+        self.assertEqual(verify_strict(source), [])
+
+    def test_lint_skin_shares_the_skin_checks(self):
+        lint_skin = load("lint-skin.py")
+        self.assertIs(lint_skin.HEX_RE, self_check.HEX_RE)
+        self.assertIs(lint_skin.normalize_hex, self_check.normalize_hex)
+        categories = {f[1] for f in self_check.skin_findings('<rect fill="#000"/><script>x</script><img src="https://t.example/p.gif">')}
+        self.assertEqual(categories, {"pure-black", "script", "external-asset"})
+
+
 if __name__ == "__main__":
     unittest.main()
