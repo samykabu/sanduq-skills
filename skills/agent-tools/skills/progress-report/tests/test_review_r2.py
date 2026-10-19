@@ -114,7 +114,8 @@ class F02AnchoredSpecsRoot(Project):
         if not link_dir(self.root / 'specs', outside / 'specs'):
             shutil.move(str(outside / 'specs'), str(self.root / 'specs'))
             self.skipTest('symlinks/junctions unavailable without privilege')
-        self.addCleanup(lambda: os.rmdir(self.root / 'specs'))
+        link = self.root / 'specs'  # a POSIX symlink is unlinked; a Windows junction is removed with rmdir
+        self.addCleanup(lambda: os.unlink(link) if link.is_symlink() else os.rmdir(link))
         self.assertIsNone(normalise_feature(self.root, 'specs/001-demo'))
         with self.assertRaises(ProgressError):
             Ctx(self.root, 'specs/001-demo')
