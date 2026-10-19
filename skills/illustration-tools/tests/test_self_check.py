@@ -115,15 +115,83 @@ class MotionContract(unittest.TestCase):
                 self.assertTrue(any(needle in error for error in errors), f"wanted {needle!r} in {errors}")
 
 
+def procedure_errors(path: Path) -> list[str]:
+    """The check SKILL.md step 7 runs on a copy of this asset: the technical-color profile or --strict."""
+    if "technical-color" in path.relative_to(ASSETS).parts:
+        return self_check.verify(path, profile="technical-color")
+    return self_check.verify(path, strict=True)
+
+
 class ShippedAssets(unittest.TestCase):
-    """Examples and templates pass, except the documented legacy baseline (kept honest both ways)."""
+    """Every shipped HTML asset passes the check the procedure requires; only the gallery pages are listed."""
 
     def test_assets_against_baseline(self):
         known = baseline("self-check-baseline.txt")
-        paths = sorted(ASSETS.glob("example-*.html")) + sorted(ASSETS.glob("template*.html"))
-        failing = {path.name for path in paths if self_check.verify(path)}
-        self.assertEqual(sorted(failing - known), [], "new self_check failures (fix the file)")
+        paths = sorted(ASSETS.rglob("*.html"))
+        self.assertGreater(len(paths), 290)
+        failing = {path.relative_to(ASSETS).as_posix() for path in paths if procedure_errors(path)}
+        self.assertEqual(sorted(failing - known), [], "new failures of the procedure's check (fix the file)")
         self.assertEqual(sorted(known - failing), [], "stale self-check-baseline.txt entries (remove them)")
+        self.assertTrue(all(name in {"icons.html", "index.html"} or name.startswith("index-") for name in known),
+                        "only gallery pages may be listed; templates and examples must pass")
+
+
+TOOLBAR_TEMPLATE = ASSETS / "technical-color" / "architecture" / "templates" / "template.html"
+
+
+def verify_profile(source: str, profile: str = "technical-color") -> list[str]:
+    with tempfile.TemporaryDirectory() as scratch:
+        candidate = Path(scratch) / "candidate.html"
+        candidate.write_text(source, encoding="utf-8")
+        return self_check.verify(candidate, profile=profile)
+
+
+class TechnicalColorProfile(unittest.TestCase):
+    """--profile technical-color allows exactly the pinned toolbar the family's references require."""
+
+    def setUp(self):
+        self.source = TOOLBAR_TEMPLATE.read_text(encoding="utf-8")
+
+    def test_templates_pass_the_profile_and_fail_the_default(self):
+        self.assertEqual(verify_profile(self.source), [])
+        default = verify_profile(self.source, "editorial")
+        self.assertTrue(any("onclick" in e for e in default), default)
+        self.assertTrue(any("cdn.jsdelivr.net" in e for e in default), default)
+
+    def test_theme_colour_and_download_name_may_differ(self):
+        source = self.source.replace("backgroundColor: '#f8fafc'", "backgroundColor: '#020617'").replace(
+            "'diagram.png'", "'web-app.png'").replace("'diagram.pdf'", "'web-app.pdf'")
+        self.assertEqual(verify_profile(source), [])
+
+    def test_anything_else_is_refused(self):
+        cdn = "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"
+        cases = [
+            ("</head>", '<script src="https://cdn.jsdelivr.net/npm/x@1/x.js" integrity="sha384-x" '
+             'crossorigin="anonymous"></script></head>', "remote reference on <script>"),
+            (cdn, "https://cdn.jsdelivr.net/npm/jspdf@2.5.3/dist/jspdf.umd.min.js", "remote reference on <script>"),
+            ("sha384-en/", "sha384-xx/", "remote reference on <script>"),
+            ('jspdf.umd.min.js" integrity', 'jspdf.umd.min.js" data-x="1" integrity', "remote reference on <script>"),
+            ('onclick="downloadPNG(this)"', 'onclick="fetch(1)"', "executable attribute onclick"),
+            ('<div class="toolbar">', '<div class="toolbar" onmouseover="downloadPNG(this)">',
+             "executable attribute onmouseover"),
+            ("link.download = 'diagram.png';", "link.download = 'diagram.png'; fetch('https://t.example');",
+             "must carry only the canonical"),
+            ("</body>", "<script>alert(1)</script></body>", "must carry only the canonical"),
+        ]
+        for old, new, needle in cases:
+            with self.subTest(needle=needle, new=new[:40]):
+                self.assertIn(old, self.source)
+                errors = verify_profile(self.source.replace(old, new, 1))
+                self.assertTrue(any(needle in e for e in errors), f"wanted {needle!r} in {errors}")
+
+    def test_a_second_copy_of_a_pinned_script_is_refused(self):
+        line = next(item for item in self.source.splitlines() if "html2canvas.min.js" in item)
+        errors = verify_profile(self.source.replace(line, line + "\n" + line, 1))
+        self.assertTrue(any("once each" in e for e in errors), errors)
+
+    def test_accessible_svg_contract_still_applies(self):
+        errors = verify_profile(self.source.replace(' role="img"', "", 1))
+        self.assertTrue(any("role=img" in e for e in errors), errors)
 
 
 # A diagram that passes --strict: svg min-width = viewBox width, nodes on the 4px grid, one accent node,
@@ -192,6 +260,12 @@ class StrictContract(unittest.TestCase):
          ".sublabel must use the mono"),
         ('stroke="#2d3142"', 'stroke="#000"', "pure-black"),
         ('d="M 200 92 H 240"', 'd="M 200 92 L 240 100"', "not orthogonal"),
+        # the type exceptions hold only for their exact shapes
+        ('d="M 200 92 H 240"', 'class="ring" d="M200 92 A240 180 0 0 1 240 100"', "not orthogonal"),
+        ('d="M 200 92 H 240"', 'class="ring" d="M200 92 A240 240 0 0 0 240 100"', "not orthogonal"),
+        ('d="M 200 92 H 240"', 'class="spoke" d="M200 92 L220 96 L240 100"', "not orthogonal"),
+        ('d="M 200 92 H 240"', 'class="promotion" d="M 200,92 V 76 C 200,20 240,30 240,76 V 92"', "not orthogonal"),
+        ('d="M 200 92 H 240"', 'd="M200 92 A240 240 0 0 1 240 100"', "not orthogonal"),
     ]
 
     def test_strict_fixture_passes(self):
@@ -223,6 +297,10 @@ class StrictContract(unittest.TestCase):
             ("<g class=\"legend\">", "<!-- never writing-mode --><g class=\"legend\">"),
             # a rounded elbow is orthogonal
             ('d="M 200 92 H 240"', 'd="M 200 92 H 212 Q 220 92 220 100 V 108 Q 220 116 228 116 H 240"'),
+            # the documented type exceptions to rule 1: a Loop ring arc and spoke, a Medallion promotion arc
+            ('d="M 200 92 H 240"', 'class="ring" d="M200 92 A240 240 0 0 1 240 100"'),
+            ('d="M 200 92 H 240"', 'class="spoke" d="M200 92 L240 100"'),
+            ('d="M 200 92 H 240"', 'class="promotion" d="M 200,92 V 76 C 200,20 240,20 240,76 V 92"'),
         ]
         for old, new in cases:
             with self.subTest(new=new):
