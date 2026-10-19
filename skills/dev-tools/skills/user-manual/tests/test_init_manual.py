@@ -7,6 +7,9 @@ import unittest
 from pathlib import Path
 
 INIT = Path(__file__).resolve().parents[1] / 'scripts/init_manual.py'
+ASSETS = Path(__file__).resolve().parents[1] / 'assets/github'
+sys.path.insert(0, str(INIT.parent))
+import sanduq_ci  # noqa: E402
 
 
 class InitManualTests(unittest.TestCase):
@@ -28,6 +31,21 @@ class InitManualTests(unittest.TestCase):
                 self.assertTrue((manual / 'tools' / name).is_file(), name)
             self.assertTrue((root / '.github/workflows/user-manual-preview.yml').is_file())
             self.assertFalse((root / '.specify').exists())
+
+    def test_preview_skips_fork_pull_requests_only_on_self_hosted_runners(self):
+        import yaml
+        template = (ASSETS / 'user-manual-preview.yml').read_bytes()
+        ci = sanduq_ci.default_ci()
+        ci.update(policy='self-hosted-required', runners={'linux': ['self-hosted', 'homek8-general']})
+        ci['capabilities'].update(python='preinstalled', system_packages='preinstalled')
+        job = yaml.safe_load(sanduq_ci.render(template, ci))['jobs']['preview']
+        self.assertEqual('github.event.pull_request.head.repo.full_name == github.repository', job['if'])
+        hosted = yaml.safe_load(sanduq_ci.render(template, sanduq_ci.default_ci()))
+        self.assertFalse(any('if' in each for each in hosted['jobs'].values()))
+        for name in ('user-manual-preview.yml', 'user-manual-release.yml'):
+            for line in (ASSETS / name).read_text(encoding='utf-8').splitlines():
+                if 'uses:' in line:
+                    self.assertRegex(line, r'@[0-9a-f]{40} # v\d+\.\d+\.\d+$', name)
 
 
 if __name__ == '__main__':
