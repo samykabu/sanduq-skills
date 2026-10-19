@@ -10,8 +10,8 @@ Each pair runs the same scripted update trace twice through the delegate-task dr
 Pairs alternate arm order. Token figures come from the driver's result.json (`tokens`, with its fidelity flag).
 Results are written as JSON and Markdown. Nothing here claims a Claude tokenizer count.
 
-  python live_ab.py --dry-run                       print the planned runs and exit
-  python live_ab.py --pairs 3 --updates 20          run (spends tokens)
+  python tests/live_ab.py --dry-run                       print the planned runs and exit
+  python tests/live_ab.py --pairs 3 --updates 20          run (spends tokens)
 """
 import argparse
 import json
@@ -25,7 +25,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 EXT = HERE.parent
-sys.path.insert(0, str(EXT / "tests"))
 
 DELEGATE_CANDIDATES = (".agents/skills/delegate-task/delegate.mjs", ".claude/skills/delegate-task/delegate.mjs")
 
@@ -47,7 +46,7 @@ ARMS = ("new", "md")
 
 
 def load_trace(updates):
-    from bench import model, traces  # imported lazily so --help works without the tests directory
+    from bench import model, traces  # tests/bench sits next to this file; run from a source checkout
     return model, traces.build()[:updates]
 
 

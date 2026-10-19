@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-20 — illustration-tools 3.6.0, agent-tools 1.6.0: optimization round 3
+
+- **illustration-tools 3.6.0.** Every shipped template and example now passes the check the skill's procedure requires: 274 of 296 HTML files pass `self_check.py --strict` (51 before), and the 18 technical-color files pass the new `--profile technical-color`, which allows exactly the pinned export toolbar. A baseline test keeps it that way. `scripts/icon_lookup.py` finds icons without reading the catalog (`primitive-icons.md` 81.9 KB to 4.6 KB). `export.md` is read only when the exporter fails; `output-spec.md` is split so imports read only their half (`size-classes.md`). The technical-color toolbar section exists once.
+- **agent-tools 1.6.0.** `progress-report` browser tests run only with `PROGRESS_UI_TESTS=1` (the default suite drops from 219 s to 138 s); `live_ab.py` moved to `tests/` beside the bench it imports, so nothing outside `tests/` imports from it.
+
 ## 2026-10-19 — illustration-tools 3.5.0, dev-tools 1.2.0, agent-tools 1.5.0: optimization round 2
 
 - **illustration-tools 3.5.0.** `illustrate` SKILL.md is procedure-first: 11.7 KB and 155 lines instead of 34.7 KB and 442, with the create procedure as the second section and the stable §0 to §12 tags kept. New references: `type-index.md` (one line per type and variant, so a caller reads 6.5 KB to choose), `taste-gate.md` (judgement checks, read once per diagram) and `variants.md`. `type-line`, `type-scatter`, `type-bar` and `type-treemap` are split into `slopegraph`, `ridgeline`, `streamgraph`, `bump`, `bubble`, `beeswarm`, `dumbbell` and `marimekko` files (a plain line chart reads 2.8 KB instead of 43 KB). `self_check.py --strict` adds the mechanical taste-gate checks and `verify-geometry.py --orthogonal` the connector check; default output is unchanged. The unloaded `commands/` folder is removed.

@@ -301,7 +301,7 @@ tokenizer exists.
 Task start, completion and reopening cost nothing because they are read from the plan or `tasks.md`. The skill is the
 setup cost you pay on each load, so it stays short. The full table by update class and the assumptions are in
 [the token benchmark](docs/token-benchmark.md). Plan mode prints the same one-line outputs as feature mode, so the
-benchmark applies to both. Measured usage from real harness runs comes from `scripts/live_ab.py`, a manual tool that
+benchmark applies to both. Measured usage from real harness runs comes from `tests/live_ab.py`, a manual tool that
 spends tokens ([details](docs/commands.md#benchmarks)).
 
 ## Troubleshooting
@@ -393,8 +393,15 @@ Hooks and the status line never fail: they drop the event, log it and exit 0.
 python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
 ```
 
-Standard library only. The browser tests need Playwright with Chromium and skip cleanly without it; the token-budget test
-needs `pip install tiktoken==0.14.0` and skips without it.
+Standard library only. The browser tests (`test_ui_browser.py`, `test_ui_v3_browser.py`) are opt-in: they run only
+with `PROGRESS_UI_TESTS=1` and need Playwright with Chromium, skipping cleanly without it. Run them after changes to
+`assets/ui/`, `render_data.py` or `model_v3.py`:
+
+```bash
+PROGRESS_UI_TESTS=1 python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
+```
+
+The token-budget test needs `pip install tiktoken==0.14.0` and skips without it.
 
 ## Contract and hosts
 

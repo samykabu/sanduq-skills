@@ -34,6 +34,7 @@ SKILL = SKILL_DIR / "SKILL.md"
 EXTRACT = SKILL_DIR / "scripts/drawio_extract.py"
 IMPORT_REF = SKILL_DIR / "references/import-drawio.md"
 OUTPUT_REF = SKILL_DIR / "references/output-spec.md"
+SIZE_REF = SKILL_DIR / "references/size-classes.md"
 EXPORT_REF = SKILL_DIR / "references/export.md"
 # The skill-local commands/ files were removed in 3.5.0; the reference still names this trigger.
 SLASH_COMMAND = "/illustrate:import-drawio"
@@ -176,7 +177,7 @@ def png_chunk(ctype: bytes, data: bytes) -> bytes:
 
 
 def check_files() -> None:
-    for path in (SKILL, EXTRACT, IMPORT_REF, OUTPUT_REF, EXPORT_REF, FIXTURE, EXAMPLE):
+    for path in (SKILL, EXTRACT, IMPORT_REF, OUTPUT_REF, SIZE_REF, EXPORT_REF, FIXTURE, EXAMPLE):
         if not path.is_file():
             fail(f"missing {path.relative_to(ROOT)}")
     ok("all import artifacts present")
@@ -519,7 +520,7 @@ def check_docs() -> None:
         if container not in import_text:
             fail(f"import-drawio.md does not cover {container}")
 
-    output_text = OUTPUT_REF.read_text(encoding="utf-8")
+    output_text = OUTPUT_REF.read_text(encoding="utf-8") + SIZE_REF.read_text(encoding="utf-8")
     for preset in (
         "doc-inline",
         "doc-wide",

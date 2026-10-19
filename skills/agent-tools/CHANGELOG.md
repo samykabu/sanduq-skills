@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.0 — 2026-10-20
+
+- `progress-report` browser tests (`test_ui_browser.py`, `test_ui_v3_browser.py`) run only when `PROGRESS_UI_TESTS=1`; the default suite covers everything else.
+- `scripts/live_ab.py` moved to `tests/live_ab.py` next to the bench it uses.
+
 ## 1.5.0 — 2026-10-19
 
 - `progress-report` `scripts/hook.py` reads `hook_event_name` from the payload when no event argument is given, so the same entry file serves Spec Kit's event dispatcher and direct host wiring.

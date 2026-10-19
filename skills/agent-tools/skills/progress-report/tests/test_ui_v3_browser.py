@@ -2,6 +2,7 @@
 import copy
 import datetime
 import json
+import os
 import re
 import shutil
 import sys
@@ -33,6 +34,9 @@ ISO = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
 
 def setUpModule():
     global PW, BROWSER, SKIP
+    # Opt-in: these render real pages in Chromium and take most of the suite time.
+    if os.environ.get("PROGRESS_UI_TESTS") != "1":
+        raise unittest.SkipTest("browser tests are opt-in: set PROGRESS_UI_TESTS=1")
     if sync_playwright is None:
         return
     try:

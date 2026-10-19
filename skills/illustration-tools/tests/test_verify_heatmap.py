@@ -246,8 +246,8 @@ def main() -> int:
 
         # N8: CSS transform in <style> block.
         css_transform = original.replace(
-            "svg { display: block; width: 100%; height: auto; max-width: 100%; }",
-            "svg { display: block; width: 100%; height: auto; max-width: 100%; transform: scale(1); }",
+            "svg { display: block; width: 100%; height: auto; min-width: 1000px; }",
+            "svg { display: block; width: 100%; height: auto; min-width: 1000px; transform: scale(1); }",
         )
         case(
             failures,

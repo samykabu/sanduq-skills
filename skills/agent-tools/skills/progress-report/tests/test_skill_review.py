@@ -166,7 +166,10 @@ class Installer(HooksCase):
     @unittest.skipUnless(shutil.which('bash'), 'needs bash')
     def test_a_vanished_script_does_not_block_the_host(self):
         command = f'{sys.executable.replace(chr(92), "/")} "{self.root.as_posix()}/gone/hook.py" stop {hooks_install.TAG}; exit 0'
-        self.assertEqual(subprocess.run(['bash', '-c', command], capture_output=True).returncode, 0)
+        bash = shutil.which('bash')
+        if not bash or 'system32' in bash.lower():  # Windows' WSL launcher is not the shell hosts run hooks in
+            self.skipTest('no POSIX bash on PATH')
+        self.assertEqual(subprocess.run([bash, '-c', command], capture_output=True).returncode, 0)
 
     def test_status_flags_entries_whose_script_is_gone(self):
         self.cli('hooks', 'install', '--host', 'claude', '--scope', 'user')
