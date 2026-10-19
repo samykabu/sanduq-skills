@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-19 — illustration-tools 3.5.0, dev-tools 1.2.0, agent-tools 1.5.0: optimization round 2
+
+- **illustration-tools 3.5.0.** `illustrate` SKILL.md is procedure-first: 11.7 KB and 155 lines instead of 34.7 KB and 442, with the create procedure as the second section and the stable §0 to §12 tags kept. New references: `type-index.md` (one line per type and variant, so a caller reads 6.5 KB to choose), `taste-gate.md` (judgement checks, read once per diagram) and `variants.md`. `type-line`, `type-scatter`, `type-bar` and `type-treemap` are split into `slopegraph`, `ridgeline`, `streamgraph`, `bump`, `bubble`, `beeswarm`, `dumbbell` and `marimekko` files (a plain line chart reads 2.8 KB instead of 43 KB). `self_check.py --strict` adds the mechanical taste-gate checks and `verify-geometry.py --orthogonal` the connector check; default output is unchanged. The unloaded `commands/` folder is removed.
+- **dev-tools 1.2.0.** `build_manual.py --all` builds every configured audience and language in one call; the preview and release workflows use it.
+- **agent-tools 1.5.0.** `progress-report` `hook.py` reads the event from the payload when no argument is given, so one entry file serves the Spec Kit dispatcher and direct wiring; `hooks install` writes SessionEnd for Codex (five events on both hosts) and takes `--post-tool-matcher`; `verbs.md` names the long docs as human references.
+
 ## 2026-10-19 — dev-tools 1.1.3: pinned actions and fork guard for the User Manual workflows
 
 - `user-manual` preview and release workflows pin every action to a commit SHA with its version in a comment: `actions/checkout` v4.3.0, `actions/setup-python` v5.6.0, `actions/upload-artifact` v4.6.2 and `actions/github-script` v7.1.0.

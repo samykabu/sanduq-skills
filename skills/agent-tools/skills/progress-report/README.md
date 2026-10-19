@@ -142,14 +142,14 @@ plan report in `.progress/<name>/`.
 ## Hooks
 
 ```bash
-progress hooks install   --host claude|codex [--scope project|user]
+progress hooks install   --host claude|codex [--scope project|user] [--post-tool-matcher REGEX]
 progress hooks uninstall --host claude|codex [--scope project|user]
 progress hooks status    [--host claude|codex]
 ```
 
 `install` writes the host's native hook entries for `session_start`, `pre_tool_use` (matcher `Task|Agent|spawn_agent`, the
 subagent launches), `post_tool_use`, `stop` and `session_end`, each calling `scripts/hook.py`. The Claude entries go to
-`.claude/settings.json`; the Codex entries to `.codex/hooks.json` (no session end). `--scope user` writes
+`.claude/settings.json`; the Codex entries to `.codex/hooks.json`. `--scope user` writes
 `~/.claude/settings.json` or `~/.codex/hooks.json` instead.
 
 - Existing settings and hooks are preserved. Every entry carries `--managed-by=progress-report`, and `uninstall` removes
@@ -171,7 +171,7 @@ subagent launches), `post_tool_use`, `stop` and `session_end`, each calling `scr
 $ progress hooks install --host claude
 progress: hooks installed claude project 5 entries in .claude/settings.json
 $ progress hooks status
-progress: hooks claude project 5/5 user 0/5; codex project 0/4 user 0/4; spec-kit no
+progress: hooks claude project 5/5 user 0/5; codex project 0/5 user 0/5; spec-kit no
 ```
 
 A hook prints nothing and always exits 0. It attaches an event only to a bound session (the `bind=` handshake from

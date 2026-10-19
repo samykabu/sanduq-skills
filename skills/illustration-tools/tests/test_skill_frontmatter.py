@@ -25,5 +25,34 @@ class SkillFrontmatter(unittest.TestCase):
             self.assertIn(trigger, description)
 
 
+class SkillEntry(unittest.TestCase):
+    """The entry file stays procedure-first and small; every link it and the references carry resolves."""
+
+    REFERENCES = SKILL.parent / "references"
+    LINK = re.compile(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)")
+
+    def test_entry_is_small(self):
+        text = SKILL.read_text(encoding="utf-8")
+        self.assertLess(len(text.splitlines()), 200)
+        self.assertLessEqual(len(text.encode("utf-8")), 12_500)
+        procedure, index = text.find("To create a new diagram"), text.find("Choosing the type")
+        self.assertTrue(0 < procedure < index, "the create procedure comes before the type section")
+
+    def test_links_resolve(self):
+        for document in (SKILL, *sorted(self.REFERENCES.glob("*.md"))):
+            for target in self.LINK.findall(document.read_text(encoding="utf-8")):
+                if target.startswith(("http://", "https://", "mailto:")):
+                    continue
+                with self.subTest(document=document.name, target=target):
+                    self.assertTrue((document.parent / target).exists())
+
+    def test_type_index_lists_every_type_reference_once(self):
+        index = (self.REFERENCES / "type-index.md").read_text(encoding="utf-8")
+        listed = re.findall(r"\]\((type-[a-z0-9-]+\.md)\)", index)
+        shipped = sorted(p.name for p in self.REFERENCES.glob("type-*.md") if p.name != "type-index.md")
+        self.assertEqual(sorted(listed), shipped)
+        self.assertIn("references/type-index.md", SKILL.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -69,6 +69,51 @@ class GeometryCases(unittest.TestCase):
         self.assertFindings(NODE.replace("#f5f5f5", "#101827") + mask(240, fill="#101827"), 0)
 
 
+def ortho(body: str) -> list[str]:
+    return geometry.orthogonal_findings(f"<!DOCTYPE html><html><body>{SVG_HEAD}{body}</svg></body></html>", "t")
+
+
+def arrow(d: str) -> str:
+    return f'<path d="{d}" fill="none" stroke="#4f5d75" marker-end="url(#a)"/>'
+
+
+class Orthogonality(unittest.TestCase):
+    """--orthogonal: connector rule 1, axis-aligned runs joined by quarter turns."""
+
+    def test_passing_connectors(self):
+        cases = [
+            arrow("M 40 40 H 200"),
+            arrow("M 40 40 V 120 Q 40 128 48 128 H 200"),  # rounded elbow, quadratic corner
+            arrow("M 40 40 H 92 A 8 8 0 0 1 100 48 V 120"),  # rounded elbow, quarter arc
+            arrow("M 40 40 H 92 a 6 6 0 0 1 12 0 H 200"),  # bridge hop over a crossing (rule 3)
+            arrow("M40,40 h52 c4.4,0 8,3.6 8,8 v72"),  # relative cubic corner
+            '<line x1="40" y1="40" x2="40" y2="160" marker-end="url(#a)"/>',
+            '<polyline points="40,40 120,40 120,160" fill="none" marker-end="url(#a)"/>',
+            '<path d="M 40 40 L 200 160" stroke="#4f5d75"/>',  # no marker: a chart line, not a connector
+        ]
+        for body in cases:
+            with self.subTest(body=body):
+                self.assertEqual(ortho(body), [])
+
+    def test_failing_connectors(self):
+        cases = [
+            arrow("M 40 40 L 200 160"),  # diagonal
+            arrow("M 40 40 H 100 L 200 60"),  # diagonal after a straight run
+            arrow("M 40 40 C 120 40, 120 160, 200 160"),  # S-curve: leaves and arrives horizontally, no quarter turn
+            arrow("M 40 40 Q 120 40 200 160"),  # corner that arrives on a diagonal
+            arrow("M 40 40 A 120 120 0 0 1 200 160"),  # sweeping arc
+            '<line x1="40" y1="40" x2="200" y2="160" marker-end="url(#a)"/>',
+            '<polyline points="40,40 120,80 120,160" fill="none" marker-start="url(#a)"/>',
+        ]
+        for body in cases:
+            with self.subTest(body=body):
+                self.assertEqual(len(ortho(body)), 1, ortho(body))
+
+    def test_default_check_unchanged(self):
+        # Orthogonality is opt-in; the default mask check (CI --all --baseline) ignores it.
+        self.assertEqual(findings(arrow("M 40 40 L 200 160")), [])
+
+
 class ShippedAssets(unittest.TestCase):
     """Every shipped asset passes, except the documented legacy baseline (kept honest both ways)."""
 

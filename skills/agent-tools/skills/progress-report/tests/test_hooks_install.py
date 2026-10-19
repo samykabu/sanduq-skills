@@ -81,16 +81,26 @@ class RoundTrip(HooksCase):
         self.assertEqual(self.read('claude', 'project'), UNRELATED)
         self.assertEqual(self.path('claude', 'project').read_text(encoding='utf-8'), original)
 
-    def test_codex_project_install_has_no_session_end_and_round_trips(self):
+    def test_codex_project_install_writes_the_same_five_events_and_round_trips(self):
         self.write('codex', 'project', {'hooks': {'Stop': [{'hooks': [{'type': 'command', 'command': 'echo bye'}]}]}, 'other': [1, 2]})
         before = self.read('codex', 'project')
         code, line = self.cli('hooks', 'install', '--host', 'codex')
         self.assertEqual(code, 0, line)
-        self.assertIn('4 entries in .codex/hooks.json', line)
+        self.assertIn('5 entries in .codex/hooks.json', line)
         events = self.ours(self.read('codex', 'project'))
-        self.assertEqual(sorted(e[0] for e in events), sorted(['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop']))
+        self.assertEqual(sorted(e[0] for e in events), sorted(['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionEnd']))
         self.assertEqual(self.cli('hooks', 'uninstall', '--host', 'codex')[0], 0)
         self.assertEqual(self.read('codex', 'project'), before)
+
+    def test_post_tool_matcher_is_written_only_when_asked(self):
+        for host in ('claude', 'codex'):
+            self.cli('hooks', 'install', '--host', host)
+            self.assertIsNone({e[0]: e[1] for e in self.ours(self.read(host, 'project'))}['PostToolUse'])
+            code, line = self.cli('hooks', 'install', '--host', host, '--post-tool-matcher', 'Bash|Task|Agent|spawn_agent')
+            self.assertEqual(code, 0, line)
+            matchers = {e[0]: e[1] for e in self.ours(self.read(host, 'project'))}
+            self.assertEqual((matchers['PostToolUse'], matchers['PreToolUse'], len(matchers)), ('Bash|Task|Agent|spawn_agent', 'Task|Agent|spawn_agent', 5))
+            self.assertIn('5 entries from', self.cli('hooks', 'uninstall', '--host', host)[1])
 
     def test_install_into_a_missing_file_creates_it_and_uninstall_leaves_an_empty_object(self):
         self.assertFalse(self.path('claude', 'project').exists())
@@ -195,11 +205,11 @@ class Refusals(HooksCase):
 class Status(HooksCase):
     def test_status_is_one_line_and_counts_each_host_and_scope(self):
         self.assertEqual(self.cli('hooks', 'status'),
-                         (0, 'progress: hooks claude project 0/5 user 0/5; codex project 0/4 user 0/4; spec-kit no'))
+                         (0, 'progress: hooks claude project 0/5 user 0/5; codex project 0/5 user 0/5; spec-kit no'))
         self.cli('hooks', 'install', '--host', 'claude')
         self.cli('hooks', 'install', '--host', 'codex', '--scope', 'user')
         code, line = self.cli('hooks', 'status')
-        self.assertEqual(line, 'progress: hooks claude project 5/5 user 0/5; codex project 0/4; user 4/4 registered, 0/4 approved '
+        self.assertEqual(line, 'progress: hooks claude project 5/5 user 0/5; codex project 0/5; user 5/5 registered, 0/5 approved '
                                '(approve the hooks in Codex); spec-kit no')
         self.assertEqual(self.cli('hooks', 'status', '--host', 'claude')[1], 'progress: hooks claude project 5/5 user 0/5; spec-kit no')
 
@@ -209,7 +219,7 @@ class Status(HooksCase):
 
 
 class CodexApproval(HooksCase):
-    EVENTS = ('session_start', 'pre_tool_use', 'post_tool_use', 'stop')
+    EVENTS = ('session_start', 'pre_tool_use', 'post_tool_use', 'stop', 'session_end')
 
     def setUp(self):
         super().setUp()
@@ -236,32 +246,32 @@ class CodexApproval(HooksCase):
     def test_unapproved_and_untrusted(self):
         self.cli('hooks', 'install', '--host', 'codex')
         self.config(trusted=False)
-        self.assertEqual(self.line(), 'progress: hooks codex project 4/4 registered, 0/4 approved, project untrusted; user 0/4 '
+        self.assertEqual(self.line(), 'progress: hooks codex project 5/5 registered, 0/5 approved, project untrusted; user 0/5 '
                                       '(approve the hooks in Codex); spec-kit no')
 
     def test_trusted_but_unapproved(self):
         self.cli('hooks', 'install', '--host', 'codex')
         self.config()
-        self.assertIn('project 4/4 registered, 0/4 approved; user', self.line())
+        self.assertIn('project 5/5 registered, 0/5 approved; user', self.line())
         self.assertNotIn('untrusted', self.line())
 
     def test_fully_approved_is_quiet(self):
         self.cli('hooks', 'install', '--host', 'codex')
         self.config(approve=self.EVENTS)
-        self.assertEqual(self.line(), 'progress: hooks codex project 4/4 registered, 4/4 approved; user 0/4; spec-kit no')
+        self.assertEqual(self.line(), 'progress: hooks codex project 5/5 registered, 5/5 approved; user 0/5; spec-kit no')
 
     def test_partially_approved_and_empty_hash_does_not_count(self):
         self.cli('hooks', 'install', '--host', 'codex')
         self.config(approve=self.EVENTS[:2])
-        self.assertIn('2/4 approved', self.line())
+        self.assertIn('2/5 approved', self.line())
         path = self.codex_home / 'config.toml'
         path.write_text(path.read_text(encoding='utf-8').replace('sha256:abc', ''), encoding='utf-8')
-        self.assertIn('0/4 approved', self.line())
+        self.assertIn('0/5 approved', self.line())
 
     def test_windows_style_paths_match_regardless_of_case_and_separators(self):
         self.cli('hooks', 'install', '--host', 'codex')
         self.config(approve=self.EVENTS, path_style=lambda p: p.upper().replace('/', chr(92) * 2))
-        self.assertIn('4/4 approved', self.line())
+        self.assertIn('5/5 approved', self.line())
         self.assertNotIn('untrusted', self.line())
 
     def test_spec_kit_hooks_in_config_toml_are_counted(self):

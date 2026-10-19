@@ -1,5 +1,6 @@
 """Portable build_manual: edition staging, asset privacy, theme selection and navigation."""
 import importlib.util
+import io
 import tempfile
 import unittest
 from unittest import mock
@@ -97,6 +98,52 @@ class CopyPagesTests(unittest.TestCase):
         staged = (self.target / 'assets/diagrams/home.html').read_text(encoding='utf-8')
         self.assertIn('tech.html', staged)
 
+
+
+class AllEditionsTests(unittest.TestCase):
+    """`--all` builds the three audiences for each manual.yml language whose docs/<lang>/ directory exists."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name).resolve()
+        (self.root / 'docs/en').mkdir(parents=True)
+        (self.root / 'manual.yml').write_text('languages:\n  required: [en]\n  optional: [ar]\n', encoding='utf-8')
+
+    def run_all(self, *extra):
+        calls = []
+
+        def fake(args, root, manual):
+            calls.append(args)
+            return root / 'site' / args.version / args.language / args.audience, None, root / 'x.pdf' if args.pdf else None
+
+        argv = ['build_manual.py', '--root', str(self.root), '--all', *extra]
+        with mock.patch.object(builder, 'build_edition', side_effect=fake), mock.patch('sys.argv', argv), \
+                mock.patch('sys.stdout', new_callable=io.StringIO) as out:
+            builder.main()
+        return calls, out.getvalue().splitlines()
+
+    def test_builds_only_languages_that_have_a_directory(self):
+        calls, lines = self.run_all()
+        self.assertEqual([(c.audience, c.language) for c in calls],
+                         [('end-user', 'en'), ('administrator', 'en'), ('technical', 'en')])
+        self.assertEqual(len(lines), 3)
+        self.assertTrue(lines[0].startswith('end-user en: '), lines[0])
+
+    def test_passes_version_archive_and_pdf_through_to_every_edition(self):
+        (self.root / 'docs/ar').mkdir()
+        calls, lines = self.run_all('--version', 'v1.2', '--archive', '--pdf')
+        self.assertEqual(len(calls), 6)
+        self.assertEqual({(c.version, c.archive, c.pdf) for c in calls}, {('v1.2', True, True)})
+        self.assertEqual([c.language for c in calls], ['en'] * 3 + ['ar'] * 3)
+        self.assertTrue(all(line.endswith('x.pdf') for line in lines), lines)
+
+    def test_all_refuses_a_single_edition_flag_and_an_empty_language_set(self):
+        with self.assertRaises(SystemExit):
+            self.run_all('--language', 'en')
+        (self.root / 'manual.yml').write_text('languages:\n  required: [fr]\n', encoding='utf-8')
+        with self.assertRaisesRegex(SystemExit, 'no language directory'):
+            self.run_all()
 
 
 class ThemeTests(unittest.TestCase):
