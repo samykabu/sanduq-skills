@@ -135,7 +135,8 @@ def flags(ci):
     """The named booleans a template may branch on."""
     capabilities = ci['capabilities']
     return {'system_packages_apt': capabilities['system_packages'] == 'sudo-apt',
-            'python_setup_action': capabilities['python'] == 'setup-action'}
+            'python_setup_action': capabilities['python'] == 'setup-action',
+            'self_hosted': not hosted(ci['runners']['linux'])}
 
 
 def runs_on(labels):

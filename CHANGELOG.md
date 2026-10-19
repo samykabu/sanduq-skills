@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-19 — dev-tools 1.1.3: pinned actions and fork guard for the User Manual workflows
+
+- `user-manual` preview and release workflows pin every action to a commit SHA with its version in a comment: `actions/checkout` v4.3.0, `actions/setup-python` v5.6.0, `actions/upload-artifact` v4.6.2 and `actions/github-script` v7.1.0.
+- The preview job skips pull requests from forks when the project's linux runner is self-hosted, so a self-hosted runner never executes a fork's checkout and scripts. The new `self_hosted` template flag renders the guard; GitHub-hosted projects get no `if:`.
+
 ## 2026-10-18 — illustration-tools 3.4.3, dev-tools 1.1.2, agent-tools 1.4.3: portable plugin manifests
 
 - Every bundle gains a root `plugin.json` in the Agent Plugins 1.0.0 format, mirroring its `.claude-plugin/plugin.json`, so Codex (`codex plugin marketplace add samykabu/sanduq`, then `codex plugin add <bundle>@sanduq`) and Claude Code install the same bundle. CI checks the two manifests agree and validates every SKILL.md against the Agent Skills frontmatter rules. No skill content changes.
