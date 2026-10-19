@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0 — 2026-10-19
+
+- `progress-report` `scripts/hook.py` reads `hook_event_name` from the payload when no event argument is given, so the same entry file serves Spec Kit's event dispatcher and direct host wiring.
+- `hooks install` writes SessionEnd for Codex too (five events on both hosts) and takes `--post-tool-matcher REGEX` to narrow the PostToolUse group; empty keeps every tool.
+- `references/verbs.md` names `docs/contracts.md` and `docs/commands.md` as human references that a verb does not need.
+
 ## 1.4.3 — 2026-10-18
 
 Adds the Agent Plugins root manifest (`plugin.json`, schema 1.0.0) beside `.claude-plugin/plugin.json` so Codex can install the bundle from a marketplace. No skill content changes.
