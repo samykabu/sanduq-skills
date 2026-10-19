@@ -130,6 +130,26 @@ class F5FastHook(Project):
         for heavy in ('sanduq_progress', 'argparse', 'subprocess', 'shutil', 'secrets', 'dataclasses', 'tempfile'):
             self.assertIsNone(re.search(rf'\|\s+{heavy}(\.\w+)*\s*$', result.stderr, re.M), heavy)
 
+    def test_a_missing_event_argument_is_sniffed_from_the_payload(self):
+        """Spec Kit's dispatcher passes no event name; the fast path must still let the handshake tool call through."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('progress_hook_entry', HOOK)
+        entry = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(entry)
+        for name, event in (('SessionStart', 'session_start'), ('PreToolUse', 'pre_tool_use'), ('PostToolUse', 'post_tool_use'),
+                            ('Stop', 'stop'), ('SessionEnd', 'session_end'), ('post_tool_use', 'post_tool_use'), ('Unknown', '')):
+            self.assertEqual(entry.sniff_event('{"session_id": "s", "hook_event_name": "%s"}' % name), event, name)
+        self.assertEqual((entry.sniff_event('{}'), entry.sniff_event(''), entry.sniff_event('{"hook_event_name": null}')), ('', '', ''))
+        import test_hosts
+        nonce = self.init()
+        data = json.loads(self.ctx.bindings.read_text())
+        data['pending'][0]['created_at'] = util.iso(util.utcnow())  # the subprocess uses the real clock
+        self.ctx.bindings.write_text(json.dumps(data))
+        self.run_hook('stop', self.payload('claude_post_task.json', session_id='claude-sess-9'))  # logged as dropped: the fast path now applies
+        result = self.run_hook('', test_hosts.bash_bind_payload(self, 'claude-sess-9', nonce))
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+        self.assertIn('claude:claude-sess-9', json.loads(self.ctx.bindings.read_text())['sessions'])
+
     def test_bound_session_is_recorded_through_the_fast_entry(self):
         self.init(debounce_seconds=1000)
         self.bind()
