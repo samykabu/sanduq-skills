@@ -108,6 +108,10 @@ jobs:
           python scripts/lint-render.py --all
       - name: User Manual tests
         run: python -m unittest discover -s skills/dev-tools/skills/user-manual/tests -q
+      - name: Progress Report tests (browser tests opt in with PROGRESS_UI_TESTS=1)
+        env:
+          PROGRESS_UI_TESTS: ${{ github.event_name == 'push' && '1' || '' }}
+        run: python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
       - name: Delegate Task tests
         run: |
           node skills/agent-tools/skills/delegate-task/test/run.mjs
