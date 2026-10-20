@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1 — 2026-10-21
+
+- `progress-report` `docs/commands.md` and `docs/contracts.md` mark `progress status --schema v2`, `progress export --schema v2` and the `classic` layout as deprecated. They still work and will be removed in a later release. New readers use v3.
+
 ## 1.6.0 — 2026-10-20
 
 - `progress-report` browser tests (`test_ui_browser.py`, `test_ui_v3_browser.py`) run only when `PROGRESS_UI_TESTS=1`; the default suite covers everything else.

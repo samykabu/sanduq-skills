@@ -53,6 +53,22 @@ class SkillEntry(unittest.TestCase):
         self.assertEqual(sorted(listed), shipped)
         self.assertIn("references/type-index.md", SKILL.read_text(encoding="utf-8"))
 
+    def test_imports_run_the_step_7_checks(self):
+        # An import does not load SKILL.md's procedure, so each import reference names the checks itself.
+        for name in ("import-drawio.md", "import-excalidraw.md", "import-mermaid.md"):
+            text = (self.REFERENCES / name).read_text(encoding="utf-8")
+            with self.subTest(reference=name):
+                self.assertIn("scripts/verify-geometry.py <output.html>", text)
+                self.assertIn("scripts/self_check.py --strict <output.html>", text)
+                self.assertIn("--profile technical-color", text)
+
+    def test_technical_color_process_flow_has_no_host_specific_qa(self):
+        text = (self.REFERENCES / "technical-color-process-flow.md").read_text(encoding="utf-8")
+        for host_only in ("/mnt/user-data/outputs", "present_files", "Claude.ai"):
+            self.assertFalse(host_only in text, host_only)
+        self.assertIn("self_check.py --profile technical-color", text)
+        self.assertIn("lint-render.py <file>", text)
+
 
 if __name__ == "__main__":
     unittest.main()

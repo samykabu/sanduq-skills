@@ -32,6 +32,25 @@ class InitManualTests(unittest.TestCase):
             self.assertTrue((root / '.github/workflows/user-manual-preview.yml').is_file())
             self.assertFalse((root / '.specify').exists())
 
+    def test_an_authored_home_page_survives_and_a_missing_one_gets_the_stub(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            modules = root / 'modules.json'
+            modules.write_text(json.dumps([{'id': 'refunds', 'name': 'Refunds', 'description': 'Refund requests',
+                                            'name_ar': 'المبالغ', 'description_ar': 'طلبات الاسترداد',
+                                            'evidence': ['src/refunds']}]), encoding='utf-8')
+            home = root / 'User-Manual/docs/en/index.md'
+            home.parent.mkdir(parents=True)
+            home.write_text('# My authored home page\n', encoding='utf-8')
+            result = subprocess.run([sys.executable, str(INIT), '--repo-root', str(root), '--modules-file', str(modules),
+                                     '--product-name', 'Shop', '--enable-arabic'],
+                                    capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual('# My authored home page\n', home.read_text(encoding='utf-8'))
+            arabic = (root / 'User-Manual/docs/ar/index.md').read_text(encoding='utf-8')
+            self.assertIn('Shop', arabic)
+            self.assertTrue((root / 'User-Manual/docs/en/modules/refunds/index.md').is_file())
+
     def test_preview_skips_fork_pull_requests_only_on_self_hosted_runners(self):
         import yaml
         template = (ASSETS / 'user-manual-preview.yml').read_bytes()
