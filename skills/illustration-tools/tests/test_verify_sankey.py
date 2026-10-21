@@ -961,6 +961,7 @@ def main() -> int:
         (sandbox / "references").mkdir(parents=True)
         (sandbox / "scripts").mkdir()
         shutil.copy(CHECKER, sandbox / "scripts/verify-sankey.py")
+        shutil.copy(CHECKER.parent / "svg_scan.py", sandbox / "scripts/svg_scan.py")  # the shared module it loads
         shutil.copy(REFERENCE, sandbox / "references" / REFERENCE.name)
         for variant in sorted(ASSETS.glob("example-sankey*.html")):
             shutil.copy(variant, sandbox / "assets" / variant.name)

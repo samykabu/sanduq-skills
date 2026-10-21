@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-21 — dev-tools 1.4.0, illustration-tools 3.7.1, agent-tools 1.7.0: round 5
+
+- **dev-tools 1.4.0.** `init_manual.py --no-tools` skips the script copies in `User-Manual/tools/`, for a project whose CI runs the scripts from another place. Without `--ci-policy` the CI workflows follow the `ci:` mapping in `<repo-root>/.specify/workflow.yml` when that file exists (before, the shipped default was used); `sanduq_ci.load_ci` reads a directory as a project root. `manual.yml` gains `lifecycle.impact_scope: all`. Sanduq can now vendor `init_manual.py` instead of keeping its own copy.
+- **illustration-tools 3.7.1.** The data verifiers share `scripts/svg_scan.py` (the SVG scanner, first-wins attributes, `median`, `line_of`, the printed-number reader and the hand-variant test), loaded the way they load `theme_tokens.py`. Each verifier keeps its own transform contract. No output changes; a copied verifier needs `svg_scan.py` beside it.
+- **agent-tools 1.7.0.** `progress-report` removes `status --json --schema v2`, `export --schema v2` and the `classic` page layout, deprecated in 1.6.1. A v2 or classic request exits 2 with one line that names an installed Sanduq Workflow and, below 1.17.0, its upgrade command. A `theme.json` that still says `classic` shows the timeline, and `progress status` ends its line with a notice; it also flags an installed Sanduq Workflow older than 1.17.0. The one-line status and `runs --json` are unchanged. The bench reads `PROGRESS_BENCH_CLI`, `PROGRESS_BENCH_SKILL` and `PROGRESS_BENCH_DOC` so a repository that vendors it can run it in its own layout. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-21 — agent-tools 1.6.2
 
 - **agent-tools 1.6.2.** `progress-report` declares the `.git/info/exclude` lines it writes in `.git/info/sanduq-runtime.json`, so Sanduq Memory accepts Progress's runtime files in a feature folder instead of refusing to queue it.

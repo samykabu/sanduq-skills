@@ -49,7 +49,8 @@ All content lives under `User-Manual/` in your repository:
   publishing settings.
 - `docs/en/` (and `docs/ar/` if you enable Arabic): one Markdown page per module, plus shared pages.
 - `theme/`: stylesheets for light, dark, print, and right-to-left layouts.
-- `tools/`: copies of the build, audit, and state scripts, so CI can run them.
+- `tools/`: copies of the build, audit, and state scripts, so CI can run them. `--no-tools` skips
+  them.
 - Built output in `site/` and `pdf/`: one HTML site per [edition](../glossary.md#edition), and on
   release one PDF per edition and language. Treat these as generated.
 

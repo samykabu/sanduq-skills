@@ -74,6 +74,9 @@ def manual_yaml(product: str, modules: list[dict[str, object]], arabic: bool, pr
         "  # material (default), readthedocs, mkdocs, or any installed MkDocs theme.",
         "  theme: material",
         "  theme_options: {}",
+        "lifecycle:",
+        "  # all: update and analyze read the whole manual; evidence: start from the pages an impact tool lists.",
+        "  impact_scope: all",
         "modules:",
     ]
     for module in modules:
@@ -136,7 +139,10 @@ def main() -> None:
     parser.add_argument("--enable-arabic", action="store_true")
     parser.add_argument("--provider")
     parser.add_argument("--ci-policy", type=Path,
-                        help="YAML file whose `ci:` mapping selects where the CI workflows run")
+                        help="YAML file whose `ci:` mapping selects where the CI workflows run "
+                             "(default: <repo-root>/.specify/workflow.yml when present)")
+    parser.add_argument("--no-tools", action="store_true",
+                        help="do not copy the build, audit and state scripts to User-Manual/tools/")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -191,10 +197,11 @@ def main() -> None:
                 skill_root / "assets" / "scaffold" / "theme" / name,
                 manual_root / "docs" / language / "assets" / "stylesheets" / name,
             )
-    for name in ("audit_manual.py", "build_manual.py", "manual_state.py"):
-        copy_if_missing(skill_root / "scripts" / name, manual_root / "tools" / name)
+    if not args.no_tools:
+        for name in ("audit_manual.py", "build_manual.py", "manual_state.py"):
+            copy_if_missing(skill_root / "scripts" / name, manual_root / "tools" / name)
     # CI assets are templates: render the project's recorded runner selection.
-    ci = sanduq_ci.load_ci(args.ci_policy)
+    ci = sanduq_ci.load_ci(args.ci_policy or root)
     for name in ("user-manual-preview.yml", "user-manual-release.yml"):
         render_if_missing(skill_root / "assets" / "github" / name, root / ".github" / "workflows" / name, ci)
     (manual_root / ".state").mkdir(exist_ok=True)

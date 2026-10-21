@@ -14,11 +14,6 @@ class LegacyAttempts(Project):
                                     'log': (self.root / 'logs' / 'a.jsonl').as_posix(), **fields}), encoding='utf-8')
         return str(path)
 
-    def report(self):
-        code, text = self.cli('status', '--json', '--schema', 'v2')
-        self.assertEqual(code, 0, text)
-        return json.loads(text)
-
     def test_record_is_one_line_labelled_legacy_and_upserts_by_run(self):
         self.init()
         self.cli('lane', 'L1', '--tasks', 'T001', '--owner', 'worker-1')

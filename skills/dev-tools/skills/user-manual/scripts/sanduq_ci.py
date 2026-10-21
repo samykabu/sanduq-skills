@@ -193,10 +193,13 @@ def render(template, ci):
 def load_ci(policy_path=None):
     """The `ci:` selection recorded in a YAML policy file, or the shipped default.
 
+    A directory is a project root: its `.specify/workflow.yml` is read, as Sanduq records it there.
     No file, a file without `ci:`, or no PyYAML yields the default rather than an error.
     """
     from pathlib import Path
     path = Path(policy_path) if policy_path else None
+    if path is not None and path.is_dir():
+        path = path / '.specify' / 'workflow.yml'
     if path is None or not path.is_file():
         return default_ci()
     try:

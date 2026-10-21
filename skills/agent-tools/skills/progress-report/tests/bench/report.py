@@ -2,13 +2,18 @@
 
 Run from the progress-report skill directory:  python -m tests.bench.report [--check]
 `--check` exits 1 when the committed file differs from a fresh run.
+
+A repository that vendors this bench sets, relative to the directory holding `tests/`:
+PROGRESS_BENCH_CLI (the CLI line the agent types), PROGRESS_BENCH_SKILL (the skill file it loads)
+and PROGRESS_BENCH_DOC (where its own report lives).
 """
+import os
 import sys
 from pathlib import Path
 
 from . import approaches, counting, run, traces
 
-DOC = Path(__file__).resolve().parents[2] / "docs" / "token-benchmark.md"
+DOC = Path(__file__).resolve().parents[2] / os.environ.get("PROGRESS_BENCH_DOC", "docs/token-benchmark.md")
 ORDER = ["NEW", "MD-EDIT", "MD-EDIT-LEAN", "LEGACY", "MD-RENDER"]
 DESCRIBE = {
     "NEW": "Progress verbs. The agent types only the CLI line for events no producer records; automatic collection emits nothing.",

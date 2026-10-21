@@ -1,4 +1,4 @@
-"""Browser tests for the v3 Timeline layout (schema sanduq.progress.v3). Same skip rules as test_ui_browser.py."""
+"""Browser tests for the report page (schema sanduq.progress.v3): opt-in with PROGRESS_UI_TESTS=1, skipped without Playwright."""
 import copy
 import datetime
 import json
@@ -460,33 +460,13 @@ class V3RobustnessTests(V3Test):
         self.assertIn("Stale", self.text("#banners"))
 
 
-class CompatibilityTests(V3Test):
-    layout = "classic"
+class RemovedClassicTests(V3Test):
+    """agent-tools 1.7.0 removed the classic layout and the v2 document (IP22, deliberate change)."""
+    layout = "classic"  # a layout.js written before the removal
 
-    def test_classic_layout_renders_the_v2_view_unchanged_for_a_v2_report(self):
-        p = fresh(load("projection-sample.json"))
-        p["generated_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.open(p)
-        self.assertEqual(self.page.locator("[data-v3]").count(), 0)
-        self.assertEqual(self.page.locator("#b-lanes tbody tr").count(), 3)
-        self.assertIn("Add dependencies when creating a task", self.text("h1"))
-        self.assertEqual(self.errors, [])
-
-    def test_classic_layout_does_not_crash_on_a_v3_report(self):
+    def test_a_classic_layout_setting_still_renders_the_timeline(self):
         self.open()
-        self.assertEqual(self.page.locator("[data-v3]").count(), 0)
-        self.assertIn("classic layout needs a v2 report", self.text("#app"))
-        self.assertIn("Signal quality scoring", self.text("h1"))
-        self.assertEqual(self.errors, [])
-
-
-class V2DefaultTests(V3Test):
-    def test_a_v2_report_renders_classic_with_the_timeline_default(self):
-        p = fresh(load("projection-sample.json"))
-        self.open(p)
-        self.assertEqual(self.page.locator("[data-v3]").count(), 0)
-        ids = self.page.eval_on_selector_all("#app > *", "els=>els.map(e=>(e.querySelector('.body')||{}).id||e.tagName)")
-        self.assertEqual(ids[:3], ["HEADER", "b-decisions", "b-blockers"])
+        self.assertEqual(self.page.eval_on_selector_all("[data-v3]", "els=>els.map(e=>e.id)"), ORDER)
         self.assertEqual(self.errors, [])
 
     def test_a_timeline_layout_setting_also_renders_v3(self):
@@ -562,7 +542,7 @@ def synthetic_report(ledger=(), lifecycle=(), now="2026-10-17T14:00:00Z"):
         (feature / "workflow" / "delegations.json").write_text(json.dumps({"feature": "specs/001-demo", "attempts": list(ledger)}), encoding="utf-8")
         (feature / "workflow" / "lifecycle.jsonl").write_text("".join(json.dumps(e) + "\n" for e in lifecycle), encoding="utf-8")
         moment = datetime.datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
-        return model.build(Ctx(root, "specs/001-demo"), moment, 1, {}, schema="v3")
+        return model.build(Ctx(root, "specs/001-demo"), moment, 1, {})
 
 
 def attempt(run_id, stage, status="failed", start="2026-10-17T10:00:00Z", end="2026-10-17T10:10:00Z", **extra):
@@ -772,47 +752,100 @@ class TimingAndDecisionTests(V3Test):
         self.assertIn("Snapshot may mix generations", self.text("#banners"))
 
 
-class OpenPageTests(V3Test):
-    """A page left open while `progress theme --layout` changes the layout."""
+class PollerTests(V3Test):
+    """The poller and banners, whatever the page draws."""
 
-    def layout_doc(self, doc, layout, rev):
-        d = copy.deepcopy(doc)
-        d["rev"] = rev
-        d["ui"] = {"layout": layout}
-        return d
+    def test_higher_rev_updates_without_reload(self):
+        self.open()
+        self.page.evaluate("window.__marker = 'same-document'")
+        p = fresh(load("ui_v3_sample.json"), rev=41)
+        p["feature"]["title"] = "Renamed feature"
+        write_data(self.view, p)
+        self.wait_text("h1", "Renamed feature")
+        self.assertEqual(self.page.evaluate("window.__marker"), "same-document")
 
-    def test_an_open_classic_page_follows_a_switch_to_timeline_and_back(self):
-        v3 = fresh(load("ui_v3_sample.json"), rev=10)
-        self.layout = "classic"
-        (self.view / "layout.js").write_text('window.__SANDUQ_PROGRESS_LAYOUT__={"layout":"classic"};\n', encoding="utf-8")
-        self.open(self.layout_doc(v3, "classic", 10))
-        self.assertIn("classic layout needs a v2 report", self.text("#app"))  # a v3 report under the classic layout
-        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=11), "timeline", 11))
-        self.page.wait_for_selector("#v3-stages", timeout=UPDATE_WAIT)  # no reload
-        self.assertNotIn("classic layout needs a v2 report", self.text("#app"))
-        self.assertEqual(self.page.eval_on_selector_all("[data-v3]", "els=>els.map(e=>e.id)"), ORDER)
-        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=12), "classic", 12))
-        self.wait_text("#app", "classic layout needs a v2 report")
-        self.assertEqual(self.page.locator("#v3-stages").count(), 0)
+    def test_lower_or_equal_rev_ignored(self):
+        self.open()
+        for rev in (39, 40):
+            p = fresh(load("ui_v3_sample.json"), rev=rev)
+            p["feature"]["title"] = "Should not appear %d" % rev
+            write_data(self.view, p)
+            self.page.wait_for_timeout(3600)
+            self.assertNotIn("Should not appear", self.text("h1"))
+        self.assertEqual(self.page.inner_text("#banners").strip(), "")
+
+    def test_broken_data_keeps_last_good_and_banner(self):
+        self.open()
+        (self.view / "data.js").write_text("window.__SANDUQ_PROGRESS__ = {oops", encoding="utf-8")
+        self.wait_text("#banners", "Update failed")
+        self.assertIn("Signal quality scoring", self.text("h1"))
+        self.assertEqual(self.page.locator("#v3-stages").count(), 1)
+        write_data(self.view, fresh(load("ui_v3_sample.json"), rev=50))  # recovery clears the banner
+        self.page.wait_for_function("!document.getElementById('banners').textContent.includes('Update failed')", timeout=UPDATE_WAIT)
+
+    def test_a_v2_document_is_refused_and_the_last_good_view_stays(self):
+        self.open()
+        v2 = {"schema": "sanduq.progress.v2", "rev": 60, "generated_at": fresh(load("ui_v3_sample.json"))["generated_at"],
+              "collection": {"automatic": True, "dirty": False}, "feature": {"id": "f", "title": "A v2 document"},
+              "summary": {"tasks_total": 0, "tasks_done": 0, "lanes_active": 0, "blocked": 0, "decisions_pending": 0}}
+        write_data(self.view, v2)
+        self.wait_text("#banners", "unsupported format")
+        self.assertIn("Signal quality scoring", self.text("h1"))
+        self.assertEqual(self.page.locator("#v3-stages").count(), 1)
         self.assertEqual(self.errors, [])
 
-    def test_an_open_timeline_page_follows_a_switch_to_a_v2_document_and_back(self):
-        timeline = fresh(load("ui_v3_sample.json"), rev=20)
-        self.open(self.layout_doc(timeline, "timeline", 20))
-        self.page.wait_for_selector("#v3-stages")
-        classic = {"schema": "sanduq.progress.v2", "rev": 21, "generated_at": timeline["generated_at"], "stale_after_seconds": 600,
-                   "collection": {"automatic": True, "dirty": False}, "ui": {"layout": "classic"},
-                   "feature": {"id": "f", "title": "Switched to classic", "branch": "b", "issue": None, "stage": None},
-                   "orchestrator": {"host": None, "model": {"value": None}, "effort": {"value": None}, "context": {"value": None}, "elapsed": {"value": None}, "active": {"value": None}},
-                   "lanes": [], "unassigned_tasks": {"active": [], "waiting": [], "blocked": [], "done": []}, "tasks": {},
-                   "decisions": {"pending": [], "made": []}, "blockers": [], "events": [],
-                   "summary": {"tasks_total": 0, "tasks_done": 0, "lanes_active": 0, "blocked": 0, "decisions_pending": 0}}
-        write_data(self.view, classic)
-        self.wait_text("h1", "Switched to classic")
-        self.assertEqual(self.page.locator("#v3-stages").count(), 0)
-        write_data(self.view, self.layout_doc(fresh(load("ui_v3_sample.json"), rev=22), "timeline", 22))
-        self.page.wait_for_selector("#v3-stages", timeout=UPDATE_WAIT)
-        self.assertEqual(self.errors, [])
+    def test_a_stalled_data_load_does_not_stop_the_poller(self):
+        """Under heavy load Chromium sometimes never fires onload or onerror for a file:// script; the poller must give up
+        on that load and try again instead of waiting forever."""
+        self.page.add_init_script("""
+            (function () {
+              var dropped = false, desc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+              Object.defineProperty(HTMLScriptElement.prototype, 'src', {
+                set: function (v) { if (!dropped && /data\\.js/.test(v)) { dropped = true; return; } desc.set.call(this, v); },
+                get: function () { return desc.get.call(this); }
+              });
+            })();""")
+        write_data(self.view, fresh(load("ui_v3_sample.json")))
+        self.page.goto((self.view / "index.html").as_uri())
+        self.page.wait_for_selector("h1", timeout=40000)
+        self.assertIn("Signal quality scoring", self.text("h1"))
+
+    def test_missing_data_file_banner(self):
+        self.open()
+        (self.view / "data.js").unlink()
+        self.wait_text("#banners", "Update failed")
+        self.assertEqual(self.page.locator("#v3-stages").count(), 1)
+
+    def test_stale_banner_dirty(self):
+        p = fresh(load("ui_v3_sample.json"))
+        p["collection"]["dirty"] = True
+        self.open(p)
+        self.assertIn("pending", self.text("#banners"))
+
+    def test_automatic_collection_unavailable(self):
+        p = fresh(load("ui_v3_sample.json"))
+        p["collection"]["automatic"] = False
+        self.open(p)
+        self.assertIn("Automatic collection unavailable", self.text("#banners"))
+
+    def test_only_one_load_in_flight(self):
+        self.open()
+        self.assertLessEqual(self.page.evaluate("document.querySelectorAll('script[src^=\"data.js\"]').length"), 1)
+
+
+class LightTests(V3Test):
+    scheme = "light"
+
+    def test_light_tokens_applied(self):
+        self.open()
+        self.assertEqual(self.page.evaluate("getComputedStyle(document.body).backgroundColor"), "rgb(246, 247, 244)")
+
+
+class ThemeSwapTests(V3Test):
+    def test_theme_css_swap(self):
+        theme.write_assets(self.view, theme.resolve_doc({"preset": "emerald"}))
+        self.open()
+        self.assertEqual(self.page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()"), "#0f8a64")
 
 
 class EpisodeEndTests(V3Test):

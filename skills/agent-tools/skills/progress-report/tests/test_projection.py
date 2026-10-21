@@ -95,19 +95,19 @@ class Projection(Project):
         self.assertEqual(report['blockers'][0]['source'], 'workflow-pause')
 
     def test_markdown_export_is_deterministic_and_complete(self):
+        # IP22: export is v3 only (`--schema v2` was removed in 1.7.0).
         self.workflow_scenario()
-        first = self.cli('export', '--schema', 'v2')
-        second = self.cli('export', '--schema', 'v2')
+        first = self.cli('export')
+        second = self.cli('export')
         self.assertEqual(first, second)
         self.assertEqual(first[0], 0)
-        self.assertIn('| L1 | Docs |', first[1])
         self.assertIn('T004', first[1])
-        report = self.report()
+        report = self.stored_report()
         self.assertEqual(render_md.render(report), render_md.render(json.loads(json.dumps(report))))
         out = self.root / 'out.md'
-        self.assertEqual(self.cli('export', '--schema', 'v2', '--out', str(out)), (0, f'progress: exported {out}'))
+        self.assertEqual(self.cli('export', '--out', str(out)), (0, f'progress: exported {out}'))
         self.assertEqual(out.read_text(encoding='utf-8'), render_md.render(report))
-        code, text = self.cli('export', '--format', 'json', '--schema', 'v2')
+        code, text = self.cli('export', '--format', 'json')
         self.assertEqual(json.loads(text), report)
 
     def test_report_files_and_data_js(self):
