@@ -216,18 +216,5 @@ class Events(unittest.TestCase):
         self.assertLessEqual(len(report['events']), model.KEEP_LIMIT + model.OTHER_LIMIT + model.NOTE_LIMIT)
 
 
-class Source(unittest.TestCase):
-    """UI wording that needs no browser."""
-    JS = (Path(helpers.__file__).resolve().parent.parent / 'assets' / 'ui' / 'blocks.js').read_text(encoding='utf-8')
-
-    def test_f9_missing_telemetry_wording_is_host_neutral(self):
-        self.assertNotIn("'No host hook data \\u2014 Codex worktree hooks not active?'", self.JS)
-        self.assertIn("o.host === 'codex'", self.JS)
-
-    def test_a5_board_and_quiet_summaries_carry_stable_ids(self):
-        self.assertIn("'data-k': 'quiet-lanes'", self.JS)
-        self.assertIn("'data-k': 'board-' + key", self.JS)
-
-
 if __name__ == '__main__':
     unittest.main()

@@ -93,8 +93,8 @@ Plan mode needs no Spec Kit. Any Markdown checklist is a plan: a file you wrote,
    progress: 4/12 tasks, 1 lanes active, 0 blocked, 0 decisions pending (rev 15)
    ```
 
-   `progress status --json` prints the v3 projection (`sanduq.progress.v3`) that the page reads. `--schema v2` prints
-   the older document, kept for the Sanduq Workflow bridge and other v2 readers.
+   `progress status --json` prints the v3 projection (`sanduq.progress.v3`) that the page reads. `--schema v2` was
+   removed in 1.7.0 and exits 2; Sanduq Workflow 1.17.0 and later do not ask for it.
 
 **What a plan can contain.** Every `- [ ]` / `- [x]` item is a task (nested items too). A heading of level 2 or deeper is
 the phase of the items under it, and the first level-1 heading is the title. `(depends on T001, P002)` and `(after T001)`
@@ -184,13 +184,13 @@ A hook prints nothing and always exits 0. It attaches an event only to a bound s
 | `init [--plan PATH [--name N] [--dir D] \| --feature DIR] [--statusline yes\|no] [--theme P]` | Create the report, start the bind handshake |
 | `bind [--session ID] [--host H] [--model M] [--effort E]` | Bind this session when `init` was run elsewhere, or record the coordinator's own model and effort as a self-report |
 | `refresh [--verbose]` | Rebuild the report now; silent on success |
-| `status [--json [--schema v2\|v3]]` | One-line state, or the projection (v3 by default) |
+| `status [--json]` | One-line state, or the v3 projection |
 | `lane L1 --tasks P001-P004 [--owner ID] [--label T] [--harness H --model M --effort E] [--workstream] [--close]` | Assign tasks to a lane; `--workstream` marks it a workstream |
 | `block P007 --by L2\|P003\|SD2\|ext:"text"` and `unblock B4` | Record and resolve a blocker |
 | `decide ask "q" --options a,b` and `decide made D2 b --by user` | Questions and answers (refused when Workflow owns decisions) |
 | `note "text" [--target P005]` | A retry or failure worth a human's attention |
 | `attempt record`, `runs [--json]` | Integration verbs for Workflow and `.delegate/runs` |
-| `theme --preset NAME \| --from-illustrate \| --file F \| --layout timeline\|classic \| --show` | Colours, section order, density, title, logo; the page layout |
+| `theme --preset NAME \| --from-illustrate \| --file F \| --layout timeline \| --show` | Colours, density, title, logo |
 | `export [--format md\|json] [--out PATH]` | Deterministic Markdown or JSON of the projection |
 | `hooks install\|uninstall\|status` | Native host hooks, above |
 | `statusline [install\|uninstall]` | Claude Code status line wrapper |
@@ -273,9 +273,10 @@ every schema are in [contracts](docs/contracts.md).
 ## Theming
 
 Four presets (`sanduq`, `cobalt`, `emerald`, `classic`) in light and dark, tokens only. `--from-illustrate` maps the
-project's [Illustrate](../../../illustration-tools/skills/illustrate/SKILL.md) theme. Section order, hidden sections, density,
-title, logo and fonts are set in the project's `theme.json`. `progress theme --layout timeline|classic` picks the page;
-`classic` is the old lanes and boards page, fed the v2 document, and is kept for one release.
+project's [Illustrate](../../../illustration-tools/skills/illustrate/SKILL.md) theme. Density, title, logo and fonts are set in
+the project's `theme.json`. The page has one layout, `timeline`. The `classic` layout was
+removed in 1.7.0: `theme --layout classic` exits 2, and a `theme.json` that still names it shows the timeline, with a notice
+in `progress status`.
 
 ![Progress report, dark theme](docs/assets/progress-dark.png)
 
@@ -393,7 +394,7 @@ Hooks and the status line never fail: they drop the event, log it and exit 0.
 python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
 ```
 
-Standard library only. The browser tests (`test_ui_browser.py`, `test_ui_v3_browser.py`) are opt-in: they run only
+Standard library only. The browser tests (`test_ui_v3_browser.py`) are opt-in: they run only
 with `PROGRESS_UI_TESTS=1` and need Playwright with Chromium, skipping cleanly without it. Run them after changes to
 `assets/ui/`, `render_data.py` or `model_v3.py`:
 

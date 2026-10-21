@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.0 — 2026-10-21
+
+- `progress-report` removes the v2 output and the classic layout, deprecated in 1.6.1:
+  - `progress status --json --schema v2` and `progress export --schema v2` exit 2 with
+    `progress: error PROGRESS_REMOVED --schema v2 was removed in agent-tools 1.7.0`. When a Sanduq Workflow is installed the line
+    names its version, and for one older than 1.17.0 adds `python .specify/extensions/workflow/scripts/upgrade.py --version 1.17.1 --apply`.
+  - `progress theme --layout classic`, or `--file` with `"layout": "classic"`, exits 2 with the same kind of line. A stored
+    `theme.json` that says `classic` is read as `timeline`; `progress status` ends its line with a notice until a new preset or
+    `--layout timeline` drops the key. `data.js` always carries the v3 document with `ui.layout: "timeline"`, so a view that still
+    holds an older `blocks.js` draws the timeline.
+  - `progress status` ends its line with a notice while the installed Sanduq Workflow is older than 1.17.0.
+  - The classic half of `assets/ui/blocks.js`, `render_md.render_v2`, `validate.validate_v2`, `model.build_pair` and
+    `model.schema_name` are gone. The base document v3 is built on (`model.build_v2`) stays internal; the one-line status still
+    reads its counts, so the line and `runs --json` are byte-compatible.
+  - `tests/test_ui_browser.py` (the classic page) is removed; its poller and banner tests moved to `test_ui_v3_browser.py`.
+- `tests/bench` reads the CLI line, the skill file and the report path from `PROGRESS_BENCH_CLI`, `PROGRESS_BENCH_SKILL` and
+  `PROGRESS_BENCH_DOC` (relative to the folder that holds `tests/`), with this skill's layout as the default. The skill call
+  names the skill file's folder.
+
+### Migration
+
+- A reader of `status --json --schema v2` or `export --schema v2` reads v3 (`status --json`). Sanduq Workflow 1.16 and earlier
+  ask for v2: upgrade Workflow to 1.17.0 or later.
+- A project with `"layout": "classic"` in `theme.json` sees the timeline. Run `progress theme --layout timeline` to clear the notice.
+
 ## 1.6.2 — 2026-10-21
 
 - `progress-report`: `paths.git_exclude` records the exclude lines it writes in `.git/info/sanduq-runtime.json` (key `progress`), so Sanduq Memory can tell Progress's runtime files from feature content when it archives a feature.

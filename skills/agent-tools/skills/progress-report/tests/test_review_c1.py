@@ -275,7 +275,7 @@ class F10DeadCode(unittest.TestCase):
         self.assertFalse(hasattr(lock, 'pid_alive'))
         self.assertFalse(hasattr(refresh, 'count_dropped'))
         js = (SCRIPTS.parent / 'assets' / 'ui' / 'blocks.js').read_text(encoding='utf-8')
-        self.assertEqual(js.count('function selectedList('), 1)
+        self.assertEqual(js.count('function selectedList('), 0)  # IP22 removed it with the classic page
 
 
 class A1AsyncLaunch(Project):

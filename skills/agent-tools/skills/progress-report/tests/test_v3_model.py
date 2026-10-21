@@ -122,13 +122,12 @@ class Run842V3(unittest.TestCase):
         self.assertTrue(h['unresolved'])
         self.assertTrue(all(u['reason'] for u in h['unresolved']))
 
-    def test_markdown_and_v2_are_both_available(self):
+    def test_markdown_renders_v3_and_the_base_keeps_the_status_line_counts(self):
         md = render_md.render(self.report)
         self.assertIn('## Stages', md)
         self.assertIn('editor not recorded', md)
-        v2 = helpers.run842_report(tempfile.mkdtemp(), schema='v2')[0]
-        self.assertEqual(validate.validate(v2), [])
-        self.assertIn('lanes_active', v2['summary'])
+        base = helpers.run842_report(tempfile.mkdtemp(), schema='v2')[0]
+        self.assertIn('lanes_active', base['summary'])  # the one-line status reads it
 
     def test_real_output_has_the_shapes_the_ui_fixtures_use(self):
         """The hand-built UI fixtures and the real builder must not drift: every key the UI fixture holds in an object that
@@ -159,7 +158,7 @@ class Synthetic(Project):
         (folder / name).write_text(data if isinstance(data, str) else json.dumps(data), encoding='utf-8')
 
     def build(self, schema='v3', now=NOW):
-        return model.build(self.ctx, now, 1, {}, schema=schema)
+        return (model.build if schema == 'v3' else model.build_v2)(self.ctx, now, 1, {})
 
     def attempt(self, run_id, status='successful', identity='specs/001-demo/stage:execute', started='2026-10-15T10:00:00Z',
                 ended='2026-10-15T10:10:00Z', **extra):
@@ -568,17 +567,48 @@ class SelfReport(Synthetic):
 
 
 class Adapter(Synthetic):
-    def test_status_json_defaults_to_v3_and_schema_v2_gives_the_compatibility_document(self):
+    def workflow(self, version):
+        """Install a Sanduq Workflow manifest the way Spec Kit lays it out."""
+        folder = self.root / '.specify' / 'extensions' / 'workflow'
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / 'extension.yml').write_text("schema_version: '1.0'\nextension:\n  id: workflow\n"
+                                              f'  version: "{version}"\nrequires:\n  speckit_version: ">=0.8.0"\n',
+                                              encoding='utf-8')
+
+    def test_status_json_is_v3_and_schema_v2_is_refused_with_one_line(self):
+        # IP22 (deliberate change): agent-tools 1.7.0 removed `--schema v2`; it was deprecated in 1.6.1.
         self.init()
         code, text = self.cli('status', '--json')
         self.assertEqual(json.loads(text)['schema'], 'sanduq.progress.v3')
         code, text = self.cli('status', '--json', '--schema', 'v3')
         self.assertEqual(json.loads(text)['schema'], 'sanduq.progress.v3')
-        code, text = self.cli('status', '--json', '--schema', 'v2')
-        v2 = json.loads(text)
-        self.assertEqual(v2['schema'], 'sanduq.progress.v2')
-        self.assertEqual(validate.validate(v2), [])
+        self.assertEqual(self.cli('status', '--json', '--schema', 'v2'),
+                         (2, 'progress: error PROGRESS_REMOVED --schema v2 was removed in agent-tools 1.7.0'))
         self.assertEqual(self.cli('status', '--json', '--schema', 'v9')[0], 2)
+
+    def test_a_v2_request_names_the_installed_workflow_and_the_upgrade_when_it_is_older_than_1_17(self):
+        self.init()
+        self.workflow('1.16.0')
+        code, line = self.cli('status', '--json', '--schema', 'v2')
+        self.assertEqual(code, 2)
+        self.assertEqual(len(line.splitlines()), 1)
+        self.assertIn('Sanduq Workflow 1.16.0 is installed and needs 1.17.0 or later: '
+                      'python .specify/extensions/workflow/scripts/upgrade.py --version 1.17.1 --apply', line)
+        self.workflow('1.17')
+        code, line = self.cli('export', '--schema', 'v2')
+        self.assertEqual((code, line), (2, 'progress: error PROGRESS_REMOVED --schema v2 was removed in agent-tools 1.7.0; '
+                                           'Sanduq Workflow 1.17 is installed'))
+
+    def test_status_flags_an_installed_workflow_older_than_1_17_and_keeps_the_line_otherwise(self):
+        self.init()
+        plain = self.cli('status')[1]
+        self.workflow('1.16.0')
+        line = self.cli('status')[1]
+        self.assertTrue(line.startswith(plain))
+        self.assertTrue(line.endswith(' Sanduq Workflow 1.16.0 is installed; Progress needs 1.17.0 or later: '
+                                      'python .specify/extensions/workflow/scripts/upgrade.py --version 1.17.1 --apply'))
+        self.workflow('1.17.1')
+        self.assertEqual(self.cli('status')[1], plain)
 
     def test_the_one_line_summary_and_the_stored_report(self):
         self.init()
@@ -586,14 +616,12 @@ class Adapter(Synthetic):
         self.assertRegex(line, r'^progress: 2/5 tasks, 0 lanes active, 0 blocked, 0 decisions pending \(rev \d+\)')
         self.assertEqual(self.stored_report()['schema'], 'sanduq.progress.v3')
 
-    def test_export_markdown_and_json_in_both_schemas(self):
+    def test_export_markdown_and_json_are_v3_and_schema_v2_is_refused(self):
         self.init()
-        v3 = self.cli('export')[1]
-        v2 = self.cli('export', '--schema', 'v2')[1]
-        self.assertIn('## Workstreams', v3)
-        self.assertIn('## Lanes', v2)
+        self.assertIn('## Workstreams', self.cli('export')[1])
         self.assertEqual(json.loads(self.cli('export', '--format', 'json')[1])['schema'], 'sanduq.progress.v3')
-        self.assertEqual(json.loads(self.cli('export', '--format', 'json', '--schema', 'v2')[1])['schema'], 'sanduq.progress.v2')
+        for args in (('export', '--schema', 'v2'), ('export', '--format', 'json', '--schema', 'v2')):
+            self.assertEqual(self.cli(*args), (2, 'progress: error PROGRESS_REMOVED --schema v2 was removed in agent-tools 1.7.0'))
 
     def test_v3_and_v2_agree_on_the_facts_they_share(self):
         self.init()
@@ -604,15 +632,19 @@ class Adapter(Synthetic):
         self.assertEqual(v3['summary']['decisions_pending'], v2['summary']['decisions_pending'])
         self.assertEqual((v3['summary']['tasks_total'], v3['summary']['tasks_done']), (v2['summary']['tasks_total'], v2['summary']['tasks_done']))
 
-    def test_classic_layout_feeds_the_browser_the_v2_document_and_timeline_feeds_v3(self):
+    def test_a_stored_classic_layout_falls_back_to_timeline_with_one_notice(self):
         self.init()
-        shown = lambda: json.loads((self.ctx.view / 'data.js').read_text(encoding='utf-8')[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
-        self.assertEqual(shown()['schema'], 'sanduq.progress.v3')
-        self.assertEqual(self.cli('theme', '--layout', 'classic')[0], 0)
-        self.assertEqual(shown()['schema'], 'sanduq.progress.v2')  # the layout command itself publishes the matching document
-        self.assertEqual(self.stored_report()['schema'], 'sanduq.progress.v3')
-        self.assertEqual(self.cli('theme', '--layout', 'timeline')[0], 0)
-        self.assertEqual(shown()['schema'], 'sanduq.progress.v3')
+        theme_json = self.root / '.specify' / 'progress' / 'theme.json'
+        theme_json.write_text('{"v": 1, "preset": "cobalt", "layout": "classic"}', encoding='utf-8')  # written by 1.6
+        self.assertEqual(self.cli('refresh')[0], 0)
+        shown = json.loads((self.ctx.view / 'data.js').read_text(encoding='utf-8')[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
+        self.assertEqual((shown['schema'], shown['ui']), ('sanduq.progress.v3', {'layout': 'timeline'}))
+        code, line = self.cli('status')
+        self.assertEqual(len(line.splitlines()), 1)
+        self.assertTrue(line.endswith(' theme layout classic was removed; the page shows timeline (progress theme --layout timeline)'))
+        self.assertEqual(self.cli('theme', '--preset', 'emerald')[0], 0)  # a new look drops the removed layout
+        self.assertNotIn('classic', theme_json.read_text(encoding='utf-8'))
+        self.assertNotIn('classic', self.cli('status')[1])
 
     def test_rev_advances_and_a_debounced_event_patches_both_documents(self):
         self.init()
@@ -638,16 +670,17 @@ class ThemeLayout(Project):
         self.init()
         self.assertIn('"layout":"timeline"', self.layout_js())
 
-    def test_theme_layout_writes_the_key_to_layout_js_and_keeps_other_customizations(self):
+    def test_theme_layout_classic_is_refused_and_timeline_keeps_other_customizations(self):
+        # IP22 (deliberate change): the classic layout was removed in agent-tools 1.7.0.
         self.init()
         self.assertEqual(self.cli('theme', '--preset', 'cobalt')[0], 0)
-        self.assertEqual(self.cli('theme', '--layout', 'classic'), (0, 'progress: theme layout classic'))
-        self.assertIn('"layout":"classic"', self.layout_js())
-        self.assertIn('"preset":"cobalt"', self.layout_js())
-        self.assertEqual(self.cli('theme', '--preset', 'emerald')[0], 0)  # a new look keeps the picked layout
-        self.assertIn('"layout":"classic"', self.layout_js())
-        self.assertEqual(self.cli('theme', '--layout', 'timeline')[0], 0)
+        before = self.layout_js()
+        self.assertEqual(self.cli('theme', '--layout', 'classic'),
+                         (2, 'progress: error PROGRESS_REMOVED the classic layout was removed in agent-tools 1.7.0'))
+        self.assertEqual(self.layout_js(), before)
+        self.assertEqual(self.cli('theme', '--layout', 'timeline'), (0, 'progress: theme layout timeline'))
         self.assertIn('"layout":"timeline"', self.layout_js())
+        self.assertIn('"preset":"cobalt"', self.layout_js())
 
     def test_unknown_layout_is_refused(self):
         self.init()

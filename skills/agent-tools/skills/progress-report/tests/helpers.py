@@ -187,8 +187,10 @@ def run842_ctx(base):
 
 
 def run842_report(base, now=RUN842_NOW, schema='v2'):
-    """The projection model.build gives for the frozen #842 fixture, at a fixed clock (v2 by default: the phase 1 tests pin it)."""
+    """The document the model builds for the frozen #842 fixture, at a fixed clock: the internal v2 base document by default
+    (the phase 1 tests pin it), or the v3 projection."""
     from datetime import datetime
     from sanduq_progress import model
     ctx = run842_ctx(base)
-    return model.build(ctx, datetime.fromisoformat(now.replace('Z', '+00:00')), 1, {}, schema=schema), ctx
+    build = model.build if schema == 'v3' else model.build_v2
+    return build(ctx, datetime.fromisoformat(now.replace('Z', '+00:00')), 1, {}), ctx

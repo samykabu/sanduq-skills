@@ -111,7 +111,7 @@ class Recoveries(unittest.TestCase):
         with tempfile.TemporaryDirectory() as base:
             ctx = helpers.run842_ctx(base)
             (ctx.feature_dir / 'workflow' / 'checkpoint.json').write_text(json.dumps(live), encoding='utf-8')
-            report = model.build(ctx, parse(helpers.RUN842_NOW), 1, {}, schema='v3')
+            report = model.build(ctx, parse(helpers.RUN842_NOW), 1, {})
         shown = [e for s in report['stages'] for e in s['episodes'] if e['source'] == 'checkpoint-recovery']
         self.assertEqual(len(shown), 7)
         text = json.dumps(report)
@@ -294,7 +294,7 @@ class Consistency(Synthetic):
         module.clarcol.collect = collect_then_append
         self.addCleanup(setattr, module.clarcol, 'collect', real)
         state = {}
-        report, _ = model.build_pair(self.ctx, NOW, 1, state)
+        report = model.build(self.ctx, NOW, 1, state)
         facts = next(s for s in report['sources'] if s['name'] == 'facts')
         self.assertEqual((facts['fingerprint'], facts['consistent']), (before, False))
         self.assertTrue(report['collection']['dirty'])
@@ -313,7 +313,7 @@ class Consistency(Synthetic):
             return real(ctx)
         module._raw_receipts = rewrite_then_read
         self.addCleanup(setattr, module, '_raw_receipts', real)
-        report = model.build(self.ctx, NOW, 1, {}, schema='v3')
+        report = model.build(self.ctx, NOW, 1, {})
         checkpoint = next(s for s in report['sources'] if s['name'] == 'workflow-checkpoint')
         self.assertFalse(checkpoint['consistent'])
 
@@ -380,23 +380,13 @@ class ThemeRepublish(helpers.Project):
         text = (ctx.view / 'data.js').read_text(encoding='utf-8')
         return json.loads(text[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))['schema']
 
-    def test_layout_republishes_data_js_for_every_initialised_report_and_only_those(self):
-        from sanduq_progress.paths import Ctx
+    def test_a_layout_command_rebuilds_nothing(self):
+        # IP22: the layout no longer picks the document data.js carries, so nothing is republished.
         self.init()
-        other = self.root / 'specs' / '002-other'
-        other.mkdir()
-        (other / 'tasks.md').write_text((self.feature_dir / 'tasks.md').read_text(encoding='utf-8'), encoding='utf-8')
-        self.assertEqual(self.cli('init', '--feature', 'specs/002-other')[0], 0)
-        third = self.root / 'specs' / '003-never'
-        third.mkdir()
-        two = Ctx(self.root, 'specs/002-other')
-        self.assertEqual((self.shown(self.ctx), self.shown(two)), ('sanduq.progress.v3',) * 2)
-        self.assertEqual(self.cli('theme', '--layout', 'classic'), (0, 'progress: theme layout classic'))
-        self.assertEqual((self.shown(self.ctx), self.shown(two)), ('sanduq.progress.v2',) * 2)
-        self.assertEqual(self.stored_report()['schema'], 'sanduq.progress.v3')
-        self.assertFalse((third / 'progress').exists())
-        self.assertEqual(self.cli('theme', '--layout', 'timeline')[0], 0)
-        self.assertEqual((self.shown(self.ctx), self.shown(two)), ('sanduq.progress.v3',) * 2)
+        before = (self.ctx.report.read_bytes(), (self.ctx.view / 'data.js').read_bytes())
+        self.assertEqual(self.cli('theme', '--layout', 'timeline'), (0, 'progress: theme layout timeline'))
+        self.assertEqual((self.ctx.report.read_bytes(), (self.ctx.view / 'data.js').read_bytes()), before)
+        self.assertEqual(self.shown(self.ctx), 'sanduq.progress.v3')
 
     def test_a_preset_change_does_not_rebuild_anything(self):
         self.init()
@@ -404,16 +394,6 @@ class ThemeRepublish(helpers.Project):
         self.assertEqual(self.cli('theme', '--preset', 'cobalt')[0], 0)
         self.assertEqual(self.ctx.report.read_bytes(), before)
 
-    def test_a_busy_report_lock_is_reported_not_silently_skipped(self):
-        from sanduq_progress.lock import Lock
-        self.init()
-        hold = Lock(self.ctx.lock, retries=0, delay=0).acquire()
-        self.addCleanup(hold.release)
-        code, line = self.cli('theme', '--layout', 'classic')
-        self.assertEqual(code, 0)
-        self.assertIn('layout classic', line)
-        self.assertIn('another progress command is running', line)
-        self.assertIn('run progress refresh', line)
 
 
 class VersionAndDocs(unittest.TestCase):
@@ -430,7 +410,7 @@ class MixedVersion(unittest.TestCase):
             ctx = helpers.run842_ctx(base)
             rows = ''.join(json.dumps(e) + '\n' for e in events)
             (ctx.feature_dir / 'workflow' / 'lifecycle.jsonl').write_text(rows, encoding='utf-8')
-            return model.build(ctx, parse(helpers.RUN842_NOW), 1, {}, schema='v3')
+            return model.build(ctx, parse(helpers.RUN842_NOW), 1, {})
 
     def event(self, n, event, stage, at, **extra):
         row = {'v': 1, 'event_id': f'e{n}', 'workflow_run_id': 'wr', 'generation': n, 'at': at, 'stage': stage, 'event': event,
@@ -535,7 +515,7 @@ class UnicodeAnswers(Synthetic):
             doc['items'].append(dict(item, source_id='C9', answer={'kind': 'single', 'value': '\u00df'}))
             doc['items'].append(dict(item, source_id='C10', answer={'kind': 'text', 'value': '\ufb01'}))
             path.write_text(json.dumps(doc), encoding='utf-8')
-            report = model.build(ctx, parse(helpers.RUN842_NOW), 1, {}, schema='v3')
+            report = model.build(ctx, parse(helpers.RUN842_NOW), 1, {})
         by = {d['source_id']: d['answer'] for d in report['decisions']['made'] + report['decisions']['pending'] if d['source'] == 'clarification'}
         self.assertEqual(by['C1Q1']['value'], ['\u00df', '\ufb01', '\u0149', item['options'][0], item['options'][0], 'Z'])
         self.assertIsNone(by['C1Q1']['index'])  # not every value names an option
@@ -627,14 +607,14 @@ class LayoutEnvelope(helpers.Project):
         text = (self.ctx.view / 'data.js').read_text(encoding='utf-8')
         return json.loads(text[len('window.__SANDUQ_PROGRESS__ = '):].rstrip().rstrip(';'))
 
-    def test_each_data_revision_carries_the_layout_in_force(self):
+    def test_each_data_revision_carries_the_timeline_layout(self):
+        # IP22: one layout is left; an older blocks.js still in a view reads `ui.layout` and draws the timeline.
         self.init()
         self.assertEqual(self.shown()['ui'], {'layout': 'timeline'})
-        self.cli('theme', '--layout', 'classic')
-        self.assertEqual((self.shown()['schema'], self.shown()['ui']), ('sanduq.progress.v2', {'layout': 'classic'}))
+        self.assertEqual(self.cli('theme', '--layout', 'classic')[0], 2)
+        self.cli('refresh')
+        self.assertEqual((self.shown()['schema'], self.shown()['ui']), ('sanduq.progress.v3', {'layout': 'timeline'}))
         self.assertNotIn('ui', self.stored_report())  # report.json stays the plain projection
-        self.cli('theme', '--layout', 'timeline')
-        self.assertEqual(self.shown()['ui'], {'layout': 'timeline'})
 
 
 class SpreadsheetLabels(Synthetic):
@@ -734,7 +714,7 @@ class AllTrackedReads(Synthetic):
         model_v3.clarcol.collect = collect_then_touch
         self.addCleanup(setattr, model_v3.clarcol, 'collect', real)
         state = {}
-        report, _ = model.build_pair(self.ctx, NOW, 1, state)
+        report = model.build(self.ctx, NOW, 1, state)
         self.assertTrue(report['collection']['dirty'])
         self.assertIn(rel, report['collection']['inconsistent_sources'])
         self.assertTrue(state['dirty'])

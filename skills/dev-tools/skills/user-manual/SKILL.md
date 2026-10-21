@@ -22,7 +22,9 @@ editions: End User, Administrator/Operator, and Technical Reference.
   when the inputs or manual outputs changed since the record.
 
 `init_manual.py` copies the build, audit, and state scripts to `User-Manual/tools/` for CI. After
-upgrading this skill, refresh those copies from its `scripts/` directory.
+upgrading this skill, refresh those copies from its `scripts/` directory. `--no-tools` skips the
+copies when CI runs the scripts from another place. The CI workflows follow the `ci:` mapping in
+`--ci-policy <file>`, else in `.specify/workflow.yml` when it exists.
 
 This standalone skill does not require `.specify/`, a feature specification, or any Spec Kit
 command. Scope work from the user's request, repository evidence, and version-control changes.
