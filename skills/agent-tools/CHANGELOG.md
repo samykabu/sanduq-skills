@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.2 — 2026-10-21
+
+- `progress-report`: `paths.git_exclude` records the exclude lines it writes in `.git/info/sanduq-runtime.json` (key `progress`), so Sanduq Memory can tell Progress's runtime files from feature content when it archives a feature.
+
 ## 1.6.1 — 2026-10-21
 
 - `progress-report` `docs/commands.md` and `docs/contracts.md` mark `progress status --schema v2`, `progress export --schema v2` and the `classic` layout as deprecated. They still work and will be removed in a later release. New readers use v3.

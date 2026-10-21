@@ -50,6 +50,16 @@ class F1Hygiene(Project):
         self.assertNotIn('diagnostics.log', status)
         self.assertNotIn('.lock', status)
 
+    def test_git_exclude_declares_its_lines_for_memory(self):
+        self.init()
+        paths.git_exclude(self.root)
+        git_dir = subprocess.run(['git', 'rev-parse', '--git-path', 'info'], cwd=self.root,
+                                 capture_output=True, text=True).stdout.strip()
+        declaration = json.loads((self.root / git_dir / 'sanduq-runtime.json').read_text(encoding='utf-8'))
+        exclude = (self.root / git_dir / 'exclude').read_text(encoding='utf-8').splitlines()
+        self.assertTrue(declaration['progress'])
+        self.assertLessEqual(set(declaration['progress']), set(exclude))
+
     def test_uninitialised_project_gets_no_files_from_a_hook(self):
         payload = self.payload('claude_pre_task.json', session_id='stranger')
         self.assertEqual(self.hook('pre_tool_use', payload), 'dropped')
