@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-21 — agent-tools 1.6.2
+
+- **agent-tools 1.6.2.** `progress-report` declares the `.git/info/exclude` lines it writes in `.git/info/sanduq-runtime.json`, so Sanduq Memory accepts Progress's runtime files in a feature folder instead of refusing to queue it.
+
 ## 2026-10-21 — dev-tools 1.3.0, illustration-tools 3.7.0, agent-tools 1.6.1: optimization round 4
 
 - **dev-tools 1.3.0.** `init_manual.py` no longer overwrites an existing `docs/<lang>/index.md`; it writes the stub only when the page is missing, as it already did for module pages. `build_manual.py` captures the MkDocs or Zensical output: a successful build prints one line per edition, and a failed build prints the edition name and the last 40 lines of the renderer's output to stderr. `assets/user-manual-config.template.yml` is removed; no script read it.
