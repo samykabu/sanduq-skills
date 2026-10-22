@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.1 — 2026-10-22
+
+- `progress-report` bench: the LEGACY protocol read call names `execution-report.md` with `/` on every OS
+  (`approaches.read_call`), so the report is the same on Windows and Linux. Windows had counted 5 more bytes per read call
+  (setup 6757 instead of 6752, updates 29311 instead of 29301); token counts were already equal. A test feeds a Windows and a
+  POSIX path and asserts equal text and counts.
+
 ## 1.7.0 — 2026-10-21
 
 - `progress-report` removes the v2 output and the classic layout, deprecated in 1.6.1:
