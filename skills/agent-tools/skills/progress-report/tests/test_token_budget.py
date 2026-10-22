@@ -78,5 +78,18 @@ class TokenBudget(unittest.TestCase):
         self.assertEqual(doc, report.render(self.data), "run: python -m tests.bench.report")
 
 
+@unittest.skipUnless(HAVE_TIKTOKEN, "tiktoken is not installed")
+class OsNeutral(unittest.TestCase):
+    def test_read_call_counts_the_same_on_windows_and_linux(self):
+        from pathlib import PurePosixPath, PureWindowsPath
+        from bench import counting
+        rel = "extensions/workflow/skills/workflow/references/execution-report.md"
+        windows = approaches.read_call(PureWindowsPath(rel.replace("/", "\\")))
+        linux = approaches.read_call(PurePosixPath(rel))
+        self.assertEqual(windows, linux)
+        for enc in counting.load().values():
+            self.assertEqual(counting.count(enc, windows), counting.count(enc, linux))
+
+
 if __name__ == "__main__":
     unittest.main()

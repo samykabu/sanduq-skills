@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-22 — agent-tools 1.7.1
+
+- **agent-tools 1.7.1.** The `progress-report` bench writes the LEGACY protocol path with `/` on every OS, so its report is identical on Windows and Linux (Windows counted 5 more bytes per protocol read). See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-21 — dev-tools 1.4.0, illustration-tools 3.7.1, agent-tools 1.7.0: round 5
 
 - **dev-tools 1.4.0.** `init_manual.py --no-tools` skips the script copies in `User-Manual/tools/`, for a project whose CI runs the scripts from another place. Without `--ci-policy` the CI workflows follow the `ci:` mapping in `<repo-root>/.specify/workflow.yml` when that file exists (before, the shipped default was used); `sanduq_ci.load_ci` reads a directory as a project root. `manual.yml` gains `lifecycle.impact_scope: all`. Sanduq can now vendor `init_manual.py` instead of keeping its own copy.
