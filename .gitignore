@@ -10,3 +10,5 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+# worktrees of this checkout
+.worktrees/
