@@ -9,12 +9,34 @@ on:
 
 permissions:
   contents: write
+  actions: read # the CI gate reads ci.yml runs
 
 jobs:
   release:
     runs-on: homek8-general
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      # Publish only a commit that main's ci passed: ci runs on pushes to main only, so a successful push run
+      # for the tagged sha proves both. A run still going is waited for (up to 30 minutes).
+      - name: Require a successful ci run for the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 60); do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=100" --jq '[.workflow_runs[] | select(.head_branch == "main")]')
+            if [ "$(jq '[.[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")" -gt 0 ]; then
+              echo "ci passed on main for $GITHUB_SHA"; exit 0
+            fi
+            if [ "$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")" -eq 0 ]; then
+              echo "::error::No successful ci push run on main for $GITHUB_SHA; nothing published. Merge the commit to main, wait for ci to pass, then re-run this workflow."
+              exit 1
+            fi
+            echo "ci for $GITHUB_SHA is still running (check $attempt of 60)"; sleep 30
+          done
+          echo "::error::ci for $GITHUB_SHA did not finish within 30 minutes; nothing published. Re-run this workflow once it passes."
+          exit 1
       - name: Check tag against plugin.json
         id: meta
         run: |
@@ -27,8 +49,11 @@ jobs:
           echo "bundle=$bundle" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Build bundle archive
+        env:
+          BUNDLE: ${{ steps.meta.outputs.bundle }}
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          bundle="${{ steps.meta.outputs.bundle }}"; version="${{ steps.meta.outputs.version }}"
+          bundle="$BUNDLE"; version="$VERSION"
           (cd skills && zip -qr "../${bundle}-v${version}.zip" "$bundle" -x '*/node_modules/*' '*/__pycache__/*' '*/tests/*')
           # One archive per skill folder (SKILL.md at its root) for Claude Desktop uploads.
           for skill in skills/"$bundle"/skills/*/; do
