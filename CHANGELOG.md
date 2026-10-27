@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-27 — dev-tools 1.5.0
+
+- **dev-tools 1.5.0.** Adds `github-wiki-publish`, a standalone skill for publishing existing
+  pages, reports, diagrams, and assets to a GitHub Wiki. It preserves unrelated content, checks
+  links and Unicode, reconciles concurrent Git changes, and reports remote verification separately
+  from browser rendering. The existing release workflow includes the skill in the bundle and
+  creates its individual ZIP with SHA256 checksums. Local Git behavior checks passed; a live
+  browser test of the new skill remains unrun, and Claude Desktop support is unverified.
+
 ## 2026-10-22 — agent-tools 1.7.1
 
 - **agent-tools 1.7.1.** The `progress-report` bench writes the LEGACY protocol path with `/` on every OS, so its report is identical on Windows and Linux (Windows counted 5 more bytes per protocol read). See the [bundle changelog](skills/agent-tools/CHANGELOG.md).

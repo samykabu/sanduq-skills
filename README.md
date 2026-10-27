@@ -4,7 +4,7 @@ Portable agent skills for software delivery. Each skill does one job, works with
 runs in Codex, Claude Code, or Claude Desktop.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-233C32)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-8-C65B36)](#the-skills)
+[![Skills](https://img.shields.io/badge/skills-9-C65B36)](#the-skills)
 
 If you use [Spec Kit](https://github.com/github/spec-kit) and want these tools wired into its
 lifecycle (QA, manuals, pull requests, project memory, issue-to-PR orchestration), see the
@@ -26,10 +26,12 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 | [`user-manual-release-docs`](docs/skills/user-manual-release-docs.md) | Release notes and migration guides per audience. | `dev-tools` |
 | [`user-manual-ui-screenshots`](docs/skills/user-manual-ui-screenshots.md) | Repeatable, redacted screenshots of web and mobile screens. | `dev-tools` |
 | [`user-manual-preview-publishing`](docs/skills/user-manual-preview-publishing.md) | Private previews of the manual for pull requests, and release builds. | `dev-tools` |
+| [`github-wiki-publish`](docs/skills/github-wiki-publish.md) | Publishes existing pages, reports, diagrams, and assets to a GitHub Wiki, preserving unrelated content and checking publication. | `dev-tools` |
 | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
 | [`progress-report`](docs/skills/progress-report.md) | Keeps a live progress report for a Markdown plan checklist or a Spec Kit feature: tasks, lanes, blockers, decisions, and the model, effort and context the Claude Code and Codex hooks observe. Spends no agent tokens on upkeep. | `agent-tools` |
 
 The five `user-manual*` skills work together, but you can install only the ones you need.
+`github-wiki-publish` stands alone and does not require a manual.
 
 ## Documentation
 
@@ -39,6 +41,7 @@ The five `user-manual*` skills work together, but you can install only the ones 
   [user-manual-release-docs](docs/skills/user-manual-release-docs.md),
   [user-manual-ui-screenshots](docs/skills/user-manual-ui-screenshots.md),
   [user-manual-preview-publishing](docs/skills/user-manual-preview-publishing.md),
+  [github-wiki-publish](docs/skills/github-wiki-publish.md),
   [delegate-task](docs/skills/delegate-task.md), and [progress-report](docs/skills/progress-report.md).
 - [Glossary](docs/glossary.md): the terms these skills use.
 - [Animated examples](docs/examples.md): one diagram per arrow style, with the exact export command.
@@ -71,7 +74,7 @@ As plugins (recommended; updates arrive through the marketplace):
 /plugin install agent-tools@sanduq
 ```
 
-Call them as `/illustration-tools:illustrate`, `/dev-tools:user-manual`, `/agent-tools:delegate-task`,
+Call them as `/illustration-tools:illustrate`, `/dev-tools:user-manual`, `/dev-tools:github-wiki-publish`, `/agent-tools:delegate-task`,
 `/agent-tools:progress-report`, or just describe the task. The marketplace is hosted in `samykabu/sanduq` and installs from this
 repository.
 
@@ -90,7 +93,8 @@ Or as plain skills: `npx skills add samykabu/sanduq-skills --skill illustrate -a
 
 Claude Desktop runs skills in a sandbox. Generating HTML diagrams works there. Steps that need
 local tools (PNG export with a browser, MkDocs and PDF builds, `delegate-task`, which drives
-CLIs on your machine, and `progress-report`, which writes project files and host hooks) may not; see [support by host](#support-by-host).
+CLIs on your machine, `progress-report`, which writes project files and host hooks, and
+`github-wiki-publish`, which needs authenticated Git and browser access) may not; see [support by host](#support-by-host).
 </details>
 
 ## Prerequisites
@@ -99,6 +103,7 @@ CLIs on your machine, and `progress-report`, which writes project files and host
 | --- | --- |
 | `illustrate` | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG: `pip install playwright && playwright install chromium`. |
 | `user-manual*` | Python 3.10+. For HTML: `pip install mkdocs-material` (or another MkDocs theme). For PDF: the PDF requirements listed in the skill's `references/publishing.md`, including system libraries. |
+| `github-wiki-publish` | Access to the destination Wiki through a suitable connector or authenticated Git. An authenticated browser for rendered verification; supplied pages and assets. |
 | `delegate-task` | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
 | `progress-report` | Python 3.11+ and git. Standard library only; a browser to open the report. Spec Kit is optional. |
 | `npx skills` installs | Node 18+ and npm. |
@@ -109,6 +114,7 @@ CLIs on your machine, and `progress-report`, which writes project files and host
 | --- | --- | --- | --- |
 | `illustrate` | Yes | Yes | HTML yes; exports unverified |
 | `user-manual*` | Yes | Yes | Unverified |
+| `github-wiki-publish` | Local Git checks passed; live browser test unrun | Unverified | Unverified; needs an authenticated Git/browser workspace |
 | `delegate-task` | Yes | Yes | No (needs local CLIs) |
 | `progress-report` | Yes (Codex hook file unverified) | Yes | No (needs local files and hooks) |
 
@@ -136,6 +142,11 @@ about audiences, and propose the module map before writing anything.
 Each bundle is versioned on its own and tagged `<bundle>-vX.Y.Z` (for example
 `illustration-tools-v3.2.1`). See [CHANGELOG.md](CHANGELOG.md). Releases before the move to this
 repository are recorded in [samykabu/sanduq](https://github.com/samykabu/sanduq).
+
+`github-wiki-publish` is included in `dev-tools` 1.5.0. The release workflow builds
+`dev-tools-v1.5.0.zip`, `github-wiki-publish-v1.5.0.zip`, and `SHA256SUMS`. See its
+[install and update guide](docs/skills/github-wiki-publish.md#install-and-update) for repository,
+release, and pinned-version routes.
 
 ## Contributing
 

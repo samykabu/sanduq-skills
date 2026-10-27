@@ -1,8 +1,8 @@
 name: release
 
 # Tag a bundle as <bundle>-vX.Y.Z (for example illustration-tools-v3.2.1). The tag must match the
-# bundle's plugin.json version. samykabu/sanduq picks the release up daily (its vendor-update
-# workflow vendors the skill, repins the marketplace entry and opens a pull request).
+# bundle's plugin.json version. samykabu/sanduq picks releases up during a manually started
+# vendor-update release-train run (it vendors mapped skills, repins marketplaces and opens a PR).
 on:
   push:
     tags: ['*-v*.*.*']
