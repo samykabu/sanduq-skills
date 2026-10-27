@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — agent-tools
+
+- **agent-tools.** `delegate-task`: `contract` lists `--clean-env` and `--keep-env`; finalisation masks token shapes in `stdout.log` and `stderr.log`; `collect` deletes finished runs older than `DELEGATE_PRUNE_DAYS` days (default 30, `0` disables). `progress-report`: the statusline runs the chained command only from an untracked `config.json` that still names the command recorded at install. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-27 — dev-tools 1.5.0
 
 - **dev-tools 1.5.0.** Adds `github-wiki-publish`, a standalone skill for publishing existing
