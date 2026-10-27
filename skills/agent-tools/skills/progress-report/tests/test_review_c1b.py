@@ -13,7 +13,7 @@ from sanduq_progress import model, render_md, validate
 from sanduq_progress.collect import clarifications as clarcol, lifecycle as lifecol
 from test_v3_model import NOW, Synthetic, parse
 
-LIVE_842 = Path('D:/Projects/abushanab-net/Bunyan--issue-842/specs/842-persist-and-publish-versioned-project-workflow-graphs/workflow/checkpoint.json')
+LIVE_842 = Path(os.environ.get('PROGRESS_REPORT_LIVE_842_CHECKPOINT') or 'missing')  # a private consumer's checkpoint; opt in
 VECTOR = helpers.FIXTURES / 'clarifications-vector.json'
 
 
