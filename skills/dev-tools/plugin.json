@@ -1,14 +1,16 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dev-tools",
-  "version": "1.4.0",
-  "description": "Standalone modular tools for complete application manuals, API references, release documentation, screenshots, previews, and bilingual publishing",
+  "version": "1.5.0",
+  "description": "Standalone tools for application manuals, API references, release documentation, screenshots, previews, bilingual publishing, and GitHub Wiki pages and assets",
   "author": {
     "name": "Samy K. Abushanab"
   },
   "license": "MIT",
   "keywords": [
     "user-manual",
+    "github-wiki",
+    "publishing",
     "documentation",
     "mkdocs",
     "material",

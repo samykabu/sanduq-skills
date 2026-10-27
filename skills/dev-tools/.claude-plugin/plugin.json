@@ -1,12 +1,14 @@
 {
   "name": "dev-tools",
-  "description": "Standalone modular tools for complete application manuals, API references, release documentation, screenshots, previews, and bilingual publishing",
-  "version": "1.4.0",
+  "description": "Standalone tools for application manuals, API references, release documentation, screenshots, previews, bilingual publishing, and GitHub Wiki pages and assets",
+  "version": "1.5.0",
   "author": {
     "name": "Samy K. Abushanab"
   },
   "keywords": [
     "user-manual",
+    "github-wiki",
+    "publishing",
     "documentation",
     "mkdocs",
     "material",
