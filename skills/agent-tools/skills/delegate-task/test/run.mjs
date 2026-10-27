@@ -669,6 +669,8 @@ function driver(args, opts = {}) {
 
 const scratchRuns = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-test-'));
 const RUNS_ENV = { DELEGATE_RUNS_DIR: scratchRuns };
+// Planted runs are dated 1970; a collect must not sweep them away under the other cases.
+process.env.DELEGATE_PRUNE_DAYS = '0';
 
 t('REPAIR-D3 a NaN timeout is rejected, not turned into an instant kill', () => {
   const r = driver(['start', '--harness', 'codex', '--task', 'x', '--timeout', 'abc'], { env: RUNS_ENV });
@@ -793,6 +795,11 @@ t('CONTRACT prune is a dry run without --yes', () => {
   const r = driver(['prune', '--keep', '0'], { env: RUNS_ENV });
   assert.equal(r.status, 0);
   assert.ok(!/^removing/m.test(r.stdout));
+});
+
+t('CONTRACT start_flags list the clean-environment flags every Sanduq launch passes', () => {
+  assert.ok(DRIVER_CONTRACT.start_flags.includes('--clean-env'));
+  assert.ok(DRIVER_CONTRACT.start_flags.includes('--keep-env'));
 });
 
 /* =======================================================================
@@ -1418,7 +1425,7 @@ if (process.platform === 'win32') {
 // making buildEnv return the full environment left it green. This asks the
 // harness what it actually received.
 t('E2E --clean-env really withholds the variable from the harness', () => {
-  const secret = 'DELEGATE_TEST_SECRET';
+  const secret = 'DELEGATE_TEST_PROBE';  // not a credential name: finalisation masks those in the logs
   const runWith = (args) => {
     const start = spawnSync(process.execPath, [DRIVER, 'start',
       '--harness', 'codex', '--cwd', os.tmpdir(), '--timeout', '60',
@@ -1447,6 +1454,51 @@ t('E2E --clean-env really withholds the variable from the harness', () => {
     'with --clean-env the harness must NOT see it');
   assert.match(runWith(['--clean-env', ...control, '--keep-env', secret]), new RegExp(`"${secret}":true`),
     '--keep-env must hand it back');
+});
+
+t('E2E finalisation masks a token the harness printed in either stream', () => {
+  const token = 'ghp_' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8';
+  const { runId, result } = e2e('leak', {
+    FAKE_STREAM: `{"type":"item.completed","item":{"type":"reasoning","text":"saw ${token}"}}
+` + CODEX_OK,
+    FAKE_STDERR: `GH_TOKEN=${token}
+`, FAKE_EXIT: '0',
+  });
+  assert.equal(result.status, 'successful');
+  for (const name of fs.readdirSync(path.join(scratchRuns, runId))) {
+    const text = fs.readFileSync(path.join(scratchRuns, runId, name), 'utf8');
+    assert.ok(!text.includes(token), `${name} still holds the token`);
+  }
+  assert.match(fs.readFileSync(path.join(scratchRuns, runId, 'stderr.log'), 'utf8'), /GH_TOKEN=\[redacted\]/);
+});
+
+t('E2E collect prunes finished runs older than DELEGATE_PRUNE_DAYS and keeps the rest', () => {
+  const runs = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-autoprune-'));
+  const old = path.join(runs, 'codex-19700101000000-0ad000');
+  fs.mkdirSync(old);
+  fs.writeFileSync(path.join(old, 'meta.json'), JSON.stringify({
+    run_id: 'codex-19700101000000-0ad000', harness: 'codex', harness_label: 'OpenAI Codex', tier: 'verified',
+    task: 'old', cwd: os.tmpdir(), permission: 'bypass', allow_commit: false, timeout_ms: 1,
+    started_at: new Date(0).toISOString(), supervisor_pid: DEAD_PID, nonce: 'o',
+  }));
+  fs.writeFileSync(path.join(old, 'result.json'), JSON.stringify({ schema: 'delegate-task.result.v2', run_id: 'codex-19700101000000-0ad000',
+    harness: 'codex', status: 'failed', status_reason: 'old', status_provenance: { primary: 'exit' } }));
+  const env = { ...process.env, DELEGATE_RUNS_DIR: runs, DELEGATE_BIN_CODEX: FAKE, FAKE_STREAM: CODEX_OK, FAKE_EXIT: '0' };
+  const start = spawnSync(process.execPath, [DRIVER, 'start', '--harness', 'codex', '--cwd', os.tmpdir(), '--timeout', '60',
+    '--task', 'fresh'], { encoding: 'utf8', timeout: 60_000, env });
+  assert.equal(start.status, 0, start.stderr);
+  const runId = JSON.parse(start.stdout).run_id;
+  const kept = spawnSync(process.execPath, [DRIVER, 'collect', runId, '--wait', '45', '--json'],
+    { encoding: 'utf8', timeout: 60_000, env: { ...env, DELEGATE_PRUNE_DAYS: '0' } });
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.ok(fs.existsSync(old), 'DELEGATE_PRUNE_DAYS=0 deletes nothing');
+  const swept = spawnSync(process.execPath, [DRIVER, 'collect', runId, '--json'],
+    { encoding: 'utf8', timeout: 60_000, env: { ...env, DELEGATE_PRUNE_DAYS: '7' } });
+  assert.equal(swept.status, 0, swept.stderr);
+  assert.equal(JSON.parse(swept.stdout).run_id, runId, 'the printed result is unchanged');
+  assert.ok(!fs.existsSync(old), 'the old finished run is gone');
+  assert.ok(fs.existsSync(path.join(runs, runId)), 'the fresh run stays');
+  fs.rmSync(runs, { recursive: true, force: true });
 });
 
 // The claim protocol's real hazard is contention, not a dead owner. Two

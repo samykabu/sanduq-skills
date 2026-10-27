@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `delegate-task`: `contract` lists `--clean-env` and `--keep-env` under `start_flags`; the driver already accepted both, and a consumer that always passes them (Sanduq Workflow 1.20.0) can now require them.
+- `delegate-task`: when a run is finalised, `stdout.log` and `stderr.log` are rewritten through `bounded.mjs` `redact()`, so a token the harness printed (`ghp_…`, `sk-…`, a bearer header, a credential-looking `NAME=value` pair) is masked on disk. `result.json` is unchanged. A test runs the fake harness with a `ghp_` token in both streams and checks no file in the run folder holds it.
+- `delegate-task`: a successful `collect` deletes finished runs older than `DELEGATE_PRUNE_DAYS` days (default 30; `0` disables), never a live, adrift or stalled run. `doctor` says so.
+- `progress-report`: the statusline wrapper runs the chained command only while `config.json` is untracked by git and `statusline.chained` equals `statusline.previous.command` recorded at install; a tracked file or an edited command prints the minimal line and writes one `diagnostics.log` line. A committed `config.json` can no longer run a shell command on every refresh.
+
 ## 1.7.1 — 2026-10-22
 
 - `progress-report` bench: the LEGACY protocol read call names `execution-report.md` with `/` on every OS

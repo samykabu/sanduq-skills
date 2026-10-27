@@ -185,7 +185,7 @@ class StatuslineChain(Project):
         self.init(debounce_seconds=0)
         chain = f'"{sys.executable}" -c "import sys; d=sys.stdin.buffer.read(); sys.stdout.buffer.write(b\'CHAIN \'+str(len(d)).encode()+b\'\\n\\xc3\\xa9\')"'
         data = json.loads(self.ctx.config.read_text())
-        data['statusline'] = {'enabled': True, 'chained': chain}
+        data['statusline'] = {'enabled': True, 'chained': chain, 'previous': {'type': 'command', 'command': chain}}
         self.ctx.config.write_text(json.dumps(data))
         raw = fixture('claude_statusline.json', CWD=self.root.as_posix()).encode()
         unbound = self.run_status(raw)
@@ -195,6 +195,24 @@ class StatuslineChain(Project):
         bound = self.run_status(raw)
         self.assertEqual(bound.stdout, unbound.stdout)
         self.assertEqual(self.snap()['model']['source'], 'statusline')
+
+    def test_chained_command_runs_only_from_an_untracked_config_that_matches_the_recorded_previous_line(self):
+        """SEC-08: a committed config.json, or an edited chained command, must not run a shell command on every refresh."""
+        self.init()
+        raw = fixture('claude_statusline.json', CWD=self.root.as_posix()).encode()
+        chain = f'"{sys.executable}" -c "import sys; sys.stdout.write(sys.argv[1])" CHAIN'
+        data = json.loads(self.ctx.config.read_text())
+        data['statusline'] = {'enabled': True, 'chained': chain, 'previous': {'type': 'command', 'command': 'other.sh'}}
+        self.ctx.config.write_text(json.dumps(data))
+        self.assertEqual(self.run_status(raw).stdout.decode().strip(), 'Opus 5.5 | ctx 41%')
+        log = (self.ctx.config.parent / 'diagnostics.log').read_text()
+        self.assertIn('not the command recorded in statusline.previous', log)
+        data['statusline']['previous'] = {'type': 'command', 'command': chain}
+        self.ctx.config.write_text(json.dumps(data))
+        self.assertEqual(self.run_status(raw).stdout.decode().strip(), 'CHAIN')
+        subprocess.run(['git', 'add', '-f', '--', str(self.ctx.config)], cwd=self.root, check=True, capture_output=True)
+        self.assertEqual(self.run_status(raw).stdout.decode().strip(), 'Opus 5.5 | ctx 41%')
+        self.assertIn('config.json is tracked by git', (self.ctx.config.parent / 'diagnostics.log').read_text())
 
     def test_minimal_line_without_a_chained_command_and_on_garbage(self):
         self.init()

@@ -82,7 +82,7 @@ any of these harnesses, including the one you are in.
 - `--deliverable TEXT` and `--constraint TEXT` shape what comes back.
 - `--allow-commit` lets the delegate commit.
 - `--resume <run_id>` continues a finished run. Send only what should change.
-- `--clean-env` passes only basic environment variables to the CLI.
+- `--clean-env` passes only basic environment variables to the CLI; `--keep-env NAME` (repeatable) adds one. Both are part of the driver contract (`contract` lists them under `start_flags`).
 
 Other commands: `status`, `collect --wait N`, `list`, `prune`, and `contract`.
 
@@ -96,8 +96,9 @@ Other commands: `status`, `collect --wait N`, `list`, `prune`, and `contract`.
 - Token totals are not comparable across harnesses. Copilot reports no tokens, and Codex reports
   no cost or model.
 - Delegating to `claude` costs about 58,000 tokens before the task starts.
-- Run files hold your task text and the raw output. Treat them as sensitive and clean up with
-  `prune`.
+- Run files hold your task text and the raw output. Token shapes are masked in the two log files
+  when a run finishes, and `collect` deletes finished runs older than 30 days (`DELEGATE_PRUNE_DAYS`;
+  `0` disables). Treat the files as sensitive and clean up sooner with `prune`.
 
 ## Related
 
