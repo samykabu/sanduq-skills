@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 — 2026-10-27
 
 - `progress-report`: every element that renders user text (titles, task lines, decisions, timeline entries, links) carries `dir="auto"`, so Arabic text renders right-to-left inside the English page.
 - `delegate-task`: `contract` lists `--clean-env` and `--keep-env` under `start_flags`; the driver already accepted both, and a consumer that always passes them (Sanduq Workflow 1.20.0) can now require them.
