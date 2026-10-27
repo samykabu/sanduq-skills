@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `progress-report`: every element that renders user text (titles, task lines, decisions, timeline entries, links) carries `dir="auto"`, so Arabic text renders right-to-left inside the English page.
 - `delegate-task`: `contract` lists `--clean-env` and `--keep-env` under `start_flags`; the driver already accepted both, and a consumer that always passes them (Sanduq Workflow 1.20.0) can now require them.
 - `delegate-task`: when a run is finalised, `stdout.log` and `stderr.log` are rewritten through `bounded.mjs` `redact()`, so a token the harness printed (`ghp_…`, `sk-…`, a bearer header, a credential-looking `NAME=value` pair) is masked on disk. `result.json` is unchanged. A test runs the fake harness with a `ghp_` token in both streams and checks no file in the run folder holds it.
 - `delegate-task`: a successful `collect` deletes finished runs older than `DELEGATE_PRUNE_DAYS` days (default 30; `0` disables), never a live, adrift or stalled run. `doctor` says so.
