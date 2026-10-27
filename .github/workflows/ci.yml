@@ -15,6 +15,16 @@ jobs:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
+
+      - name: No private product names (pattern held in the PRIVATE_NAMES repository secret)
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
+        run: |
+          if [ -z "$PRIVATE_NAMES" ]; then echo "::notice::PRIVATE_NAMES is not set; the private-name check was skipped"; exit 0; fi
+          if git grep -I -i -n -E "$PRIVATE_NAMES" -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::Private product or customer names found (lines above). Remove them; this repository never names third-party products."; exit 1
+          fi
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'

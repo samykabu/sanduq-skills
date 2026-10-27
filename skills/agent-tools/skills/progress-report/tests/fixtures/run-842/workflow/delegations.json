@@ -1471,7 +1471,7 @@
    "read_only": false,
    "allow_commit": false,
    "ended_at": "2026-10-16T22:21:11.620364+00:00",
-   "result_summary": "Fixed schema normalization that incorrectly rewrote bunyan.* setting literals before hashing the installed V3 body. Preserved the original digest and attribute checks, kept both SQL copies byte-identical, and recorded all checks. The build and 24 integrity probes passed; four unrelated stale assertions remained in the requested integration filters.",
+   "result_summary": "Fixed schema normalization that incorrectly rewrote app.* setting literals before hashing the installed V3 body. Preserved the original digest and attribute checks, kept both SQL copies byte-identical, and recorded all checks. The build and 24 integrity probes passed; four unrelated stale assertions remained in the requested integration filters.",
    "status_provenance": {
     "primary": "harness_telemetry",
     "evidence": [
