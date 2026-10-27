@@ -277,6 +277,10 @@ class F10DeadCode(unittest.TestCase):
         js = (SCRIPTS.parent / 'assets' / 'ui' / 'blocks.js').read_text(encoding='utf-8')
         self.assertEqual(js.count('function selectedList('), 0)  # IP22 removed it with the classic page
 
+    def test_user_text_elements_take_their_direction_from_the_text(self):
+        js = (SCRIPTS.parent / 'assets' / 'ui' / 'blocks.js').read_text(encoding='utf-8')
+        self.assertIn("n.setAttribute('dir', 'auto')", js)  # AHMED-26: Arabic task text renders right-to-left
+
 
 class A1AsyncLaunch(Project):
     def spawn(self, event, **response):
