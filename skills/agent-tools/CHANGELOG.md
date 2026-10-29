@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.2 — 2026-10-29
+
+- `delegate-task`: `collect --summary` recovers a lost run with a large journal without loading it whole. The `process_containment` lookup added in 1.8.1 read the journal unbounded, after `stateOf()` and `synthesizeLost()` had read it bounded, so a large journal could exhaust the collector's heap instead of producing a terminal result. It now uses the bounded reader (latest record per state), and a run whose journal holds no `contained` record still reports `unproven`. A test recovers a lost run with a 24 MB journal under a 32 MB heap and checks the persisted result reports `process_containment`.
+
 ## 1.8.1 — 2026-10-29
 
 - `delegate-task` (Windows): killing the supervisor now ends every harness descendant. Before the harness starts, the supervisor moves itself into a kill-on-close job object (`job-windows.ps1`) and holds the only handle to it, so its exit, a hard kill included, terminates the whole tree. Before, a hard-killed supervisor took only the harness root with it; a descendant outside the root's own job (a shell or tool process started by a non-Node harness) kept running. The driver timeout already reached such descendants through `taskkill /T`.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-29 — agent-tools 1.8.2
+
+- **agent-tools 1.8.2.** `delegate-task`: `collect --summary` reads the journal bounded when it looks up `process_containment` for a lost run, so recovering a run with a large journal no longer runs out of memory. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-29 — agent-tools 1.8.1
 
 - **agent-tools 1.8.1.** `delegate-task` (Windows): the supervisor runs the harness inside a kill-on-close job object it alone holds, so killing the supervisor ends every harness descendant; results report `process_containment`, and a lost run reports the job's closure. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
