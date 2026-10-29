@@ -16,12 +16,22 @@
 //                  character and a JSON line both straddle a chunk boundary
 
 import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 
 const argv = process.argv.slice(2);
 
 if (argv.includes('--version')) {
   process.stdout.write(`${process.env.FAKE_VERSION || '9.9.9'}\n`);
   process.exit(0);
+}
+
+// FAKE_GRANDCHILD=<pidfile>: start a long-sleeping descendant that records its
+// pid there, the way a real harness starts a shell or a tool process. Detached,
+// so on Windows it is outside this process's own libuv job, as the plain child
+// of a non-Node harness is: only the supervisor's containment can stop it.
+if (process.env.FAKE_GRANDCHILD) {
+  spawn(process.execPath, ['-e', `require('fs').writeFileSync(${JSON.stringify(process.env.FAKE_GRANDCHILD)}, String(process.pid)); setTimeout(() => {}, 600000)`],
+    { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
 
 if (process.env.FAKE_CODEX_RESUME_SANDBOX) {
