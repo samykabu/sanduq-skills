@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-29 — agent-tools 1.8.1
+
+- **agent-tools 1.8.1.** `delegate-task` (Windows): the supervisor runs the harness inside a kill-on-close job object it alone holds, so killing the supervisor ends every harness descendant; results report `process_containment`, and a lost run reports the job's closure. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-10-27 — agent-tools 1.8.0
 
 - **agent-tools 1.8.0.** `delegate-task`: `contract` lists `--clean-env` and `--keep-env`; finalisation masks token shapes in `stdout.log` and `stderr.log`; `collect` deletes finished runs older than `DELEGATE_PRUNE_DAYS` days (default 30, `0` disables). `progress-report`: the statusline runs the chained command only from an untracked `config.json` that still names the command recorded at install. See the [bundle changelog](skills/agent-tools/CHANGELOG.md). `progress-report`: user text carries `dir="auto"`, so Arabic renders right-to-left.

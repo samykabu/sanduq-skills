@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.1 — 2026-10-29
+
+- `delegate-task` (Windows): killing the supervisor now ends every harness descendant. Before the harness starts, the supervisor moves itself into a kill-on-close job object (`job-windows.ps1`) and holds the only handle to it, so its exit, a hard kill included, terminates the whole tree. Before, a hard-killed supervisor took only the harness root with it; a descendant outside the root's own job (a shell or tool process started by a non-Node harness) kept running. The driver timeout already reached such descendants through `taskkill /T`.
+- `delegate-task`: results carry `process_containment: { mechanism, closure }`. `mechanism` is `windows_job`, `process_group` (POSIX) or `none` (the Windows job could not be set up; the run goes ahead). A lost run under `windows_job` reports `closure: "closed"`; a finished one `at_supervisor_exit`; anything else `unproven`. `containment_evidence` keeps its filesystem meaning.
+- Two Windows tests start the fake harness with a detached grandchild, then hard-kill the supervisor or let the driver timeout fire, and check that neither the harness nor the grandchild survives. They are skipped elsewhere.
+
 ## 1.8.0 — 2026-10-27
 
 - `progress-report`: every element that renders user text (titles, task lines, decisions, timeline entries, links) carries `dir="auto"`, so Arabic text renders right-to-left inside the English page.

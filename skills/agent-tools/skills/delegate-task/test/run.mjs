@@ -1421,6 +1421,61 @@ if (process.platform === 'win32') {
   });
 }
 
+// SAMY-18: a hard-killed supervisor used to take only the harness root with it
+// (Node's own job), leaving the harness's detached descendants running.
+if (process.platform !== 'win32') {
+  t('SKIP harness-tree containment (Windows job object)', () => {});
+} else {
+  const sleepMs = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  const live = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const waitFor = (fn, ms = 20_000) => {
+    for (const end = Date.now() + ms; Date.now() < end; sleepMs(100)) { const v = fn(); if (v) return v; }
+    return null;
+  };
+  const treeRun = (timeout) => {
+    const pidFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-tree-')), 'grandchild.pid');
+    const start = spawnSync(process.execPath, [DRIVER, 'start', '--harness', 'codex',
+      '--cwd', os.tmpdir(), '--timeout', String(timeout), '--task', 'tree'], {
+      encoding: 'utf8', timeout: 60_000,
+      env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_CODEX: FAKE, FAKE_SLEEP_MS: '120000', FAKE_GRANDCHILD: pidFile },
+    });
+    assert.equal(start.status, 0, start.stderr);
+    const runId = JSON.parse(start.stdout).run_id, dir = path.join(scratchRuns, runId);
+    const grandchild = Number(waitFor(() => fs.existsSync(pidFile) && fs.readFileSync(pidFile, 'utf8')));
+    const child = waitFor(() => (fs.readFileSync(path.join(dir, 'journal.jsonl'), 'utf8').trim().split('\n')
+      .map((l) => JSON.parse(l)).find((e) => e.state === 'child_started') || {}).pid);
+    assert.ok(grandchild && child, 'the fake harness and its descendant never started');
+    const supervisor = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8')).supervisor_pid;
+    return { runId, supervisor, child, grandchild };
+  };
+  const collectJson = (runId) => JSON.parse(spawnSync(process.execPath, [DRIVER, 'collect', runId, '--wait', '45', '--json'],
+    { encoding: 'utf8', timeout: 60_000, env: { ...process.env, ...RUNS_ENV } }).stdout);
+  const reap = (...pids) => { for (const p of pids) { try { process.kill(p); } catch { /* gone */ } } };
+
+  t('E2E Windows: hard-killing the supervisor ends every harness descendant; the lost run reports closure', () => {
+    const r = treeRun(120);
+    try {
+      process.kill(r.supervisor);  // TerminateProcess on the supervisor alone, no tree walk
+      assert.ok(waitFor(() => !live(r.child) && !live(r.grandchild), 10_000),
+        `survivors: child ${r.child} ${live(r.child)}, grandchild ${r.grandchild} ${live(r.grandchild)}`);
+      const res = collectJson(r.runId);
+      assert.equal(res.status_provenance.primary, 'supervisor_lost');
+      assert.deepEqual(res.process_containment, { mechanism: 'windows_job', closure: 'closed' });
+    } finally { reap(r.child, r.grandchild); }
+  });
+
+  t('E2E Windows: the driver timeout ends every harness descendant', () => {
+    const r = treeRun(4);
+    try {
+      const res = collectJson(r.runId);
+      assert.equal(res.status_provenance.primary, 'timeout');
+      assert.equal(res.process_containment.mechanism, 'windows_job');
+      assert.ok(waitFor(() => !live(r.child) && !live(r.grandchild), 10_000),
+        `survivors: child ${r.child} ${live(r.child)}, grandchild ${r.grandchild} ${live(r.grandchild)}`);
+    } finally { reap(r.child, r.grandchild); }
+  });
+}
+
 // Round 2 showed the previous clean-env test checked only our own metadata, so
 // making buildEnv return the full environment left it green. This asks the
 // harness what it actually received.
