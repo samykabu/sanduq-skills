@@ -529,6 +529,22 @@ test('bounded collector refuses oversized historical metadata without rewriting 
   const f = path.join(dir, 'result.json'); const fd = fs.openSync(f, 'w'); fs.ftruncateSync(fd, 8 * 1024 * 1024 + 1); fs.closeSync(fd);
   const r = cli(driver, ['collect', id, '--summary']); assert.equal(r.status, 8); assert.match(r.stderr, /metadata over 8 MiB/); assert.equal(fs.statSync(f).size, 8 * 1024 * 1024 + 1);
 });
+test('summary recovery of a lost run with a 24 MB journal completes under a 32 MB heap and reports containment', () => {
+  const id = 'codex-20261029000000-c0ffee', dir = path.join(tmp, id); fs.mkdirSync(dir);
+  const t = new Date().toISOString(), dead = 2147483646; // a recent start: collect prunes runs older than 30 days
+  fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ run_id: id, harness: 'codex', harness_label: 'OpenAI Codex', tier: 'verified', task: 'lost', cwd: tmp, permission: 'bypass', started_at: t, supervisor_pid: dead }));
+  fs.writeFileSync(path.join(dir, 'stdout.log'), '');
+  const fd = fs.openSync(path.join(dir, 'journal.jsonl'), 'w');
+  fs.writeSync(fd, [['supervisor_started', { pid: dead }], ['contained', { mechanism: 'windows_job' }], ['child_started', { pid: dead }]].map(([state, x]) => JSON.stringify({ t, state, ...x }) + '\n').join(''));
+  const beats = `{"t":"${t}","state":"heartbeat","pad":"${'x'.repeat(200)}"}\n`.repeat(4096);
+  for (let n = 0; n < 24 * 1024 * 1024; n += beats.length) fs.writeSync(fd, beats);
+  fs.closeSync(fd);
+  const r = spawnSync(process.execPath, ['--max-old-space-size=32', driver, 'collect', id, '--summary'], { env, encoding: 'utf8', windowsHide: true, timeout: 60000 });
+  assert.equal(r.status, 0, r.stderr.slice(-2000));
+  assert.equal(JSON.parse(r.stdout).status, 'abandoned');
+  // The summary projection omits process_containment; the persisted terminal result carries it.
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'result.json'), 'utf8')).process_containment, { mechanism: 'windows_job', closure: 'closed' });
+});
 test('legacy collect JSON readback remains intact while summary is bounded and read-only', () => {
   const id = 'codex-20261016000000-aabbcc', dir = path.join(tmp, id); fs.mkdirSync(dir);
   fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify({ harness: 'codex', started_at: new Date().toISOString() }));
