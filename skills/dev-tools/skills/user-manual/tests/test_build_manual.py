@@ -325,7 +325,9 @@ class PdfDocumentTests(unittest.TestCase):
 
         args = builder.argparse.Namespace(language='ar', audience='end-user', module=None, version='v1',
                                           renderer='material', pdf=True, archive=False)
-        with mock.patch.object(builder.subprocess, 'run', side_effect=fake_run):
+        # theme_config reads MkDocs' theme locales; these tests need no MkDocs.
+        with mock.patch.object(builder.subprocess, 'run', side_effect=fake_run), \
+                mock.patch.object(builder, 'theme_config', side_effect=lambda name, *_: {'name': name}):
             builder.build_edition(args, self.root, manual)
         return seen
 
