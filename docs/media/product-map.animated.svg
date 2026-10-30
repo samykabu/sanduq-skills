@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1140 432" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="product-map-title product-map-desc">
       <title id="product-map-title">Sanduq Skills product map</title>
-      <desc id="product-map-desc">Three plugin bundles: dev-tools holds the user-manual core skill and four skills that extend it, the core uses illustrate from illustration-tools for diagrams when it is installed, and agent-tools holds delegate-task on its own.</desc>
+      <desc id="product-map-desc">Three plugin bundles: dev-tools holds the user-manual skill, whose API, release, screenshot and preview instructions are references it loads on demand, the core uses illustrate from illustration-tools for diagrams when it is installed, and agent-tools holds delegate-task on its own.</desc>
       <defs><style data-illustrate-animation="true">.ia-draw,.ia-flow{opacity:0;fill:none}.ia-flow{stroke-dasharray:3 14;stroke-linecap:round}.ia-dot,.ia-chev{display:none}@keyframes ia-draw-fwd{0%{opacity:1;stroke-dasharray:1 1;stroke-dashoffset:1}99.9%{opacity:1;stroke-dasharray:1 1;stroke-dashoffset:0}100%{opacity:0}}@keyframes ia-draw-rev{0%{opacity:1;stroke-dasharray:1 1;stroke-dashoffset:-1}99.9%{opacity:1;stroke-dasharray:1 1;stroke-dashoffset:0}100%{opacity:0}}@keyframes ia-draw-both{0%{opacity:1;stroke-dasharray:0 1;stroke-dashoffset:-.5}99.9%{opacity:1;stroke-dasharray:1 1;stroke-dashoffset:0}100%{opacity:0}}@keyframes ia-hidden{0%,100%{opacity:0}}@keyframes ia-show{from{opacity:0}to{opacity:.9}}@keyframes ia-march{to{stroke-dashoffset:-17}}@keyframes ia-march-px{to{stroke-dashoffset:-17}}@keyframes ia-travel{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}@media (prefers-reduced-motion: no-preference){.ia-draw.ia-a0{animation:ia-draw-fwd 600ms ease-out 0ms backwards}[data-ia="0"]{animation:ia-hidden 600ms}.ia-draw.ia-a1{animation:ia-draw-fwd 600ms ease-out 450ms backwards}[data-ia="1"]{animation:ia-hidden 1050ms}.ia-draw.ia-a2{animation:ia-draw-fwd 600ms ease-out 900ms backwards}[data-ia="2"]{animation:ia-hidden 1500ms}.ia-draw.ia-a3{animation:ia-draw-fwd 600ms ease-out 1350ms backwards}[data-ia="3"]{animation:ia-hidden 1950ms}.ia-draw.ia-a4{animation:ia-draw-fwd 600ms ease-out 1800ms backwards}[data-ia="4"]{animation:ia-hidden 2400ms}.ia-dot{display:inline;offset-rotate:0deg;animation:ia-travel 2400ms ease-in-out infinite}.ia-chev{display:inline;offset-rotate:auto;animation:ia-travel 2400ms linear infinite}.ia-rev{animation-direction:reverse}.ia-chev.ia-rev{offset-rotate:auto 180deg}}</style>
         <style>
           svg { color: #4f6078; }
@@ -73,36 +73,36 @@
       <rect class="tag" x="340" y="118" width="36" height="12" rx="2" stroke-width="0.8"/>
       <text class="ink mono" x="358" y="127" font-size="7" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <text class="ink sans" x="432" y="148" font-size="12" font-weight="600" text-anchor="middle">user-manual</text>
-      <text class="muted mono" x="432" y="164" font-size="9" text-anchor="middle">editions · HTML · PDF</text>
+      <text class="muted mono" x="432" y="164" font-size="9" text-anchor="middle">editions · any renderer</text>
 
       <!-- Extensions -->
       <rect class="mask" x="60" y="264" width="176" height="64" rx="6"/>
       <rect class="box" x="60" y="264" width="176" height="64" rx="6" stroke-width="1"/>
       <rect class="tag" x="68" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
-      <text class="ink mono" x="82" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink mono" x="82" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">REF</text>
       <text class="ink sans" x="148" y="300" font-size="12" font-weight="600" text-anchor="middle">API docs</text>
-      <text class="muted mono" x="148" y="316" font-size="9" text-anchor="middle">user-manual-api-docs</text>
+      <text class="muted mono" x="148" y="316" font-size="9" text-anchor="middle">api-docs.md</text>
 
       <rect class="mask" x="248" y="264" width="176" height="64" rx="6"/>
       <rect class="box" x="248" y="264" width="176" height="64" rx="6" stroke-width="1"/>
       <rect class="tag" x="256" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
-      <text class="ink mono" x="270" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink mono" x="270" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">REF</text>
       <text class="ink sans" x="336" y="300" font-size="12" font-weight="600" text-anchor="middle">Release docs</text>
-      <text class="muted mono" x="336" y="316" font-size="9" text-anchor="middle">user-manual-release-docs</text>
+      <text class="muted mono" x="336" y="316" font-size="9" text-anchor="middle">release-docs.md</text>
 
       <rect class="mask" x="436" y="264" width="176" height="64" rx="6"/>
       <rect class="box" x="436" y="264" width="176" height="64" rx="6" stroke-width="1"/>
       <rect class="tag" x="444" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
-      <text class="ink mono" x="458" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink mono" x="458" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">REF</text>
       <text class="ink sans" x="524" y="300" font-size="12" font-weight="600" text-anchor="middle">UI screenshots</text>
-      <text class="muted mono" x="524" y="316" font-size="9" text-anchor="middle">user-manual-ui-screenshots</text>
+      <text class="muted mono" x="524" y="316" font-size="9" text-anchor="middle">ui-screenshots.md</text>
 
       <rect class="mask" x="624" y="264" width="176" height="64" rx="6"/>
       <rect class="box" x="624" y="264" width="176" height="64" rx="6" stroke-width="1"/>
       <rect class="tag" x="632" y="270" width="28" height="12" rx="2" stroke-width="0.8"/>
-      <text class="ink mono" x="646" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text class="ink mono" x="646" y="279" font-size="7" text-anchor="middle" letter-spacing="0.08em">REF</text>
       <text class="ink sans" x="712" y="300" font-size="12" font-weight="600" text-anchor="middle">Preview publishing</text>
-      <text class="muted mono" x="712" y="316" font-size="8.5" text-anchor="middle">user-manual-preview-publishing</text>
+      <text class="muted mono" x="712" y="316" font-size="8.5" text-anchor="middle">preview-publishing.md</text>
 
       <!-- illustrate -->
       <rect class="mask" x="880" y="112" width="200" height="64" rx="6"/>

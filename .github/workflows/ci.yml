@@ -77,7 +77,7 @@ jobs:
         run: |
           npx -y skills@1.7.2 add . --list > list.txt
           cat list.txt
-          for s in illustrate user-manual user-manual-api-docs user-manual-release-docs user-manual-ui-screenshots user-manual-preview-publishing github-wiki-publish delegate-task progress-report; do
+          for s in illustrate user-manual github-wiki-publish delegate-task progress-report; do
             grep -q "$s" list.txt || { echo "missing $s"; exit 1; }
           done
       - run: git diff --check

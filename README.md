@@ -15,26 +15,17 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 | Skill | What it does | Bundle (Claude Code plugin) |
 | --- | --- | --- |
 | [`illustrate`](docs/skills/illustrate.md) | Draws 44 kinds of diagrams and charts (architecture, sequence, state, flow, ER, timelines, Sankey, and more) as editable HTML with SVG/PNG export, plus animated SVG or GIF for READMEs, in your project's colors and fonts. | `illustration-tools` |
-| [`user-manual`](docs/skills/user-manual.md) | Creates and maintains an application manual with End User, Administrator, and Technical editions, in Markdown, MkDocs HTML, and PDF with any MkDocs theme. English is required; Arabic (right-to-left, PDFs in the Amiri font) is optional. | `dev-tools` |
-| [`user-manual-api-docs`](docs/skills/user-manual-api-docs.md) | API reference pages for public, administrator, and private audiences. | `dev-tools` |
-| [`user-manual-release-docs`](docs/skills/user-manual-release-docs.md) | Release notes and migration guides per audience. | `dev-tools` |
-| [`user-manual-ui-screenshots`](docs/skills/user-manual-ui-screenshots.md) | Repeatable, redacted screenshots of web and mobile screens. | `dev-tools` |
-| [`user-manual-preview-publishing`](docs/skills/user-manual-preview-publishing.md) | Private previews of the manual for pull requests, and release builds. | `dev-tools` |
+| [`user-manual`](docs/skills/user-manual.md) | Creates and maintains an application manual with End User, Administrator, and Technical editions, including API references, release notes, screenshots, and private previews. Pages are Markdown that reads correctly on GitHub; each edition renders as Markdown, through your own templates and tools (Pandoc, Quarto, a script), or as an MkDocs site and PDF. English is required; Arabic (right-to-left, PDFs in the Amiri font) is optional. | `dev-tools` |
 | [`github-wiki-publish`](docs/skills/github-wiki-publish.md) | Publishes existing pages, reports, diagrams, and assets to a GitHub Wiki, preserving unrelated content and checking publication. | `dev-tools` |
 | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
 | [`progress-report`](docs/skills/progress-report.md) | Keeps a live progress report for a Markdown plan checklist or a Spec Kit feature: tasks, lanes, blockers, decisions, and the model, effort and context the Claude Code and Codex hooks observe. Spends no agent tokens on upkeep. | `agent-tools` |
 
-The five `user-manual*` skills work together, but you can install only the ones you need.
 `github-wiki-publish` stands alone and does not require a manual.
 
 ## Documentation
 
 - [Product map](docs/product-map.md): what each bundle and skill does, and how they relate.
 - One page per skill: [illustrate](docs/skills/illustrate.md), [user-manual](docs/skills/user-manual.md),
-  [user-manual-api-docs](docs/skills/user-manual-api-docs.md),
-  [user-manual-release-docs](docs/skills/user-manual-release-docs.md),
-  [user-manual-ui-screenshots](docs/skills/user-manual-ui-screenshots.md),
-  [user-manual-preview-publishing](docs/skills/user-manual-preview-publishing.md),
   [github-wiki-publish](docs/skills/github-wiki-publish.md),
   [delegate-task](docs/skills/delegate-task.md), and [progress-report](docs/skills/progress-report.md).
 - [Glossary](docs/glossary.md): the terms these skills use.
@@ -137,7 +128,7 @@ Each bundle is versioned on its own and tagged `<bundle>-vX.Y.Z` (for example
 `illustration-tools-v3.2.1`). See [CHANGELOG.md](CHANGELOG.md). Releases before the move to this
 repository are recorded in [samykabu/sanduq](https://github.com/samykabu/sanduq).
 
-`github-wiki-publish` is included in `dev-tools` (1.6.1 at the time of writing). The release workflow builds
+`github-wiki-publish` is included in `dev-tools` (2.0.0 at the time of writing). The release workflow builds
 `dev-tools-v<version>.zip`, a zip per skill such as `github-wiki-publish-v<version>.zip`, and `SHA256SUMS`. See its
 [install and update guide](docs/skills/github-wiki-publish.md#install-and-update) for repository,
 release, and pinned-version routes.

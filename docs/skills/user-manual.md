@@ -1,20 +1,21 @@
 # user-manual
 
 user-manual creates and maintains an application manual from your repository, with separate
-editions for end users, administrators, and technical readers.
+editions for end users, administrators, and technical readers. Pages are Markdown that reads
+correctly on GitHub; you choose how each edition is rendered.
 
 | | |
 | --- | --- |
 | Bundle | `dev-tools` (Claude Code plugin `dev-tools@sanduq`) |
-| Version | 1.1.1 |
-| Prerequisites | Python 3.10+. For HTML: `pip install mkdocs-material` (or another MkDocs theme). For PDF: the requirements in the skill's `references/publishing.md`, including system libraries. |
+| Version | 2.0.0 |
+| Prerequisites | Python 3.10+ and PyYAML. Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
 | Hosts | Codex: yes. Claude Code: yes. Claude Desktop: unverified. |
 
 ## Install
 
 Follow the [Install section of the README](../../README.md#install) for your
 [host](../glossary.md#host). In Claude Code, the `dev-tools` [plugin](../glossary.md#plugin)
-installs this skill and its four extensions together.
+installs it.
 
 ## First prompt
 
@@ -41,24 +42,75 @@ Or just ask: "create a user manual for this app".
 The skill reads your code first. Then it proposes a [module map](../glossary.md#module-map): the
 product areas the manual will cover. Nothing is written until you approve it.
 
+## What it covers
+
+One skill does all of the manual work. It loads the detailed instructions for a task only when the
+task needs them:
+
+- **Pages:** discovery, tutorials, how-to guides, reference and explanation pages per
+  [audience](../glossary.md#audience), in English and optional Arabic.
+- **API references:** REST/OpenAPI, AsyncAPI, GraphQL, RPC, webhooks and code APIs, with a separate
+  bundle per audience so internal operations never reach public pages.
+- **Release notes and [migration guides](../glossary.md#migration-guide)** written from what actually
+  shipped.
+- **Screenshots:** a [capture matrix](../glossary.md#capture-matrix) and repeatable,
+  [redacted](../glossary.md#redaction) web and mobile screenshots from your own test runner.
+- **[Previews](../glossary.md#preview) and releases:** a private build for every pull request and
+  versioned release archives.
+
 ## What you get
 
 All content lives under `User-Manual/` in your repository:
 
-- `manual.yml`: the approved module map, languages, [audiences](../glossary.md#audience), and
-  publishing settings.
+- `manual.yml`: the approved module map, languages, audiences, publishing settings and the
+  [renderer](../glossary.md#renderer).
 - `docs/en/` (and `docs/ar/` if you enable Arabic): one Markdown page per module, plus shared pages.
-- `theme/`: stylesheets for light, dark, print, and right-to-left layouts.
+- `theme/brand.yml`: the title, subtitle, author, copyright, logo and colour every renderer shows.
+  Your own templates go in `theme/` too.
+- `requirements.lock` (PyYAML only), `requirements-mkdocs.lock` and `requirements-pdf.lock`: install
+  only what your renderer needs.
 - `tools/`: copies of the build, audit, and state scripts, so CI can run them. `--no-tools` skips
   them.
-- Built output in `site/` and `pdf/`: one HTML site per [edition](../glossary.md#edition), and on
-  release one PDF per edition and language. Treat these as generated.
+- Built output in `site/` (and `pdf/` with the MkDocs renderer). Treat these as generated.
 
 Outside that folder, it adds two CI workflows if they don't exist yet:
-`.github/workflows/user-manual-preview.yml` and `.github/workflows/user-manual-release.yml`.
+`.github/workflows/user-manual-preview.yml` and `.github/workflows/user-manual-release.yml`. They
+install only what the selected renderer needs.
 
 Markdown is the source of truth. Every page records its audience, content type, evidence paths,
 and last-verified date.
+
+## Rendering
+
+The build assembles each [edition](../glossary.md#edition) (one audience and language) as Markdown:
+it selects the pages, fixes the links between them, and copies only the images and files they use.
+Then `renderer.kind` in `manual.yml` decides the output:
+
+| `renderer.kind` | You get |
+| --- | --- |
+| `markdown` (default) | The assembled Markdown edition, readable on GitHub or a wiki |
+| `command` | Whatever your own tool makes from the edition, with your templates: a Word file through Pandoc, a Quarto book, your own script |
+| `mkdocs` | An MkDocs HTML site with any installed theme, and with `--pdf` a PDF |
+
+A Word edition through your team's template:
+
+```yaml
+renderer:
+  kind: command
+  command: pandoc {pages} --metadata-file {metadata} --reference-doc theme/word.docx -o {output}/manual.docx
+```
+
+The command runs from `User-Manual/`, so its paths are relative to the manual. `{pages}` lists the
+edition's pages in reading order; `{metadata}` gives Pandoc the title, author, language and text
+direction. The full list of placeholders is in the skill's `references/publishing.md`.
+
+## Writing for GitHub
+
+Write GitHub's own Markdown, so pages read correctly in the repository: `> [!NOTE]` and the other
+GitHub alerts for callouts, `<details>` for collapsible or alternative content, and plain pipe
+tables. The MkDocs renderer converts them into its own boxes and sections, titled in the edition's
+language. The audit warns about MkDocs-only syntax such as `!!! note` or `=== "Tab"` and names the
+GitHub form to use.
 
 ## Options worth knowing
 
@@ -66,13 +118,15 @@ and last-verified date.
   reads `manual.yml` and your git changes, then updates only the affected pages.
 - **Coverage audit.** `scripts/audit_manual.py` lists gaps. Ask "audit the manual" and it explains
   each one.
-- **Build one edition.** `scripts/build_manual.py --audience end-user --language en` builds a site.
-  Add `--pdf` for a PDF, `--archive` for a zip, or `--module <id>` for one module only.
-- **Theme.** Set `renderer.theme` in `manual.yml`: `material` (the default), `readthedocs`,
-  `mkdocs`, or any installed MkDocs theme. HTML and PDF both build with every theme.
-- **Arabic.** English is required. Arabic is optional, with right-to-left layout built in, in the PDF
-  too. Arabic PDFs use the Amiri font, so the build machine needs it installed (`fonts-hosny-amiri` on
-  Ubuntu). The PDF's contents heading follows the edition's language.
+- **Build one edition.** `scripts/build_manual.py --audience end-user --language en`. Add
+  `--archive` for a zip, `--module <id>` for one module only, `--renderer <kind>` to try another
+  renderer once, or `--pdf` with the MkDocs renderer.
+- **MkDocs theme.** `renderer.theme`: `material` (the default), `readthedocs`, `mkdocs`, or any
+  installed MkDocs theme. `renderer.custom_dir` is a theme override folder relative to
+  `User-Manual/`. A cover template in `theme/pdf/cover.html` replaces the PDF cover.
+- **Arabic.** English is required. Arabic is optional, with right-to-left layout built in. Every
+  edition records its language and direction for any renderer. MkDocs PDFs keep right-to-left layout,
+  use the Amiri font (`fonts-hosny-amiri` on Ubuntu) and title the contents in Arabic.
 - **Freshness.** `scripts/manual_state.py record --feature <dir>` records the state after an
   update. `status` exits 1 if inputs or outputs changed since then.
 - **Diagrams.** When [illustrate](illustrate.md) is installed, the skill uses it for diagrams,
@@ -85,18 +139,13 @@ and last-verified date.
   Examples use synthetic data.
 - A page may link only to pages its own audience receives. The build rejects anything else.
 - After you upgrade the skill, refresh `User-Manual/tools/` from the skill's `scripts/` folder.
-- A manual created before dev-tools 1.6.0 keeps its own `User-Manual/theme/rtl*.css` files, so its
-  Arabic PDFs do not switch to Amiri on their own. There is no migration; copy the font rule in by hand
-  if you want it (see `references/publishing.md`).
-- Without the extensions installed, API, release, screenshot, and hosted-preview work follows the
-  core rules only, and the skill reports what remains.
+- The skill does not install a renderer command's tool. Put it on the build machine or CI runner.
+- dev-tools 2.0.0 has no migration from 1.x: an existing `manual.yml` needs a `renderer.kind`
+  (add `kind: mkdocs` to keep the MkDocs site), and the four `user-manual-*` companion skills are
+  gone, their instructions now part of this skill.
 
 ## Related
 
-- Extensions: [user-manual-api-docs](user-manual-api-docs.md),
-  [user-manual-release-docs](user-manual-release-docs.md),
-  [user-manual-ui-screenshots](user-manual-ui-screenshots.md),
-  [user-manual-preview-publishing](user-manual-preview-publishing.md)
 - [illustrate](illustrate.md)
 - [Product map](../product-map.md)
 - [Glossary](../glossary.md)
