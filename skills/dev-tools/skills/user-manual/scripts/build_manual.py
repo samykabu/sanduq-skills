@@ -53,6 +53,17 @@ LINK = re.compile(
     r'|(?P<hb>(?:src|href)=["\'])(?P<hv>[^"\']+)(?P<ha>["\'])',
     re.M,
 )
+# A fenced code block (``` or ~~~, closed by the same fence or the end of the page): never links or syntax.
+FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})[^\n]*\n(?:.*?^[ ]{0,3}\1[ \t]*$|.*\Z)", re.M | re.S)
+
+
+def outside_fences(text: str, change) -> str:
+    """`change` applied to the text between fenced code blocks; the blocks stay exactly as written."""
+    parts, at = [], 0
+    for match in FENCE.finditer(text):
+        parts += [change(text[at:match.start()]), match.group(0)]
+        at = match.end()
+    return "".join(parts + [change(text[at:])])
 
 
 def copy_pages(source: Path, target: Path, audience: str, module: str | None, page_suffix: str = ".md",
@@ -121,7 +132,7 @@ def copy_pages(source: Path, target: Path, audience: str, module: str | None, pa
             if titles is not None and title:
                 titles[output.relative_to(target).as_posix()] = str(title)
             text = text.split("---\n", 2)[2].lstrip("\n")
-        output.write_text(LINK.sub(link, text), encoding="utf-8")
+        output.write_text(outside_fences(text, lambda part: LINK.sub(link, part)), encoding="utf-8")
 
     for page in sorted(selected):
         copy(page)
@@ -434,8 +445,7 @@ ALERT_TITLE = {
 
 def mkdocs_markdown(text: str, language: str) -> str:
     """GitHub-flavoured constructs in the form MkDocs renders: alerts as admonitions, and `<details>`
-    blocks marked so the Markdown inside them is rendered (md_in_html).
-    shortcut: an alert or <details> written inside a fenced code block is converted too."""
+    blocks marked so the Markdown inside them is rendered (md_in_html). Fenced code stays as written."""
     titles = ALERT_TITLE.get(language, ALERT_TITLE["en"])
 
     def alert(match: re.Match) -> str:
@@ -443,7 +453,8 @@ def mkdocs_markdown(text: str, language: str) -> str:
         lines = "".join(("    " + line if line.strip() else "") + "\n" for line in body)
         return f'!!! {ADMONITION[match.group(1)]} "{titles[match.group(1)]}"\n{lines}\n'
 
-    return re.sub(r"<details(?![^>]*\bmarkdown=)", '<details markdown="1"', ALERT.sub(alert, text))
+    return outside_fences(text, lambda part: re.sub(r"<details(?![^>]*\bmarkdown=)", '<details markdown="1"',
+                                                     ALERT.sub(alert, part)))
 
 
 PDF_COVER = (

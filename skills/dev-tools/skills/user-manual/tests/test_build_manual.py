@@ -548,6 +548,27 @@ class LinkFormTests(unittest.TestCase):
             self.assertEqual({'a.png', 'b c.png', 'd.json'}, {p.name for p in (root / 'out/assets').iterdir()})
 
 
+class FencedCodeTests(unittest.TestCase):
+    """Code examples are never links or syntax to translate."""
+
+    def test_a_code_example_that_looks_like_a_link_is_left_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source = root / 'docs/en'
+            source.mkdir(parents=True)
+            body = ('---\naudiences: [technical]\n---\n```js\nconst routes = {\n  [region]: endpoint,\n};\n'
+                    '![x](gone.png)\n```\n\n~~~\n[id]: also-gone.md\n')
+            (source / 'index.md').write_text(body, encoding='utf-8')
+            builder.copy_pages(source, root / 'out', 'technical', None)
+            self.assertEqual(body.split('---\n', 2)[2], (root / 'out/index.md').read_text(encoding='utf-8'))
+
+    def test_mkdocs_translation_skips_code_blocks(self):
+        text = '```markdown\n> [!NOTE]\n> Example.\n<details>\n```\n> [!TIP]\n> Real.\n'
+        converted = builder.mkdocs_markdown(text, 'en')
+        self.assertTrue(converted.startswith('```markdown\n> [!NOTE]\n> Example.\n<details>\n```\n'), converted)
+        self.assertIn('!!! tip "Tip"', converted)
+
+
 class BrandTests(unittest.TestCase):
     def test_the_title_defaults_to_the_product_and_a_missing_logo_fails(self):
         with tempfile.TemporaryDirectory() as tmp:

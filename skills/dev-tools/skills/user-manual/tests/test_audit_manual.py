@@ -39,6 +39,8 @@ class AuditTests(unittest.TestCase):
         self.assertEqual((0, []), (code, result['errors']))
         code, result = self.audit('A claim.[^1]\n\n[^1]: Explanation of the information.\n')
         self.assertEqual((0, []), (code, result['errors']), 'a footnote is not a link')
+        code, result = self.audit('```js\nconst routes = {\n  [region]: endpoint,\n};\n```\n\n```markdown\n!!! note\n```\n')
+        self.assertEqual((0, [], []), (code, result['errors'], result['warnings']), 'code examples are not checked')
         code, result = self.audit('[gone](missing.md "Title")\n')
         self.assertEqual(1, code)
         self.assertIn('missing linked file missing.md', result['errors'][0])

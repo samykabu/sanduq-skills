@@ -21,6 +21,8 @@ REQUIRED_META = {"title", "module", "audiences", "language", "content_type", "so
 SECRET = re.compile(r"(?i)(api[_-]?key|client[_-]?secret|password|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[\"']?([^\s\"']{8,})")
 # Inline links and images (optional "title", <angle-bracketed> targets) and reference definitions.
 LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(<[^>\n]+>|\S+)', re.M)
+# Fenced code blocks (``` or ~~~): examples, never links or syntax to check.
+FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})[^\n]*\n(?:.*?^[ ]{0,3}\1[ \t]*$|.*\Z)", re.M | re.S)
 # MkDocs-only syntax shows as raw text on GitHub; each has a GitHub form the build translates.
 MKDOCS_ONLY = (
     (re.compile(r"^[ \t]*(?:!!!|\?\?\?\+?)[ \t]+\w", re.M), 'a GitHub alert ("> [!NOTE]", "> [!WARNING]", ...) or <details>'),
@@ -104,10 +106,11 @@ def main() -> None:
             value = match.group(2).lower()
             if not any(marker in value for marker in ("redacted", "example", "placeholder", "<", "${")):
                 errors.append(f"{relative}: possible secret assigned to {match.group(1)}")
+        prose = FENCE.sub(lambda block: "\n" * block.group(0).count("\n"), body)
         for pattern, replacement in MKDOCS_ONLY:
-            if pattern.search(body):
+            if pattern.search(prose):
                 warnings.append(f"{relative}: MkDocs-only syntax shows as raw text on GitHub; use {replacement}")
-        for match in LINK.finditer(body):
+        for match in LINK.finditer(prose):
             target = (match.group(1) or match.group(2)).strip("<>")
             clean = target.split("#", 1)[0].split("?", 1)[0]
             if not clean or re.match(r"^[a-z]+://", clean) or clean.startswith(("mailto:", "#")):

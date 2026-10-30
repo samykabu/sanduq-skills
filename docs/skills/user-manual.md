@@ -7,7 +7,7 @@ correctly on GitHub; you choose how each edition is rendered.
 | | |
 | --- | --- |
 | Bundle | `dev-tools` (Claude Code plugin `dev-tools@sanduq`) |
-| Version | 2.0.1 |
+| Version | 2.0.2 |
 | Prerequisites | Python 3.10+ and PyYAML. Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
 | Hosts | Codex: yes. Claude Code: yes. Claude Desktop: unverified. |
 
