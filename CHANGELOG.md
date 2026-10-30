@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-30 — dev-tools 1.6.0
+
+- **dev-tools 1.6.0.** `user-manual`: Arabic PDFs use the Amiri font. The RTL stylesheets set Arabic text to `"Amiri", "Noto Naskh Arabic", "Noto Sans Arabic", serif`, and the release workflow template installs `fonts-hosny-amiri` with the WeasyPrint libraries. The PDF now keeps the edition's `lang` and `dir`: mkdocs-to-pdf rebuilt `<html>` without them, so Arabic PDFs lost their right-to-left layout and their font rules. A PDF with a theme other than `material` or `mkdocs` (`readthedocs`, for example) no longer fails: mkdocs-to-pdf 0.10.1 has no handler for it and its fallback failed, so the build supplies one. Checked on Ubuntu 24.04 with the Material, `readthedocs` and `mkdocs` themes: `pdffonts` lists Amiri in each Arabic PDF and none in the English ones. A manual created earlier keeps its own `User-Manual/theme/rtl*.css` copies; copy the font rule into them (see `references/publishing.md`).
+
 ## 2026-10-29 — agent-tools 1.8.2
 
 - **agent-tools 1.8.2.** `delegate-task`: `collect --summary` reads the journal bounded when it looks up `process_containment` for a lost run, so recovering a run with a large journal no longer runs out of memory. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).

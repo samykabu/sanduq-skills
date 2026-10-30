@@ -1,7 +1,7 @@
 {
   "name": "dev-tools",
   "description": "Standalone tools for application manuals, API references, release documentation, screenshots, previews, bilingual publishing, and GitHub Wiki pages and assets",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "author": {
     "name": "Samy K. Abushanab"
   },
