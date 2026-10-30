@@ -22,7 +22,8 @@ SECRET = re.compile(r"(?i)(api[_-]?key|client[_-]?secret|password|access[_-]?tok
 # Inline links and images (optional "title", <angle-bracketed> targets) and reference definitions.
 LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(<[^>\n]+>|\S+)', re.M)
 # Fenced code blocks (``` or ~~~): examples, never links or syntax to check.
-FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})[^\n]*\n(?:.*?^[ ]{0,3}\1[ \t]*$|.*\Z)", re.M | re.S)
+FENCE = re.compile(r"^[ ]{0,3}(?P<fence>(?P<c>[`~])(?P=c){2,})[^\n]*\n"
+                   r"(?:.*?^[ ]{0,3}(?P=fence)(?P=c)*[ \t]*$|.*\Z)", re.M | re.S)
 # MkDocs-only syntax shows as raw text on GitHub; each has a GitHub form the build translates.
 MKDOCS_ONLY = (
     (re.compile(r"^[ \t]*(?:!!!|\?\?\?\+?)[ \t]+\w", re.M), 'a GitHub alert ("> [!NOTE]", "> [!WARNING]", ...) or <details>'),

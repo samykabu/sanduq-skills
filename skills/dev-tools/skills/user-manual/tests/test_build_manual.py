@@ -562,6 +562,19 @@ class FencedCodeTests(unittest.TestCase):
             builder.copy_pages(source, root / 'out', 'technical', None)
             self.assertEqual(body.split('---\n', 2)[2], (root / 'out/index.md').read_text(encoding='utf-8'))
 
+    def test_a_longer_closing_fence_ends_the_block(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source = root / 'docs/en'
+            (root / 'docs/assets').mkdir(parents=True)
+            (root / 'docs/assets/screen.png').write_bytes(b'x')
+            source.mkdir(parents=True)
+            (source / 'index.md').write_text('---\naudiences: [end-user]\n---\n```\ncode\n````\n\n'
+                                             '![Screen](../assets/screen.png)\n', encoding='utf-8')
+            builder.copy_pages(source, root / 'out', 'end-user', None)
+            self.assertIn('![Screen](assets/screen.png)', (root / 'out/index.md').read_text(encoding='utf-8'))
+            self.assertTrue((root / 'out/assets/screen.png').is_file())
+
     def test_mkdocs_translation_skips_code_blocks(self):
         text = '```markdown\n> [!NOTE]\n> Example.\n<details>\n```\n> [!TIP]\n> Real.\n'
         converted = builder.mkdocs_markdown(text, 'en')

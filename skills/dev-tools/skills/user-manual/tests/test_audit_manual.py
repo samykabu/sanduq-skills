@@ -41,6 +41,8 @@ class AuditTests(unittest.TestCase):
         self.assertEqual((0, []), (code, result['errors']), 'a footnote is not a link')
         code, result = self.audit('```js\nconst routes = {\n  [region]: endpoint,\n};\n```\n\n```markdown\n!!! note\n```\n')
         self.assertEqual((0, [], []), (code, result['errors'], result['warnings']), 'code examples are not checked')
+        code, result = self.audit('```\ncode\n````\n\n[gone](after-the-fence.md)\n')
+        self.assertEqual(1, code, 'prose after a longer closing fence is still checked')
         code, result = self.audit('[gone](missing.md "Title")\n')
         self.assertEqual(1, code)
         self.assertIn('missing linked file missing.md', result['errors'][0])

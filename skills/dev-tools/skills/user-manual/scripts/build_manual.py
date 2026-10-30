@@ -54,7 +54,8 @@ LINK = re.compile(
     re.M,
 )
 # A fenced code block (``` or ~~~, closed by the same fence or the end of the page): never links or syntax.
-FENCE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})[^\n]*\n(?:.*?^[ ]{0,3}\1[ \t]*$|.*\Z)", re.M | re.S)
+FENCE = re.compile(r"^[ ]{0,3}(?P<fence>(?P<c>[`~])(?P=c){2,})[^\n]*\n"
+                   r"(?:.*?^[ ]{0,3}(?P=fence)(?P=c)*[ \t]*$|.*\Z)", re.M | re.S)
 
 
 def outside_fences(text: str, change) -> str:
