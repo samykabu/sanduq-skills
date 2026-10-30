@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-30 — dev-tools 2.0.1
+
+- **dev-tools 2.0.1.** `user-manual`: the MkDocs renderer labels each page in the navigation with its front-matter `title` again; 2.0.0 strips front matter from assembled pages, so pages whose title differed from their first heading lost it. `edition.json` now lists every page's title under `titles`. The documented Pandoc recipe reads pages with `-f gfm+rebase_relative_paths`, so images resolve from each page's own folder; checked with Pandoc 3.1.3 on a nested page with a screenshot.
+
 ## 2026-10-30 — dev-tools 2.0.0
 
 - **dev-tools 2.0.0 (breaking).** `user-manual` no longer depends on MkDocs. `build_manual.py` assembles each edition (audience and language, optionally one module) as Markdown with only the assets its pages reach, plus `edition.json` (title, language, direction, pages in reading order, navigation, brand) and `metadata.yml` (Pandoc-style title block with `lang` and `dir`). `renderer.kind` in `manual.yml` then renders it: `markdown` (the default; the edition itself, readable on GitHub), `command` (your own tool and templates, such as Pandoc or Quarto, with `{pages}`, `{edition}`, `{metadata}`, `{output}` and other placeholders, run from `User-Manual/`), or `mkdocs` (the HTML site and `--pdf`). `--renderer` overrides the kind for one build and `--print-renderer` reports it for CI. Zensical compatibility builds are removed.

@@ -7,7 +7,7 @@ correctly on GitHub; you choose how each edition is rendered.
 | | |
 | --- | --- |
 | Bundle | `dev-tools` (Claude Code plugin `dev-tools@sanduq`) |
-| Version | 2.0.0 |
+| Version | 2.0.1 |
 | Prerequisites | Python 3.10+ and PyYAML. Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
 | Hosts | Codex: yes. Claude Code: yes. Claude Desktop: unverified. |
 
@@ -97,7 +97,7 @@ A Word edition through your team's template:
 ```yaml
 renderer:
   kind: command
-  command: pandoc {pages} --metadata-file {metadata} --reference-doc theme/word.docx -o {output}/manual.docx
+  command: pandoc -f gfm+rebase_relative_paths {pages} --metadata-file {metadata} --reference-doc theme/word.docx -o {output}/manual.docx
 ```
 
 The command runs from `User-Manual/`, so its paths are relative to the manual. `{pages}` lists the
