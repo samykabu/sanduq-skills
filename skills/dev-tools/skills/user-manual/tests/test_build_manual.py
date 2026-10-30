@@ -603,6 +603,25 @@ class FencedCodeTests(unittest.TestCase):
             self.assertIn('![Screen](assets/screen.png)', (root / 'out/index.md').read_text(encoding='utf-8'))
             self.assertTrue((root / 'out/assets/screen.png').is_file())
 
+    def test_an_alert_containing_code_is_converted_whole(self):
+        text = '> [!NOTE]\n> Run:\n> ```python\n> print(1)\n> ```\n> Then <details> opens.\n'
+        self.assertEqual('!!! note "Note"\n    Run:\n    ```python\n    print(1)\n    ```\n'
+                         '    Then <details markdown="1"> opens.\n\n', builder.mkdocs_markdown(text, 'en'))
+
+    def test_html_and_svg_assets_keep_every_link_whatever_their_indentation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source = root / 'docs/en'
+            (root / 'docs/assets').mkdir(parents=True)
+            (root / 'docs/assets/screen.png').write_bytes(b'x')
+            (root / 'docs/assets/flow.svg').write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg">\n\n    <image href="screen.png"/>\n</svg>\n', encoding='utf-8')
+            source.mkdir(parents=True)
+            (source / 'index.md').write_text('---\naudiences: [end-user]\n---\n![Flow](../assets/flow.svg)\n',
+                                             encoding='utf-8')
+            builder.copy_pages(source, root / 'out', 'end-user', None)
+            self.assertTrue((root / 'out/assets/screen.png').is_file())
+
     def test_mkdocs_translation_skips_code_blocks(self):
         text = '```markdown\n> [!NOTE]\n> Example.\n<details>\n```\n> [!TIP]\n> Real.\n'
         converted = builder.mkdocs_markdown(text, 'en')

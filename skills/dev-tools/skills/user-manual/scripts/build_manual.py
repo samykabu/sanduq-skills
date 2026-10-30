@@ -142,7 +142,9 @@ def copy_pages(source: Path, target: Path, audience: str, module: str | None, pa
             if titles is not None and title:
                 titles[output.relative_to(target).as_posix()] = str(title)
             text = text.split("---\n", 2)[2].lstrip("\n")
-        output.write_text(outside_fences(text, lambda part: LINK.sub(link, part)), encoding="utf-8")
+        # Only a Markdown page has code blocks; every link in an HTML or SVG asset is processed.
+        output.write_text(outside_fences(text, lambda part: LINK.sub(link, part)) if path.suffix == ".md"
+                          else LINK.sub(link, text), encoding="utf-8")
 
     for page in sorted(selected):
         copy(page)
@@ -455,16 +457,26 @@ ALERT_TITLE = {
 
 def mkdocs_markdown(text: str, language: str) -> str:
     """GitHub-flavoured constructs in the form MkDocs renders: alerts as admonitions, and `<details>`
-    blocks marked so the Markdown inside them is rendered (md_in_html). Fenced code stays as written."""
+    blocks marked so the Markdown inside them is rendered (md_in_html). A construct shown inside a code
+    example stays as written; an alert that contains a code example is converted whole."""
     titles = ALERT_TITLE.get(language, ALERT_TITLE["en"])
+    blocks = code_blocks(text)
+
+    def in_code(match: re.Match) -> bool:
+        return any(start <= match.start() < end for start, end in blocks)
 
     def alert(match: re.Match) -> str:
+        if in_code(match):
+            return match.group(0)
         body = [re.sub(r"^> ?", "", line) for line in match.group(2).splitlines()]
         lines = "".join(("    " + line if line.strip() else "") + "\n" for line in body)
         return f'!!! {ADMONITION[match.group(1)]} "{titles[match.group(1)]}"\n{lines}\n'
 
-    return outside_fences(text, lambda part: re.sub(r"<details(?![^>]*\bmarkdown=)", '<details markdown="1"',
-                                                     ALERT.sub(alert, part)))
+    # <details> first: an alert's converted body is indented, which a parser would read as indented code.
+    text = re.sub(r"<details(?![^>]*\bmarkdown=)",
+                  lambda match: match.group(0) if in_code(match) else '<details markdown="1"', text)
+    blocks = code_blocks(text)
+    return ALERT.sub(alert, text)
 
 
 PDF_COVER = (
