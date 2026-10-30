@@ -37,6 +37,8 @@ class AuditTests(unittest.TestCase):
     def test_titled_bracketed_and_reference_links_resolve(self):
         code, result = self.audit('![A](<shot one.png> "Shot")\n[x][s]\n\n[s]: <shot one.png>\n')
         self.assertEqual((0, []), (code, result['errors']))
+        code, result = self.audit('A claim.[^1]\n\n[^1]: Explanation of the information.\n')
+        self.assertEqual((0, []), (code, result['errors']), 'a footnote is not a link')
         code, result = self.audit('[gone](missing.md "Title")\n')
         self.assertEqual(1, code)
         self.assertIn('missing linked file missing.md', result['errors'][0])

@@ -49,7 +49,7 @@ def split_page(path: Path) -> tuple[dict, str]:
 # definitions ("[id]: target"), and src/href attributes in HTML.
 LINK = re.compile(
     r'(?P<ib>!?\[[^\]]*\]\()(?P<iv><[^>\n]+>|[^\s)]+)(?P<ia>(?:\s+"[^"\n]*")?\))'
-    r'|(?P<rb>^[ ]{0,3}\[[^\]\n]+\]:[ \t]*)(?P<rv><[^>\n]+>|\S+)(?P<ra>(?:[ \t]+"[^"\n]*")?[ \t]*$)'
+    r'|(?P<rb>^[ ]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*)(?P<rv><[^>\n]+>|\S+)(?P<ra>(?:[ \t]+"[^"\n]*")?[ \t]*$)'
     r'|(?P<hb>(?:src|href)=["\'])(?P<hv>[^"\']+)(?P<ha>["\'])',
     re.M,
 )
@@ -348,7 +348,11 @@ def theme_config(name: str, language: str, options: dict | None = None) -> dict:
     return config
 
 
-SCAFFOLD_THEME = Path(__file__).resolve().parents[1] / "assets" / "scaffold" / "theme"
+SCRIPT_DIR = Path(__file__).resolve().parent
+# The skill ships its stylesheets in assets/scaffold/theme; the copy init_manual.py puts in User-Manual/tools/
+# has them beside it in tools/theme/.
+SCAFFOLD_THEME = next((folder for folder in (SCRIPT_DIR.parent / "assets" / "scaffold" / "theme", SCRIPT_DIR / "theme")
+                       if folder.is_dir()), SCRIPT_DIR.parent / "assets" / "scaffold" / "theme")
 
 
 def stylesheet_source(theme_dir: Path, name: str) -> Path | None:

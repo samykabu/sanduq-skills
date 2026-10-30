@@ -521,7 +521,7 @@ class LinkFormTests(unittest.TestCase):
             source.mkdir(parents=True)
             (source / 'index.md').write_text(
                 '---\naudiences: [end-user]\n---\n![A](../assets/a.png "Shot")\n![B](<../assets/b c.png>)\n'
-                '[data][d]\n\n[d]: ../assets/d.json "Sample"\n', encoding='utf-8')
+                '[data][d]\n\n[d]: ../assets/d.json "Sample"\n[^1]: Explanation\n', encoding='utf-8')
             builder.copy_pages(source, root / 'out', 'end-user', None)
             staged = (root / 'out/index.md').read_text(encoding='utf-8')
             self.assertIn('![A](assets/a.png "Shot")', staged)

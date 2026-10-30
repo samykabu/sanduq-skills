@@ -185,11 +185,14 @@ def main() -> None:
 
     for name in ("requirements.lock", "requirements-mkdocs.lock", "requirements-pdf.lock"):
         copy_if_missing(skill_root / "assets" / "scaffold" / name, manual_root / name)
-    # Stylesheets are not copied: the build uses the shipped ones unless User-Manual/theme/ has its own.
+    # No stylesheets in theme/: the build uses the shipped ones unless User-Manual/theme/ has its own.
     copy_if_missing(skill_root / "assets" / "scaffold" / "brand.yml", manual_root / "theme" / "brand.yml")
     if not args.no_tools:
         for name in ("audit_manual.py", "build_manual.py", "manual_state.py"):
             copy_if_missing(skill_root / "scripts" / name, manual_root / "tools" / name)
+        # The copied build_manual.py finds the shipped stylesheets beside it, in tools/theme/.
+        for css in sorted((skill_root / "assets" / "scaffold" / "theme").glob("*.css")):
+            copy_if_missing(css, manual_root / "tools" / "theme" / css.name)
     # CI assets are templates: render the project's recorded runner selection.
     ci = sanduq_ci.load_ci(args.ci_policy or root)
     for name in ("user-manual-preview.yml", "user-manual-release.yml"):

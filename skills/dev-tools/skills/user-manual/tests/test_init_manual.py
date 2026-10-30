@@ -1,4 +1,5 @@
 """Portable init_manual: renderer default, install files, brand file and tool copies, no Spec Kit layout."""
+import importlib.util
 import json
 import subprocess
 import sys
@@ -30,8 +31,13 @@ class InitManualTests(unittest.TestCase):
             self.assertEqual(['brand.yml'], sorted(p.name for p in (manual / 'theme').iterdir()))
             self.assertFalse((manual / 'mkdocs.yml').exists())
             self.assertEqual('PyYAML>=6.0,<7\n', (manual / 'requirements.lock').read_text(encoding='utf-8'))
-            for name in ('audit_manual.py', 'build_manual.py', 'manual_state.py'):
+            for name in ('audit_manual.py', 'build_manual.py', 'manual_state.py', 'theme/extra.css', 'theme/rtl.css'):
                 self.assertTrue((manual / 'tools' / name).is_file(), name)
+            # The copied builder finds the shipped stylesheets beside it, not in the skill's assets.
+            spec = importlib.util.spec_from_file_location('copied_builder', manual / 'tools/build_manual.py')
+            copied = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(copied)
+            self.assertEqual(manual / 'tools/theme/extra.css', copied.stylesheet_source(manual / 'theme', 'extra.css'))
             self.assertTrue((root / '.github/workflows/user-manual-preview.yml').is_file())
             self.assertFalse((root / '.specify').exists())
 

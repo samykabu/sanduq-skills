@@ -20,7 +20,7 @@ CONTENT_TYPES = {"tutorial", "how-to", "reference", "explanation", "release-note
 REQUIRED_META = {"title", "module", "audiences", "language", "content_type", "source_evidence", "last_verified", "status"}
 SECRET = re.compile(r"(?i)(api[_-]?key|client[_-]?secret|password|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[\"']?([^\s\"']{8,})")
 # Inline links and images (optional "title", <angle-bracketed> targets) and reference definitions.
-LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,3}\[[^\]\n]+\]:[ \t]*(<[^>\n]+>|\S+)', re.M)
+LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(<[^>\n]+>|\S+)', re.M)
 # MkDocs-only syntax shows as raw text on GitHub; each has a GitHub form the build translates.
 MKDOCS_ONLY = (
     (re.compile(r"^[ \t]*(?:!!!|\?\?\?\+?)[ \t]+\w", re.M), 'a GitHub alert ("> [!NOTE]", "> [!WARNING]", ...) or <details>'),
