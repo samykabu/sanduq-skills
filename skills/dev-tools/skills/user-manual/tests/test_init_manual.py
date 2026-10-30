@@ -1,4 +1,5 @@
-"""Portable init_manual: theme defaults, theme stylesheets and tool copies, no Spec Kit layout."""
+"""Portable init_manual: renderer default, install files, brand file and tool copies, no Spec Kit layout."""
+import importlib.util
 import json
 import subprocess
 import sys
@@ -13,7 +14,7 @@ import sanduq_ci  # noqa: E402
 
 
 class InitManualTests(unittest.TestCase):
-    def test_scaffold_records_the_theme_and_ships_every_stylesheet(self):
+    def test_scaffold_defaults_to_markdown_with_split_installs_and_a_brand_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             modules = root / 'modules.json'
@@ -23,12 +24,21 @@ class InitManualTests(unittest.TestCase):
                                     capture_output=True, text=True, encoding='utf-8')
             self.assertEqual(0, result.returncode, result.stderr)
             manual = root / 'User-Manual'
-            self.assertIn('  theme: material\n', (manual / 'manual.yml').read_text(encoding='utf-8'))
-            for name in ('extra.css', 'rtl.css', 'print.css', 'rtl-generic.css', 'rtl-readthedocs.css',
-                         'theme-readthedocs.css'):
-                self.assertTrue((manual / 'theme' / name).is_file(), name)
-            for name in ('audit_manual.py', 'build_manual.py', 'manual_state.py'):
+            self.assertIn('  kind: markdown\n', (manual / 'manual.yml').read_text(encoding='utf-8'))
+            for name in ('requirements.lock', 'requirements-mkdocs.lock', 'requirements-pdf.lock', 'theme/brand.yml'):
+                self.assertTrue((manual / name).is_file(), name)
+            # The build uses the shipped stylesheets; the scaffold copies none, and no inert mkdocs.yml.
+            self.assertEqual(['brand.yml'], sorted(p.name for p in (manual / 'theme').iterdir()))
+            self.assertFalse((manual / 'mkdocs.yml').exists())
+            self.assertEqual('PyYAML>=6.0,<7\n', (manual / 'requirements.lock').read_text(encoding='utf-8'))
+            for name in ('audit_manual.py', 'build_manual.py', 'manual_state.py', 'theme/extra.css', 'theme/rtl.css'):
                 self.assertTrue((manual / 'tools' / name).is_file(), name)
+            # The copied builder finds the shipped stylesheets beside it, not in the skill's assets.
+            spec = importlib.util.spec_from_file_location('copied_builder', manual / 'tools/build_manual.py')
+            copied = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(copied)
+            self.assertEqual((manual / 'tools/theme/extra.css').resolve(),
+                             copied.stylesheet_source(manual / 'theme', 'extra.css').resolve())
             self.assertTrue((root / '.github/workflows/user-manual-preview.yml').is_file())
             self.assertFalse((root / '.specify').exists())
 
@@ -65,7 +75,7 @@ class InitManualTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             manual = self.init(Path(tmp), '--no-tools')
             self.assertFalse((manual / 'tools').exists())
-            self.assertTrue((manual / 'theme/extra.css').is_file())
+            self.assertTrue((manual / 'theme/brand.yml').is_file())
             config = yaml.safe_load((manual / 'manual.yml').read_text(encoding='utf-8'))
             self.assertEqual({'impact_scope': 'all'}, config['lifecycle'])
 

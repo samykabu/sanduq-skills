@@ -31,7 +31,7 @@ repository has three: `illustration-tools`, `dev-tools`, and `agent-tools`. Each
 
 The plan that says which screenshots to take: which role, interface, state, language, and theme.
 It aims for the smallest set that teaches a reader or proves a documented branch.
-Where it matters: [user-manual-ui-screenshots](skills/user-manual-ui-screenshots.md).
+Where it matters: [user-manual](skills/user-manual.md).
 
 ### Delegation result
 
@@ -47,7 +47,8 @@ its [provenance](#provenance). Where it matters: [delegate-task](skills/delegate
 ### Edition
 
 One published build of the manual for one audience and one language, for example the English
-End User edition. Each edition gets its own HTML site and, on release, its own PDF.
+End User edition. The build assembles each edition as Markdown with an `edition.json` manifest, then
+its [renderer](#renderer) turns it into the output: Markdown, your own format, or an HTML site and PDF.
 Where it matters: [user-manual](skills/user-manual.md).
 
 ### Export
@@ -90,7 +91,7 @@ Where it matters: installing in Claude Code.
 
 A step-by-step guide for readers who must act because of a release: what changed, who is affected,
 the ordered steps, how to check success, and how to roll back.
-Where it matters: [user-manual-release-docs](skills/user-manual-release-docs.md).
+Where it matters: [user-manual](skills/user-manual.md).
 
 ### Module map
 
@@ -107,14 +108,14 @@ Where it matters: [progress-report](skills/progress-report.md).
 
 ### Plugin
 
-The Claude Code packaging of a bundle. Installing the `dev-tools` plugin, for example, gives you all
-five manual skills. Where it matters: installing in Claude Code.
+The Claude Code packaging of a bundle. Installing the `dev-tools` plugin, for example, gives you
+`user-manual` and `github-wiki-publish`. Where it matters: installing in Claude Code.
 
 ### Preview
 
 A private build of the manual for a pull request, so reviewers can read the change before merge.
 It is always a private CI artifact first, and optionally a hosted preview on an approved provider.
-Where it matters: [user-manual-preview-publishing](skills/user-manual-preview-publishing.md).
+Where it matters: [user-manual](skills/user-manual.md).
 
 ### Projection
 
@@ -137,13 +138,19 @@ Where it matters: [illustrate](skills/illustrate.md), [examples](examples.md).
 
 Hiding or replacing sensitive content, such as email addresses, tokens, or real records, before it
 reaches documentation. The manual skills use synthetic data and mask unstable or sensitive parts of
-screenshots. Where it matters: [user-manual-ui-screenshots](skills/user-manual-ui-screenshots.md),
-[user-manual-api-docs](skills/user-manual-api-docs.md).
+screenshots. Where it matters: [user-manual](skills/user-manual.md).
+
+### Renderer
+
+What turns an assembled [edition](#edition) into output, chosen by `renderer.kind` in
+`User-Manual/manual.yml`: `markdown` (the default; the edition as Markdown files, readable on GitHub),
+`command` (your own tool, such as Pandoc or Quarto, with your templates), or `mkdocs` (an HTML site,
+plus a PDF with `--pdf`). Where it matters: [user-manual](skills/user-manual.md).
 
 ### Release docs
 
 Release notes and migration guides written for each audience from what actually shipped.
-Where it matters: [user-manual-release-docs](skills/user-manual-release-docs.md).
+Where it matters: [user-manual](skills/user-manual.md).
 
 ### Sandbox mode
 

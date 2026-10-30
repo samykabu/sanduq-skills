@@ -3,7 +3,7 @@
 Sanduq Skills ships nine [skills](glossary.md#skill) in three [bundles](glossary.md#bundle). Each
 bundle installs as one Claude Code [plugin](glossary.md#plugin) and has its own version.
 
-![Product map. The dev-tools bundle holds the user-manual core skill, with four skills that extend it: API docs, release docs, UI screenshots, and preview publishing. A dashed arrow shows user-manual using illustrate, from the illustration-tools bundle, for diagrams. The agent-tools bundle holds delegate-task on its own (progress-report, added in 1.2.0, is described below and not yet drawn).](media/product-map.animated.svg)
+![Product map. The dev-tools bundle holds the user-manual skill, with four references it loads when a task needs them: API docs, release docs, UI screenshots, and preview publishing. A dashed arrow shows user-manual using illustrate, from the illustration-tools bundle, for diagrams. The agent-tools bundle holds delegate-task on its own (progress-report, added in 1.2.0, is described below and not yet drawn).](media/product-map.animated.svg)
 
 Editable source: [product-map.html](media/product-map.html). Still version:
 [product-map.svg](media/product-map.svg).
@@ -16,24 +16,19 @@ The lists below describe the current skill set.
 | Bundle | Version | Skills | What it is for |
 | --- | --- | --- | --- |
 | `illustration-tools` | 3.7.1 | [illustrate](skills/illustrate.md) | Diagrams and charts as editable HTML, with SVG, PNG, animated SVG, and GIF export. |
-| `dev-tools` | 1.6.1 | [user-manual](skills/user-manual.md), four extensions, and [github-wiki-publish](skills/github-wiki-publish.md) | Application manuals and standalone publishing of existing pages, reports, diagrams, and assets to a GitHub Wiki. |
+| `dev-tools` | 2.0.0 | [user-manual](skills/user-manual.md) and [github-wiki-publish](skills/github-wiki-publish.md) | Application manuals and standalone publishing of existing pages, reports, diagrams, and assets to a GitHub Wiki. |
 | `agent-tools` | 1.8.2 | [delegate-task](skills/delegate-task.md) and [progress-report](skills/progress-report.md) | Handing a task to another agent CLI and measuring what it did; keeping a live progress report of a plan or feature. |
 
 ## What each skill does
 
 - **[illustrate](skills/illustrate.md)** draws 44 kinds of diagrams and charts in your project's
   [theme](glossary.md#theme).
-- **[user-manual](skills/user-manual.md)** is the core of the manual tools. It discovers your
-  modules, writes the pages, audits coverage, and builds HTML and PDF
-  [editions](glossary.md#edition).
-- **[user-manual-api-docs](skills/user-manual-api-docs.md)** adds API reference pages, split by
-  [audience](glossary.md#audience).
-- **[user-manual-release-docs](skills/user-manual-release-docs.md)** adds release notes and
-  [migration guides](glossary.md#migration-guide).
-- **[user-manual-ui-screenshots](skills/user-manual-ui-screenshots.md)** adds repeatable,
-  [redacted](glossary.md#redaction) screenshots.
-- **[user-manual-preview-publishing](skills/user-manual-preview-publishing.md)** adds private pull
-  request [previews](glossary.md#preview) and release publishing.
+- **[user-manual](skills/user-manual.md)** discovers your modules, writes the pages, and audits
+  coverage. It also writes API references split by [audience](glossary.md#audience), release notes
+  and [migration guides](glossary.md#migration-guide), and [redacted](glossary.md#redaction)
+  screenshots, and sets up private pull request [previews](glossary.md#preview). It assembles each
+  [edition](glossary.md#edition) as Markdown and renders it the way you choose: as Markdown, through
+  your own templates and tools, or as an MkDocs site and PDF.
 - **[delegate-task](skills/delegate-task.md)** runs one task on another agent CLI, the
   [harness](glossary.md#harness), and reports a measured result.
 - **[github-wiki-publish](skills/github-wiki-publish.md)** publishes supplied content to a GitHub

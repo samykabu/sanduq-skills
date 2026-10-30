@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-30 — dev-tools 2.0.0
+
+- **dev-tools 2.0.0 (breaking).** `user-manual` no longer depends on MkDocs. `build_manual.py` assembles each edition (audience and language, optionally one module) as Markdown with only the assets its pages reach, plus `edition.json` (title, language, direction, pages in reading order, navigation, brand) and `metadata.yml` (Pandoc-style title block with `lang` and `dir`). `renderer.kind` in `manual.yml` then renders it: `markdown` (the default; the edition itself, readable on GitHub), `command` (your own tool and templates, such as Pandoc or Quarto, with `{pages}`, `{edition}`, `{metadata}`, `{output}` and other placeholders, run from `User-Manual/`), or `mkdocs` (the HTML site and `--pdf`). `--renderer` overrides the kind for one build and `--print-renderer` reports it for CI. Zensical compatibility builds are removed.
+- One skill instead of five: the `user-manual-api-docs`, `user-manual-release-docs`, `user-manual-ui-screenshots` and `user-manual-preview-publishing` skills are removed; their instructions are references `user-manual` loads when a task needs them (`references/api-docs.md`, `release-docs.md`, `ui-screenshots.md`, `preview-publishing.md`).
+- Pages are written in GitHub-flavored Markdown so they read correctly on GitHub: GitHub alerts (`> [!NOTE]`) and `<details>`. The MkDocs renderer converts alerts to admonitions titled in the edition's language and renders Markdown inside `<details>`. `audit_manual.py` warns about MkDocs-only syntax (`!!!`, `???`, `=== "..."`) and names the GitHub form.
+- `theme/brand.yml` (title, subtitle, author, copyright, logo, primary colour) reaches every renderer: the manifest and metadata for a command, the site name, logo, accent colour and PDF cover for MkDocs. `theme/pdf/cover.html` and `styles.scss` replace the PDF cover and add PDF styles; `renderer.custom_dir` (or `theme_options.custom_dir`) may be relative to `User-Manual/`.
+- Links with a title, `<angle-bracketed>` targets (paths with spaces) and reference definitions are rewritten and their assets staged like plain links, in the build and the audit.
+- Installs are split: `requirements.lock` (PyYAML only), `requirements-mkdocs.lock` and `requirements-pdf.lock`; the CI templates install only what the selected renderer needs and build PDFs only with `mkdocs`. New manuals get `renderer.kind: markdown`, `theme/brand.yml` and no copies of the stylesheets or the inert `mkdocs.yml`.
+- No migration from 1.x: add `renderer: {kind: mkdocs}` to keep an MkDocs site, and replace calls to the removed skills with `user-manual`.
+
 ## 2026-10-30 — dev-tools 1.6.1
 
 - **dev-tools 1.6.1.** `user-manual`: the PDF cover no longer prints "None" for an unset subtitle, author or copyright; the build supplies its own cover template that omits them. The contents heading follows the edition's language ("المحتويات" in Arabic, "Contents" otherwise). Checked by rendering the Arabic sample manual on the homek8 general runner image.

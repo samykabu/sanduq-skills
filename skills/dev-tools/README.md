@@ -1,16 +1,12 @@
 # dev-tools
 
-Six standalone skills for application manuals and GitHub Wiki publishing, without requiring
+Two standalone skills for application manuals and GitHub Wiki publishing, without requiring
 Spec Kit. `github-wiki-publish` publishes existing pages, reports, diagrams, and assets independently
-of the five manual skills.
+of the manual skill.
 
 | Skill | Use it for |
 | --- | --- |
-| `user-manual` | Complete discovery, initialization, incremental updates, audits, HTML, and PDF. |
-| `user-manual-api-docs` | Public, administrator, and private API reference bundles. |
-| `user-manual-release-docs` | Audience-aware release notes and migration guides. |
-| `user-manual-ui-screenshots` | Deterministic, redacted web and mobile screenshots. |
-| `user-manual-preview-publishing` | Private PR artifacts, approved previews, and releases. |
+| `user-manual` | Discovery, initialization, incremental updates, audits, API references, release notes, screenshots, previews, and rendering as Markdown, through your own templates, or as an MkDocs site and PDF. |
 | `github-wiki-publish` | Publish existing pages, reports, diagrams, and assets to a GitHub Wiki. |
 
 Install the complete core:
