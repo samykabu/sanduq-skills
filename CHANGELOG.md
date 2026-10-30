@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-30 — agent-tools 1.9.0
+
+- **agent-tools 1.9.0.** New skill `planning-majlis`: a gated planning committee of expert roles run as parallel subagents, in full mode (new software) or feature mode. Five core roles always sit; optional roles are proposed from the request and confirmed by the user. `scripts/gate.py` decides the gate: every seated role at 9/10 or higher and no OPEN rows in the decision record. See [docs/skills/planning-majlis.md](docs/skills/planning-majlis.md).
+
 ## 2026-10-30 — dev-tools 2.0.2
 
 - **dev-tools 2.0.2.** `user-manual`: code examples are left exactly as written. The build and the audit find fenced and indented code blocks with a CommonMark parser (markdown-it-py, now in `requirements.lock` next to PyYAML), the block rules GitHub uses, list items and unclosed fences included. The build no longer reads a code example such as `[region]: endpoint,` as a link definition (which stopped the build with "Missing manual asset"), no longer rewrites links inside code, and the MkDocs renderer no longer converts alerts or `<details>` shown inside code. The audit checks links and MkDocs-only syntax outside code only; it still scans code for secrets.

@@ -18,6 +18,7 @@ companion repository [samykabu/sanduq](https://github.com/samykabu/sanduq).
 | [`user-manual`](docs/skills/user-manual.md) | Creates and maintains an application manual with End User, Administrator, and Technical editions, including API references, release notes, screenshots, and private previews. Pages are Markdown that reads correctly on GitHub; each edition renders as Markdown, through your own templates and tools (Pandoc, Quarto, a script), or as an MkDocs site and PDF. English is required; Arabic (right-to-left, PDFs in the Amiri font) is optional. | `dev-tools` |
 | [`github-wiki-publish`](docs/skills/github-wiki-publish.md) | Publishes existing pages, reports, diagrams, and assets to a GitHub Wiki, preserving unrelated content and checking publication. | `dev-tools` |
 | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
+| [`planning-majlis`](docs/skills/planning-majlis.md) | Plans new software or a feature with a committee of expert roles run as parallel subagents. Five core roles always sit, optional roles are confirmed with you, and rounds repeat until every role scores 9/10 with no open blockers. | `agent-tools` |
 | [`progress-report`](docs/skills/progress-report.md) | Keeps a live progress report for a Markdown plan checklist or a Spec Kit feature: tasks, lanes, blockers, decisions, and the model, effort and context the Claude Code and Codex hooks observe. Spends no agent tokens on upkeep. | `agent-tools` |
 
 `github-wiki-publish` stands alone and does not require a manual.
@@ -60,7 +61,7 @@ As plugins (recommended; updates arrive through the marketplace):
 ```
 
 Call them as `/illustration-tools:illustrate`, `/dev-tools:user-manual`, `/dev-tools:github-wiki-publish`, `/agent-tools:delegate-task`,
-`/agent-tools:progress-report`, or just describe the task. The marketplace is hosted in `samykabu/sanduq` and installs from this
+`/agent-tools:progress-report`, `/agent-tools:planning-majlis`, or just describe the task. The marketplace is hosted in `samykabu/sanduq` and installs from this
 repository.
 
 Or as plain skills: `npx skills add samykabu/sanduq-skills --skill illustrate -a claude-code`
@@ -91,6 +92,7 @@ CLIs on your machine, `progress-report`, which writes project files and host hoo
 | `github-wiki-publish` | Access to the destination Wiki through a suitable connector or authenticated Git. An authenticated browser for rendered verification; supplied pages and assets. |
 | `delegate-task` | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
 | `progress-report` | Python 3.11+ and git. Standard library only; a browser to open the report. Spec Kit is optional. |
+| `planning-majlis` | A host that can start subagents (Claude Code, Codex, OpenCode) for full isolation; Python 3.9+ for the gate script. A full run uses many more tokens than a normal chat. |
 | `npx skills` installs | Node 18+ and npm. |
 
 ## Support by host
@@ -102,6 +104,9 @@ CLIs on your machine, `progress-report`, which writes project files and host hoo
 | `github-wiki-publish` | Local Git checks passed; live browser test unrun | Unverified | Unverified; needs an authenticated Git/browser workspace |
 | `delegate-task` | Yes | Yes | No (needs local CLIs) |
 | `progress-report` | Yes (Codex hook file unverified) | Yes | No (needs local files and hooks) |
+| `planning-majlis` | Yes (4 evals passed) | Yes (3 of 4 evals passed; the feature run hit the 90-minute eval limit in round 3) | Unverified (no subagents; runs the roles in sequence) |
+
+`planning-majlis` was also run in OpenCode with DeepSeek V4.1 Flash. All four evals behaved as expected, and its subagents ran through the Task tool.
 
 "Unverified" means not yet tested on a clean install. Reports are welcome.
 
@@ -144,6 +149,7 @@ python -m unittest discover -s skills/illustration-tools/tests -q
 python -m unittest discover -s skills/dev-tools/skills/user-manual/tests -q
 node skills/agent-tools/skills/delegate-task/test/run.mjs
 python -m unittest discover -s skills/agent-tools/skills/progress-report/tests -q
+python -m unittest discover -s skills/agent-tools/skills/planning-majlis/tests -q
 ```
 
 ## License
