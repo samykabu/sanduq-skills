@@ -172,6 +172,26 @@ def nav_pages(nav: list) -> list[str]:
     return pages
 
 
+def reading_order(docs: Path, nav: list) -> list[str]:
+    """Every page of the edition in reading order: the navigation's pages, with each page nested deeper than
+    the navigation reaches (such as modules/<id>/tasks/refund.md) placed after the last page of its closest
+    listed folder, so a renderer command receives them all."""
+    order = nav_pages(nav)
+    listed = set(order)
+    for page in sorted(p.relative_to(docs).as_posix() for p in docs.rglob("*.md")):
+        if page in listed:
+            continue
+        parts, at = page.split("/"), len(order)
+        for depth in range(len(parts) - 1, 0, -1):
+            prefix = "/".join(parts[:depth]) + "/"
+            hits = [i for i, listed_page in enumerate(order) if listed_page.startswith(prefix)]
+            if hits:
+                at = hits[-1] + 1
+                break
+        order.insert(at, page)
+    return order
+
+
 BRAND_TEXT = ("title", "subtitle", "author", "copyright")
 
 
@@ -231,7 +251,7 @@ def assemble(root: Path, manual: dict, args: argparse.Namespace, target: Path, p
         "module": args.module,
         "version": args.version,
         "toc_title": TOC_TITLE.get(args.language, TOC_TITLE["en"]),
-        "pages": nav_pages(nav),
+        "pages": reading_order(target, nav),
         "nav": nav,
         "brand": brand,
     }

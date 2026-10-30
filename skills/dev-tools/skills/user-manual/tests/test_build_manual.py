@@ -432,6 +432,18 @@ class MarkdownRendererTests(unittest.TestCase):
         self.assertEqual(('ar', 'rtl', 'Booking Demo'), (metadata['lang'], metadata['dir'], metadata['title']))
         self.assertTrue(archive.is_file())
 
+    def test_pages_nested_below_the_navigation_stay_in_reading_order(self):
+        tasks = self.root / 'docs/en/modules/booking/tasks'
+        tasks.mkdir()
+        (tasks / 'refund.md').write_text('---\naudiences: [end-user]\nmodule: booking\n---\n# Refund\n', encoding='utf-8')
+        (self.root / 'docs/en/modules/aaa').mkdir()
+        (self.root / 'docs/en/modules/aaa/index.md').write_text('---\naudiences: [end-user]\nmodule: aaa\n---\n# A\n',
+                                                               encoding='utf-8')
+        site, _, _ = builder.build_edition(edition_args(), self.root, self.manual)
+        manifest = builder.json.loads((site / 'edition.json').read_text(encoding='utf-8'))
+        self.assertEqual(['index.md', 'modules/booking/index.md', 'modules/booking/tasks/refund.md',
+                          'modules/aaa/index.md'], manifest['pages'])
+
     def test_markdown_is_the_default_and_has_no_pdf(self):
         self.assertEqual('markdown', builder.renderer_settings({})['kind'])
         with self.assertRaisesRegex(SystemExit, 'renderer.kind: mkdocs'):

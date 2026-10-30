@@ -37,7 +37,8 @@ class InitManualTests(unittest.TestCase):
             spec = importlib.util.spec_from_file_location('copied_builder', manual / 'tools/build_manual.py')
             copied = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(copied)
-            self.assertEqual(manual / 'tools/theme/extra.css', copied.stylesheet_source(manual / 'theme', 'extra.css'))
+            self.assertEqual((manual / 'tools/theme/extra.css').resolve(),
+                             copied.stylesheet_source(manual / 'theme', 'extra.css').resolve())
             self.assertTrue((root / '.github/workflows/user-manual-preview.yml').is_file())
             self.assertFalse((root / '.specify').exists())
 
