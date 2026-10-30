@@ -2,7 +2,7 @@
 
 ## 2026-10-30 — dev-tools 2.0.2
 
-- **dev-tools 2.0.2.** `user-manual`: fenced code blocks are left exactly as written: ``` or ~~~ fences, also inside list items, closed by the same character at least as long; a backtick fence's info string has no backtick, so an inline ```span``` is not a fence, and an unclosed fence is read as prose so its links are still checked. The build no longer reads a code example such as `[region]: endpoint,` as a link definition (which stopped the build with "Missing manual asset"), no longer rewrites links inside code, and the MkDocs renderer no longer converts alerts or `<details>` shown inside code. The audit checks links and MkDocs-only syntax outside code blocks only; it still scans code for secrets.
+- **dev-tools 2.0.2.** `user-manual`: code examples are left exactly as written. The build and the audit find fenced and indented code blocks with a CommonMark parser (markdown-it-py, now in `requirements.lock` next to PyYAML), the block rules GitHub uses, list items and unclosed fences included. The build no longer reads a code example such as `[region]: endpoint,` as a link definition (which stopped the build with "Missing manual asset"), no longer rewrites links inside code, and the MkDocs renderer no longer converts alerts or `<details>` shown inside code. The audit checks links and MkDocs-only syntax outside code only; it still scans code for secrets.
 
 ## 2026-10-30 — dev-tools 2.0.1
 

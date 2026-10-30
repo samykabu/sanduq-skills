@@ -8,7 +8,7 @@ correctly on GitHub; you choose how each edition is rendered.
 | --- | --- |
 | Bundle | `dev-tools` (Claude Code plugin `dev-tools@sanduq`) |
 | Version | 2.0.2 |
-| Prerequisites | Python 3.10+ and PyYAML. Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
+| Prerequisites | Python 3.10+, PyYAML and markdown-it-py (`User-Manual/requirements.lock`). Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
 | Hosts | Codex: yes. Claude Code: yes. Claude Desktop: unverified. |
 
 ## Install
@@ -67,7 +67,7 @@ All content lives under `User-Manual/` in your repository:
 - `docs/en/` (and `docs/ar/` if you enable Arabic): one Markdown page per module, plus shared pages.
 - `theme/brand.yml`: the title, subtitle, author, copyright, logo and colour every renderer shows.
   Your own templates go in `theme/` too.
-- `requirements.lock` (PyYAML only), `requirements-mkdocs.lock` and `requirements-pdf.lock`: install
+- `requirements.lock` (PyYAML and markdown-it-py), `requirements-mkdocs.lock` and `requirements-pdf.lock`: install
   only what your renderer needs.
 - `tools/`: copies of the build, audit, and state scripts, so CI can run them. `--no-tools` skips
   them.

@@ -27,8 +27,9 @@ from urllib.parse import unquote, urlsplit
 
 try:
     import yaml
-except ImportError:
-    raise SystemExit("PyYAML is required; install User-Manual/requirements.lock")
+    from markdown_it import MarkdownIt
+except ImportError as missing:
+    raise SystemExit(f"{missing.name} is required; install User-Manual/requirements.lock")
 
 
 RENDERERS = ("markdown", "command", "mkdocs")
@@ -53,37 +54,23 @@ LINK = re.compile(
     r'|(?P<hb>(?:src|href)=["\'])(?P<hv>[^"\']+)(?P<ha>["\'])',
     re.M,
 )
-# A fence line, also inside a list item ("- ```text"): ``` or ~~~ and an optional info string.
-FENCE_LINE = re.compile(r"[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)*(?P<fence>`{3,}|~{3,})(?P<info>.*)")
-# A closing fence is the delimiter alone: a list marker before it is code, not the end of the block.
-CLOSING_FENCE = re.compile(r"[ \t]*(?P<fence>`{3,}|~{3,})[ \t]*")
+COMMONMARK = MarkdownIt("commonmark")
 
 
-def fenced_blocks(text: str) -> list[tuple[int, int]]:
-    """(start, end) offsets of every closed fenced code block. A backtick fence's info string has no backtick
-    (so ```code``` is an inline span), and the closing fence uses the same character, at least as long, with
-    nothing after it. shortcut: an unclosed fence is read as prose (CommonMark runs it to the page end), so
-    its links are still checked rather than silently skipped."""
-    blocks, opened, at = [], None, 0
-    for line in text.splitlines(keepends=True):
-        bare = line.rstrip("\r\n")
-        if opened is None:
-            match = FENCE_LINE.fullmatch(bare)
-            if match and not (match["fence"][0] == "`" and "`" in match["info"]):
-                opened = (at, match["fence"])
-        else:
-            match = CLOSING_FENCE.fullmatch(bare)
-            if match and match["fence"][0] == opened[1][0] and len(match["fence"]) >= len(opened[1]):
-                blocks.append((opened[0], at + len(line)))
-                opened = None
-        at += len(line)
-    return blocks
+def code_blocks(text: str) -> list[tuple[int, int]]:
+    """(start, end) offsets of the fenced and indented code blocks of a page, found by a CommonMark parser (the
+    block rules GitHub uses, list items and unclosed fences included), so code examples are never read as
+    links or syntax."""
+    starts = [0] + [match.end() for match in re.finditer("\n", text)]
+    offset = lambda line: starts[line] if line < len(starts) else len(text)  # noqa: E731
+    return [(offset(token.map[0]), offset(token.map[1])) for token in COMMONMARK.parse(text)
+            if token.type in ("fence", "code_block") and token.map]
 
 
 def outside_fences(text: str, change) -> str:
-    """`change` applied to the text between fenced code blocks; the blocks stay exactly as written."""
+    """`change` applied to the text outside code blocks; the blocks stay exactly as written."""
     parts, at = [], 0
-    for start, end in fenced_blocks(text):
+    for start, end in code_blocks(text):
         parts += [change(text[at:start]), text[start:end]]
         at = end
     return "".join(parts + [change(text[at:])])

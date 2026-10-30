@@ -574,10 +574,21 @@ class FencedCodeTests(unittest.TestCase):
                 '![Screen](../assets/screen.png)\n', encoding='utf-8')
             builder.copy_pages(source, root / 'out', 'end-user', None)
             self.assertIn('![Screen](assets/screen.png)', (root / 'out/index.md').read_text(encoding='utf-8'))
-            self.assertEqual([], builder.fenced_blocks('```\nnever closed\n[x]: y\n'), 'an unclosed fence is prose')
+            unclosed = '```\nnever closed\n[x]: y\n'
+            self.assertEqual([(0, len(unclosed))], builder.code_blocks(unclosed), 'CommonMark runs it to the page end')
             example = '````markdown\n- ```\n````\n'
-            self.assertEqual([(0, len(example))], builder.fenced_blocks(example + '\nprose\n'),
+            self.assertEqual([(0, len(example))], builder.code_blocks(example + '\nprose\n'),
                              'a list marker before backticks inside code does not close the block')
+
+    def test_indented_code_and_a_list_items_unclosed_fence_end_where_markdown_ends_them(self):
+        page = ('    ```text\n\n![Screen](../assets/screen.png)\n\n- step\n  ```\n  [x]: y\n\n'
+                '![Again](../assets/screen.png)\n\n```python\nprint(1)\n```\n')
+        blocks = builder.code_blocks(page)
+        self.assertEqual(3, len(blocks), blocks)
+        covered = ''.join(page[start:end] for start, end in blocks)
+        self.assertNotIn('![Screen]', covered)
+        self.assertNotIn('![Again]', covered)
+        self.assertIn('[x]: y', covered)
 
     def test_a_longer_closing_fence_ends_the_block(self):
         with tempfile.TemporaryDirectory() as tmp:

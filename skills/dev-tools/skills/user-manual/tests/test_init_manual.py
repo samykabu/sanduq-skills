@@ -30,7 +30,8 @@ class InitManualTests(unittest.TestCase):
             # The build uses the shipped stylesheets; the scaffold copies none, and no inert mkdocs.yml.
             self.assertEqual(['brand.yml'], sorted(p.name for p in (manual / 'theme').iterdir()))
             self.assertFalse((manual / 'mkdocs.yml').exists())
-            self.assertEqual('PyYAML>=6.0,<7\n', (manual / 'requirements.lock').read_text(encoding='utf-8'))
+            self.assertEqual('PyYAML>=6.0,<7\nmarkdown-it-py>=3.0,<5\n',
+                             (manual / 'requirements.lock').read_text(encoding='utf-8'))
             for name in ('audit_manual.py', 'build_manual.py', 'manual_state.py', 'theme/extra.css', 'theme/rtl.css'):
                 self.assertTrue((manual / 'tools' / name).is_file(), name)
             # The copied builder finds the shipped stylesheets beside it, not in the skill's assets.

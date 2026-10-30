@@ -12,8 +12,9 @@ from urllib.parse import unquote
 
 try:
     import yaml
-except ImportError:
-    raise SystemExit("PyYAML is required; install User-Manual/requirements.lock")
+    from markdown_it import MarkdownIt
+except ImportError as missing:
+    raise SystemExit(f"{missing.name} is required; install User-Manual/requirements.lock")
 
 AUDIENCES = {"end-user", "administrator", "technical"}
 CONTENT_TYPES = {"tutorial", "how-to", "reference", "explanation", "release-notes", "migration-guide"}
@@ -21,28 +22,17 @@ REQUIRED_META = {"title", "module", "audiences", "language", "content_type", "so
 SECRET = re.compile(r"(?i)(api[_-]?key|client[_-]?secret|password|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[\"']?([^\s\"']{8,})")
 # Inline links and images (optional "title", <angle-bracketed> targets) and reference definitions.
 LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(<[^>\n]+>|\S+)', re.M)
-# Fenced code blocks (``` or ~~~, also in list items): examples, never links or syntax to check. The same
-# rules as build_manual.fenced_blocks: no backtick in a backtick fence's info string, a closing fence of the
-# same character at least as long, and an unclosed fence read as prose.
-FENCE_LINE = re.compile(r"[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)*(?P<fence>`{3,}|~{3,})(?P<info>.*)")
-CLOSING_FENCE = re.compile(r"[ \t]*(?P<fence>`{3,}|~{3,})[ \t]*")
+COMMONMARK = MarkdownIt("commonmark")
 
 
 def prose_only(text: str) -> str:
-    """The text with every closed fenced code block blanked out, line count kept."""
-    lines, opened, start = text.splitlines(keepends=True), None, 0
-    for index, line in enumerate(lines):
-        bare = line.rstrip("\r\n")
-        if opened is None:
-            match = FENCE_LINE.fullmatch(bare)
-            if match and not (match["fence"][0] == "`" and "`" in match["info"]):
-                opened, start = match["fence"], index
-        else:
-            match = CLOSING_FENCE.fullmatch(bare)
-            if match and match["fence"][0] == opened[0] and len(match["fence"]) >= len(opened):
-                lines[start:index + 1] = ["\n"] * (index + 1 - start)
-                opened = None
-    return "".join(lines)
+    """The page with its fenced and indented code blocks blanked out (line count kept), found by a CommonMark
+    parser as build_manual.code_blocks does: code examples are never links or syntax to check."""
+    lines = text.split("\n")
+    for token in COMMONMARK.parse(text):
+        if token.type in ("fence", "code_block") and token.map:
+            lines[token.map[0]:token.map[1]] = [""] * (token.map[1] - token.map[0])
+    return "\n".join(lines)
 
 
 # MkDocs-only syntax shows as raw text on GitHub; each has a GitHub form the build translates.
