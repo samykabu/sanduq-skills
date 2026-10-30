@@ -53,17 +53,35 @@ LINK = re.compile(
     r'|(?P<hb>(?:src|href)=["\'])(?P<hv>[^"\']+)(?P<ha>["\'])',
     re.M,
 )
-# A fenced code block (``` or ~~~, closed by the same fence or the end of the page): never links or syntax.
-FENCE = re.compile(r"^[ ]{0,3}(?P<fence>(?P<c>[`~])(?P=c){2,})[^\n]*\n"
-                   r"(?:.*?^[ ]{0,3}(?P=fence)(?P=c)*[ \t]*$|.*\Z)", re.M | re.S)
+# A fence line, also inside a list item ("- ```text"): ``` or ~~~ and an optional info string.
+FENCE_LINE = re.compile(r"[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)*(?P<fence>`{3,}|~{3,})(?P<info>.*)")
+
+
+def fenced_blocks(text: str) -> list[tuple[int, int]]:
+    """(start, end) offsets of every closed fenced code block. A backtick fence's info string has no backtick
+    (so ```code``` is an inline span), and the closing fence uses the same character, at least as long, with
+    nothing after it. shortcut: an unclosed fence is read as prose (CommonMark runs it to the page end), so
+    its links are still checked rather than silently skipped."""
+    blocks, opened, at = [], None, 0
+    for line in text.splitlines(keepends=True):
+        match = FENCE_LINE.fullmatch(line.rstrip("\r\n"))
+        if match and opened is None:
+            if not (match["fence"][0] == "`" and "`" in match["info"]):
+                opened = (at, match["fence"])
+        elif match and opened and match["fence"][0] == opened[1][0] and len(match["fence"]) >= len(opened[1]) \
+                and not match["info"].strip():
+            blocks.append((opened[0], at + len(line)))
+            opened = None
+        at += len(line)
+    return blocks
 
 
 def outside_fences(text: str, change) -> str:
     """`change` applied to the text between fenced code blocks; the blocks stay exactly as written."""
     parts, at = [], 0
-    for match in FENCE.finditer(text):
-        parts += [change(text[at:match.start()]), match.group(0)]
-        at = match.end()
+    for start, end in fenced_blocks(text):
+        parts += [change(text[at:start]), text[start:end]]
+        at = end
     return "".join(parts + [change(text[at:])])
 
 

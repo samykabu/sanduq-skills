@@ -557,10 +557,24 @@ class FencedCodeTests(unittest.TestCase):
             source = root / 'docs/en'
             source.mkdir(parents=True)
             body = ('---\naudiences: [technical]\n---\n```js\nconst routes = {\n  [region]: endpoint,\n};\n'
-                    '![x](gone.png)\n```\n\n~~~\n[id]: also-gone.md\n')
+                    '![x](gone.png)\n```\n\n- Step:\n  ~~~text\n  [id]: also-gone.md\n  ~~~\n')
             (source / 'index.md').write_text(body, encoding='utf-8')
             builder.copy_pages(source, root / 'out', 'technical', None)
             self.assertEqual(body.split('---\n', 2)[2], (root / 'out/index.md').read_text(encoding='utf-8'))
+
+    def test_list_fences_and_inline_code_spans_do_not_hide_the_rest_of_the_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            source = root / 'docs/en'
+            (root / 'docs/assets').mkdir(parents=True)
+            (root / 'docs/assets/screen.png').write_bytes(b'x')
+            source.mkdir(parents=True)
+            (source / 'index.md').write_text(
+                '---\naudiences: [end-user]\n---\n- ```text\n  code\n  ```\n\n```example``` is a span.\n\n'
+                '![Screen](../assets/screen.png)\n', encoding='utf-8')
+            builder.copy_pages(source, root / 'out', 'end-user', None)
+            self.assertIn('![Screen](assets/screen.png)', (root / 'out/index.md').read_text(encoding='utf-8'))
+            self.assertEqual([], builder.fenced_blocks('```\nnever closed\n[x]: y\n'), 'an unclosed fence is prose')
 
     def test_a_longer_closing_fence_ends_the_block(self):
         with tempfile.TemporaryDirectory() as tmp:
