@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
 
+# Runners: every job runs on homek8-general except the windows-latest leg of the tests matrix (the home runners
+# are Linux pods) and jobs of pull requests from forks (ubuntu-latest: fork code never runs inside the home cluster).
 jobs:
   lint:
     runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || 'homek8-general' }}

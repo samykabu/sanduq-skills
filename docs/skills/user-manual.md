@@ -68,9 +68,11 @@ and last-verified date.
   each one.
 - **Build one edition.** `scripts/build_manual.py --audience end-user --language en` builds a site.
   Add `--pdf` for a PDF, `--archive` for a zip, or `--module <id>` for one module only.
-- **HTML theme.** Set `renderer.theme` in `manual.yml`: `material` (the default), `readthedocs`,
-  `mkdocs`, or any installed MkDocs theme.
-- **Arabic.** English is required. Arabic is optional, with right-to-left layout built in.
+- **Theme.** Set `renderer.theme` in `manual.yml`: `material` (the default), `readthedocs`,
+  `mkdocs`, or any installed MkDocs theme. HTML and PDF both build with every theme.
+- **Arabic.** English is required. Arabic is optional, with right-to-left layout built in, in the PDF
+  too. Arabic PDFs use the Amiri font, so the build machine needs it installed (`fonts-hosny-amiri` on
+  Ubuntu). The PDF's contents heading follows the edition's language.
 - **Freshness.** `scripts/manual_state.py record --feature <dir>` records the state after an
   update. `status` exits 1 if inputs or outputs changed since then.
 - **Diagrams.** When [illustrate](illustrate.md) is installed, the skill uses it for diagrams,
@@ -83,6 +85,9 @@ and last-verified date.
   Examples use synthetic data.
 - A page may link only to pages its own audience receives. The build rejects anything else.
 - After you upgrade the skill, refresh `User-Manual/tools/` from the skill's `scripts/` folder.
+- A manual created before dev-tools 1.6.0 keeps its own `User-Manual/theme/rtl*.css` files, so its
+  Arabic PDFs do not switch to Amiri on their own. There is no migration; copy the font rule in by hand
+  if you want it (see `references/publishing.md`).
 - Without the extensions installed, API, release, screenshot, and hosted-preview work follows the
   core rules only, and the skill reports what remains.
 
