@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-30 — dev-tools 1.6.1
+
+- **dev-tools 1.6.1.** `user-manual`: the PDF cover no longer prints "None" for an unset subtitle, author or copyright; the build supplies its own cover template that omits them. The contents heading follows the edition's language ("المحتويات" in Arabic, "Contents" otherwise). Checked by rendering the Arabic sample manual on the homek8 general runner image.
+
 ## 2026-10-30 — dev-tools 1.6.0
 
 - **dev-tools 1.6.0.** `user-manual`: Arabic PDFs use the Amiri font. The RTL stylesheets set Arabic text to `"Amiri", "Noto Naskh Arabic", "Noto Sans Arabic", serif`, and the release workflow template installs `fonts-hosny-amiri` with the WeasyPrint libraries. The PDF now keeps the edition's `lang` and `dir`: mkdocs-to-pdf rebuilt `<html>` without them, so Arabic PDFs lost their right-to-left layout and their font rules. A PDF with a theme other than `material` or `mkdocs` (`readthedocs`, for example) no longer fails: mkdocs-to-pdf 0.10.1 has no handler for it and its fallback failed, so the build supplies one. Checked on Ubuntu 24.04 with the Material, `readthedocs` and `mkdocs` themes: `pdffonts` lists Amiri in each Arabic PDF and none in the English ones. A manual created earlier keeps its own `User-Manual/theme/rtl*.css` copies; copy the font rule into them (see `references/publishing.md`).
