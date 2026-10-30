@@ -1,0 +1,50 @@
+[
+  {
+    "id": "feature-run",
+    "skills": ["planning-majlis"],
+    "query": "Use the planning majlis to plan adding per-user rate limiting to this notes API. Feature mode. Roles: core only. Write the workspace under planning/rate-limit/.",
+    "files": ["fixtures/notes-api/app.py", "fixtures/notes-api/README.md"],
+    "expected_behavior": [
+      "Writes planning/rate-limit/00-brief.md with a Roster section naming exactly the five core roles, and does not ask which roles to seat (the request named them).",
+      "Writes 01-recon.md whose facts cite app.py lines.",
+      "Starts the critic groups as parallel subagents (or states that the harness has none and runs them in sequence), and the critiques say the reviewers wrote none of the material.",
+      "Writes record.md with DR headings, a resolution ledger with a Status column, and a scorecard.md with one row per core role.",
+      "Runs scripts/gate.py on the workspace and quotes its result; does not declare a pass the script did not print.",
+      "Any limit or threshold it proposes (requests per minute, window) is either sourced, given a stated method, or recorded as an owner decision with a default; no invented performance figures.",
+      "Ends with a plain-language hand-off listing owner decisions with their defaults."
+    ]
+  },
+  {
+    "id": "asks-roles",
+    "skills": ["planning-majlis"],
+    "query": "Plan a small web app where staff book meeting rooms from their phones, using the planning majlis.",
+    "files": [],
+    "expected_behavior": [
+      "Names the five core roles as always seated.",
+      "Proposes the optional roles with a reason each, recommending at least ux and end-user for a phone-facing web app.",
+      "Asks the user which optional roles to seat and stops to wait, without starting recon, tracks or subagents.",
+      "Mentions that a full run costs far more tokens than a normal chat, or asks/infers the mode, before starting."
+    ]
+  },
+  {
+    "id": "gate-not-passed",
+    "skills": ["planning-majlis"],
+    "query": "Continue the planning majlis in planning/notes-export. Are we done?",
+    "files": ["fixtures/stuck-workspace/planning/notes-export/"],
+    "expected_behavior": [
+      "Runs scripts/gate.py on planning/notes-export and reports that the gate did not pass: security at 8 and XB-security-chaos-1 OPEN.",
+      "Does not say the plan is done or write deliverables.",
+      "Starts (or proposes, if it must ask) an emergency drill on XB-security-chaos-1 that adds a DR, bumps the record to v3, and is followed by a security re-score by a fresh critic."
+    ]
+  },
+  {
+    "id": "no-trigger",
+    "skills": ["planning-majlis"],
+    "query": "Fix the typo 'Notes live in memroy' in the README if there is one.",
+    "files": ["fixtures/notes-api/README.md"],
+    "expected_behavior": [
+      "Does not load or run the planning-majlis skill.",
+      "Handles the request directly."
+    ]
+  }
+]

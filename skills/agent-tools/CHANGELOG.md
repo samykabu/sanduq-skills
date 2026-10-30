@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.0 — 2026-10-30
+
+- New skill `planning-majlis`: plans new software or a new feature with a committee of expert roles. Five core roles (chair, product, architect, security, QA and chaos) always sit; the skill proposes the optional ones (UX, integrations and AI, DevOps and FinOps, end user) from the request and asks which to seat. Specialist tracks and isolated critics run as parallel subagents, findings are folded into one decision record, and re-score rounds repeat until every seated role scores 9/10 with no OPEN ledger rows; then writers produce the deliverables. Full mode for a new product, feature mode for an addition. Works in Claude Code, Codex and OpenCode with each harness's built-in subagent; no agent definition files are needed.
+- `planning-majlis/scripts/gate.py` decides the gate (roster, latest scores, OPEN rows, cited DR/SP/OD ids, table cell counts), standard library only, with unit tests and four evals in `evals/`.
+
 ## 1.8.2 — 2026-10-29
 
 - `delegate-task`: `collect --summary` recovers a lost run with a large journal without loading it whole. The `process_containment` lookup added in 1.8.1 read the journal unbounded, after `stateOf()` and `synthesizeLost()` had read it bounded, so a large journal could exhaust the collector's heap instead of producing a terminal result. It now uses the bounded reader (latest record per state), and a run whose journal holds no `contained` record still reports `unproven`. A test recovers a lost run with a 24 MB journal under a 32 MB heap and checks the persisted result reports `process_containment`.

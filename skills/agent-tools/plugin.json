@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agent-tools",
-  "version": "1.8.2",
-  "description": "Delegate one task to an external agent CLI and get back a measured, normalised result; and keep a live, deterministic progress report for a Markdown plan or Spec Kit feature, with native Claude Code and Codex hooks",
+  "version": "1.9.0",
+  "description": "Delegate one task to an external agent CLI and get back a measured, normalised result; and keep a live, deterministic progress report for a Markdown plan or Spec Kit feature, with native Claude Code and Codex hooks; and plan software or a feature with a gated committee of expert roles run as parallel subagents",
   "author": {
     "name": "Samy K. Abushanab"
   },
@@ -27,7 +27,11 @@
     "dashboard",
     "hooks",
     "lanes",
-    "telemetry"
+    "telemetry",
+    "planning",
+    "committee",
+    "review",
+    "subagents"
   ],
   "repository": "https://github.com/samykabu/sanduq-skills"
 }

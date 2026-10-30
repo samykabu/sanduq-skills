@@ -1,0 +1,4 @@
+interface:
+  display_name: "Planning Majlis"
+  short_description: "Plan software or a feature with a gated expert committee"
+  default_prompt: "Use $planning-majlis to plan this with a committee of expert roles, asking me which optional roles to seat first."

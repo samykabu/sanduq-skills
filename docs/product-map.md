@@ -17,7 +17,7 @@ The lists below describe the current skill set.
 | --- | --- | --- | --- |
 | `illustration-tools` | 3.7.1 | [illustrate](skills/illustrate.md) | Diagrams and charts as editable HTML, with SVG, PNG, animated SVG, and GIF export. |
 | `dev-tools` | 2.0.2 | [user-manual](skills/user-manual.md) and [github-wiki-publish](skills/github-wiki-publish.md) | Application manuals and standalone publishing of existing pages, reports, diagrams, and assets to a GitHub Wiki. |
-| `agent-tools` | 1.8.2 | [delegate-task](skills/delegate-task.md) and [progress-report](skills/progress-report.md) | Handing a task to another agent CLI and measuring what it did; keeping a live progress report of a plan or feature. |
+| `agent-tools` | 1.9.0 | [delegate-task](skills/delegate-task.md), [progress-report](skills/progress-report.md) and [planning-majlis](skills/planning-majlis.md) | Handing a task to another agent CLI and measuring what it did; keeping a live progress report of a plan or feature; planning software or a feature with a gated committee of expert roles. |
 
 ## What each skill does
 
@@ -37,6 +37,9 @@ The lists below describe the current skill set.
 - **[progress-report](skills/progress-report.md)** keeps a live report of a Markdown [plan](glossary.md#plan) or a
   Spec Kit feature: tasks, [lanes](glossary.md#lane), blockers, decisions, and what the Claude Code and Codex hooks
   observe. It is a [projection](glossary.md#projection), so no agent is spent on upkeep.
+- **[planning-majlis](skills/planning-majlis.md)** plans new software or a feature with a committee of
+  expert roles run as parallel subagents, and gates the plan: every seated role at 9/10 with no open
+  blockers in the decision record.
 
 ## How they relate
 
@@ -49,6 +52,8 @@ The lists below describe the current skill set.
 - **delegate-task and progress-report stand alone.** No other skill here calls them. They fit together:
   `progress runs` can read the runs that delegate-task writes to `.delegate/runs`, and a lane can name the harness and
   model you delegated to.
+- **planning-majlis stands alone.** It can use delegate-task, when installed, to run a critic on a
+  different agent CLI or model from the authors.
 - **github-wiki-publish stands alone.** It accepts existing pages, reports, diagrams, and assets
   without requiring `user-manual` or Spec Kit. Generate content with the appropriate tool first,
   then publish the bounded update.
@@ -64,6 +69,7 @@ The lists below describe the current skill set.
 | Publish existing pages, reports, diagrams, or assets to a repository Wiki | [github-wiki-publish](skills/github-wiki-publish.md) |
 | Get a second agent to do or check a task | [delegate-task](skills/delegate-task.md) |
 | Watch progress on a plan or feature, and see which agent does what | [progress-report](skills/progress-report.md) |
+| Plan new software or a feature with a committee of experts before building | [planning-majlis](skills/planning-majlis.md) |
 
 ## Related
 
