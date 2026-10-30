@@ -128,7 +128,7 @@ Each bundle is versioned on its own and tagged `<bundle>-vX.Y.Z` (for example
 `illustration-tools-v3.2.1`). See [CHANGELOG.md](CHANGELOG.md). Releases before the move to this
 repository are recorded in [samykabu/sanduq](https://github.com/samykabu/sanduq).
 
-`github-wiki-publish` is included in `dev-tools` (2.0.0 at the time of writing). The release workflow builds
+`github-wiki-publish` is included in `dev-tools` (2.0.1 at the time of writing). The release workflow builds
 `dev-tools-v<version>.zip`, a zip per skill such as `github-wiki-publish-v<version>.zip`, and `SHA256SUMS`. See its
 [install and update guide](docs/skills/github-wiki-publish.md#install-and-update) for repository,
 release, and pinned-version routes.
