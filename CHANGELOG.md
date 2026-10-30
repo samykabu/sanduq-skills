@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-30 — dev-tools 2.0.2
+
+- **dev-tools 2.0.2.** `user-manual`: code examples are left exactly as written. The build and the audit find fenced and indented code blocks with a CommonMark parser (markdown-it-py, now in `requirements.lock` next to PyYAML), the block rules GitHub uses, list items and unclosed fences included. The build no longer reads a code example such as `[region]: endpoint,` as a link definition (which stopped the build with "Missing manual asset"), no longer rewrites links inside code, and the MkDocs renderer no longer converts alerts or `<details>` shown inside code. The audit checks links and MkDocs-only syntax outside code only; it still scans code for secrets.
+
 ## 2026-10-30 — dev-tools 2.0.1
 
 - **dev-tools 2.0.1.** `user-manual`: the MkDocs renderer labels each page in the navigation with its front-matter `title` again; 2.0.0 strips front matter from assembled pages, so pages whose title differed from their first heading lost it. `edition.json` now lists every page's title under `titles`. The documented Pandoc recipe reads pages with `-f gfm+rebase_relative_paths`, so images resolve from each page's own folder; checked with Pandoc 3.1.3 on a nested page with a screenshot.
