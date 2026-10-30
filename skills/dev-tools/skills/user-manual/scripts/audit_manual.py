@@ -25,21 +25,26 @@ LINK = re.compile(r'!?\[[^\]]*\]\((<[^>\n]+>|[^\s)]+)(?:\s+"[^"\n]*")?\)|^[ ]{0,
 # rules as build_manual.fenced_blocks: no backtick in a backtick fence's info string, a closing fence of the
 # same character at least as long, and an unclosed fence read as prose.
 FENCE_LINE = re.compile(r"[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)*(?P<fence>`{3,}|~{3,})(?P<info>.*)")
+CLOSING_FENCE = re.compile(r"[ \t]*(?P<fence>`{3,}|~{3,})[ \t]*")
 
 
 def prose_only(text: str) -> str:
     """The text with every closed fenced code block blanked out, line count kept."""
     lines, opened, start = text.splitlines(keepends=True), None, 0
     for index, line in enumerate(lines):
-        match = FENCE_LINE.fullmatch(line.rstrip("\r\n"))
-        if match and opened is None:
-            if not (match["fence"][0] == "`" and "`" in match["info"]):
+        bare = line.rstrip("\r\n")
+        if opened is None:
+            match = FENCE_LINE.fullmatch(bare)
+            if match and not (match["fence"][0] == "`" and "`" in match["info"]):
                 opened, start = match["fence"], index
-        elif match and opened and match["fence"][0] == opened[0] and len(match["fence"]) >= len(opened) \
-                and not match["info"].strip():
-            lines[start:index + 1] = ["\n"] * (index + 1 - start)
-            opened = None
+        else:
+            match = CLOSING_FENCE.fullmatch(bare)
+            if match and match["fence"][0] == opened[0] and len(match["fence"]) >= len(opened):
+                lines[start:index + 1] = ["\n"] * (index + 1 - start)
+                opened = None
     return "".join(lines)
+
+
 # MkDocs-only syntax shows as raw text on GitHub; each has a GitHub form the build translates.
 MKDOCS_ONLY = (
     (re.compile(r"^[ \t]*(?:!!!|\?\?\?\+?)[ \t]+\w", re.M), 'a GitHub alert ("> [!NOTE]", "> [!WARNING]", ...) or <details>'),

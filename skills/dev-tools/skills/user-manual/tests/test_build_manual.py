@@ -575,6 +575,9 @@ class FencedCodeTests(unittest.TestCase):
             builder.copy_pages(source, root / 'out', 'end-user', None)
             self.assertIn('![Screen](assets/screen.png)', (root / 'out/index.md').read_text(encoding='utf-8'))
             self.assertEqual([], builder.fenced_blocks('```\nnever closed\n[x]: y\n'), 'an unclosed fence is prose')
+            example = '````markdown\n- ```\n````\n'
+            self.assertEqual([(0, len(example))], builder.fenced_blocks(example + '\nprose\n'),
+                             'a list marker before backticks inside code does not close the block')
 
     def test_a_longer_closing_fence_ends_the_block(self):
         with tempfile.TemporaryDirectory() as tmp:

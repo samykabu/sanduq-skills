@@ -55,6 +55,8 @@ LINK = re.compile(
 )
 # A fence line, also inside a list item ("- ```text"): ``` or ~~~ and an optional info string.
 FENCE_LINE = re.compile(r"[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)*(?P<fence>`{3,}|~{3,})(?P<info>.*)")
+# A closing fence is the delimiter alone: a list marker before it is code, not the end of the block.
+CLOSING_FENCE = re.compile(r"[ \t]*(?P<fence>`{3,}|~{3,})[ \t]*")
 
 
 def fenced_blocks(text: str) -> list[tuple[int, int]]:
@@ -64,14 +66,16 @@ def fenced_blocks(text: str) -> list[tuple[int, int]]:
     its links are still checked rather than silently skipped."""
     blocks, opened, at = [], None, 0
     for line in text.splitlines(keepends=True):
-        match = FENCE_LINE.fullmatch(line.rstrip("\r\n"))
-        if match and opened is None:
-            if not (match["fence"][0] == "`" and "`" in match["info"]):
+        bare = line.rstrip("\r\n")
+        if opened is None:
+            match = FENCE_LINE.fullmatch(bare)
+            if match and not (match["fence"][0] == "`" and "`" in match["info"]):
                 opened = (at, match["fence"])
-        elif match and opened and match["fence"][0] == opened[1][0] and len(match["fence"]) >= len(opened[1]) \
-                and not match["info"].strip():
-            blocks.append((opened[0], at + len(line)))
-            opened = None
+        else:
+            match = CLOSING_FENCE.fullmatch(bare)
+            if match and match["fence"][0] == opened[1][0] and len(match["fence"]) >= len(opened[1]):
+                blocks.append((opened[0], at + len(line)))
+                opened = None
         at += len(line)
     return blocks
 
