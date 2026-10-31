@@ -1,6 +1,6 @@
 # Product map
 
-Sanduq Skills ships nine [skills](glossary.md#skill) in three [bundles](glossary.md#bundle). Each
+Sanduq Skills ships six [skills](glossary.md#skill) in three [bundles](glossary.md#bundle). Each
 bundle installs as one Claude Code [plugin](glossary.md#plugin) and has its own version.
 
 ![Product map. The dev-tools bundle holds the user-manual skill, with four references it loads when a task needs them: API docs, release docs, UI screenshots, and preview publishing. A dashed arrow shows user-manual using illustrate, from the illustration-tools bundle, for diagrams. The agent-tools bundle holds delegate-task on its own (progress-report, added in 1.2.0, is described below and not yet drawn).](media/product-map.animated.svg)

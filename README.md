@@ -4,7 +4,7 @@ Portable agent skills for software delivery. Each skill does one job, works with
 runs in Codex, Claude Code, or Claude Desktop.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-233C32)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-9-C65B36)](#the-skills)
+[![Skills](https://img.shields.io/badge/skills-6-C65B36)](#the-skills)
 
 If you use [Spec Kit](https://github.com/github/spec-kit) and want these tools wired into its
 lifecycle (QA, manuals, pull requests, project memory, issue-to-PR orchestration), see the
@@ -88,7 +88,7 @@ CLIs on your machine, `progress-report`, which writes project files and host hoo
 | Skill | You need |
 | --- | --- |
 | `illustrate` | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG: `pip install playwright && playwright install chromium`. |
-| `user-manual*` | Python 3.10+. For HTML: `pip install mkdocs-material` (or another MkDocs theme). For PDF: the PDF requirements listed in the skill's `references/publishing.md`, including system libraries and, for Arabic, the Amiri font (`fonts-hosny-amiri` on Ubuntu). |
+| `user-manual` | Python 3.10+. For HTML: `pip install mkdocs-material` (or another MkDocs theme). For PDF: the PDF requirements listed in the skill's `references/publishing.md`, including system libraries and, for Arabic, the Amiri font (`fonts-hosny-amiri` on Ubuntu). |
 | `github-wiki-publish` | Access to the destination Wiki through a suitable connector or authenticated Git. An authenticated browser for rendered verification; supplied pages and assets. |
 | `delegate-task` | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
 | `progress-report` | Python 3.11+ and git. Standard library only; a browser to open the report. Spec Kit is optional. |
@@ -100,11 +100,11 @@ CLIs on your machine, `progress-report`, which writes project files and host hoo
 | Skill | Codex | Claude Code | Claude Desktop |
 | --- | --- | --- | --- |
 | `illustrate` | Yes | Yes | HTML yes; exports unverified |
-| `user-manual*` | Yes | Yes | Unverified |
+| `user-manual` | Yes | Yes | Unverified |
 | `github-wiki-publish` | Local Git checks passed; live browser test unrun | Unverified | Unverified; needs an authenticated Git/browser workspace |
 | `delegate-task` | Yes | Yes | No (needs local CLIs) |
 | `progress-report` | Yes (Codex hook file unverified) | Yes | No (needs local files and hooks) |
-| `planning-majlis` | Yes (4 evals passed) | Yes (3 of 4 evals passed; the feature run hit the 90-minute eval limit in round 3) | Unverified (no subagents; runs the roles in sequence) |
+| `planning-majlis` | Yes (4 evals passed) | Yes (4 evals behaved as expected; a feature-mode run takes more than an hour) | Unverified (no subagents; runs the roles in sequence) |
 
 `planning-majlis` was also run in OpenCode with DeepSeek V4.1 Flash. All four evals behaved as expected, and its subagents ran through the Task tool.
 
