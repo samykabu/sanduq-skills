@@ -17,9 +17,9 @@ Where it matters: [illustrate](skills/illustrate.md#options-worth-knowing).
 
 ### Audience
 
-The group of readers a page or bundle is written for. The manual skills use three: end user,
+The group of readers a page or bundle is written for. The `user-manual` skill uses three: end user,
 administrator (or operator), and technical. Each audience gets its own wording and its own output.
-Where it matters: every `user-manual*` skill.
+Where it matters: the `user-manual` skill.
 
 ### Bundle
 
