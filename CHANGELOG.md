@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — dev-tools 2.0.3
+
+- **dev-tools 2.0.3.** `user-manual`: a `manual.yml` from before 2.0.0 (MkDocs settings such as `theme` or `primary`, and no `renderer.kind`) keeps building with the `mkdocs` renderer instead of switching to Markdown, and the build prints a notice to add `kind: mkdocs`. When a renderer command is Pandoc and sets no `--from`, the build adds `--from=gfm+rebase_relative_paths`, so pages read as GitHub Markdown and images resolve from each page; the documented recipe is plain `pandoc {pages} ...` again. `build_manual.py --help` lists the renderers, the placeholders and both behaviours.
+
 ## 2026-10-30 — agent-tools 1.9.0
 
 - **agent-tools 1.9.0.** New skill `planning-majlis`: a gated planning committee of expert roles run as parallel subagents, in full mode (new software) or feature mode. Five core roles always sit; optional roles are proposed from the request and confirmed by the user. `scripts/gate.py` decides the gate: every seated role at 9/10 or higher and no OPEN rows in the decision record. See [docs/skills/planning-majlis.md](docs/skills/planning-majlis.md).

@@ -7,7 +7,7 @@ correctly on GitHub; you choose how each edition is rendered.
 | | |
 | --- | --- |
 | Bundle | `dev-tools` (Claude Code plugin `dev-tools@sanduq`) |
-| Version | 2.0.2 |
+| Version | 2.0.3 |
 | Prerequisites | Python 3.10+, PyYAML and markdown-it-py (`User-Manual/requirements.lock`). Rendering through your own tool needs that tool. The MkDocs renderer needs MkDocs and a theme; its PDF also needs the system libraries in the skill's `references/publishing.md`. |
 | Hosts | Codex: yes. Claude Code: yes. Claude Desktop: unverified. |
 
@@ -97,7 +97,7 @@ A Word edition through your team's template:
 ```yaml
 renderer:
   kind: command
-  command: pandoc -f gfm+rebase_relative_paths {pages} --metadata-file {metadata} --reference-doc theme/word.docx -o {output}/manual.docx
+  command: pandoc {pages} --metadata-file {metadata} --reference-doc theme/word.docx -o {output}/manual.docx
 ```
 
 The command runs from `User-Manual/`, so its paths are relative to the manual. `{pages}` lists the
@@ -140,9 +140,9 @@ GitHub form to use.
 - A page may link only to pages its own audience receives. The build rejects anything else.
 - After you upgrade the skill, refresh `User-Manual/tools/` from the skill's `scripts/` folder.
 - The skill does not install a renderer command's tool. Put it on the build machine or CI runner.
-- dev-tools 2.0.0 has no migration from 1.x: an existing `manual.yml` needs a `renderer.kind`
-  (add `kind: mkdocs` to keep the MkDocs site), and the four `user-manual-*` companion skills are
-  gone, their instructions now part of this skill.
+- A `manual.yml` from before 2.0.0 has MkDocs settings and no `renderer.kind`: it keeps building its
+  MkDocs site, and the build asks you to add `kind: mkdocs` to make that explicit. The four
+  `user-manual-*` companion skills are gone; ask `user-manual` for that work instead.
 
 ## Related
 
