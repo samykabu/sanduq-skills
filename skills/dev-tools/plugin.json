@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dev-tools",
+  "version": "2.0.5",
+  "description": "Standalone tools for application manuals, API references, release documentation, screenshots, previews, bilingual publishing, and GitHub Wiki pages and assets",
+  "author": {
+    "name": "Samy K. Abushanab"
+  },
+  "license": "MIT",
+  "keywords": [
+    "user-manual",
+    "github-wiki",
+    "publishing",
+    "documentation",
+    "mkdocs",
+    "material",
+    "pdf",
+    "api-docs",
+    "release-notes",
+    "migration-guides",
+    "screenshots",
+    "bilingual",
+    "arabic",
+    "rtl"
+  ],
+  "repository": "https://github.com/samykabu/sanduq-skills"
+}

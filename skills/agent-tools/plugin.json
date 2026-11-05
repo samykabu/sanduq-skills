@@ -1,0 +1,37 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agent-tools",
+  "version": "1.9.2",
+  "description": "delegate-task hands one task to another agent CLI and reports what it changed and the tokens it used. progress-report keeps a live progress report for a Markdown plan or a Spec Kit feature. planning-majlis plans software or a feature with a committee of expert roles run as subagents.",
+  "author": {
+    "name": "Samy K. Abushanab"
+  },
+  "license": "MIT",
+  "keywords": [
+    "delegate",
+    "agent",
+    "cli",
+    "harness",
+    "claude-code",
+    "codex",
+    "opencode",
+    "copilot",
+    "orchestration",
+    "background",
+    "tokens",
+    "second-opinion",
+    "progress",
+    "progress-report",
+    "plan",
+    "checklist",
+    "dashboard",
+    "hooks",
+    "lanes",
+    "telemetry",
+    "planning",
+    "committee",
+    "review",
+    "subagents"
+  ],
+  "repository": "https://github.com/samykabu/sanduq-skills"
+}

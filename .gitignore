@@ -1,0 +1,14 @@
+# build artifacts
+*.zip
+dist/
+node_modules/
+.delegate/
+__pycache__/
+*.py[cod]
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+# worktrees of this checkout
+.worktrees/

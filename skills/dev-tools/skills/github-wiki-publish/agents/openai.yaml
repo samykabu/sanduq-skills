@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Wiki Publish"
+  short_description: "Publish pages and assets to a GitHub Wiki"
+  default_prompt: "Use $github-wiki-publish to publish these pages and assets to the target repository Wiki and verify the result."

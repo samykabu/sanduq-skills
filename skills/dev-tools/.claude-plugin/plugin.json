@@ -1,0 +1,26 @@
+{
+  "name": "dev-tools",
+  "description": "Standalone tools for application manuals, API references, release documentation, screenshots, previews, bilingual publishing, and GitHub Wiki pages and assets",
+  "version": "2.0.5",
+  "author": {
+    "name": "Samy K. Abushanab"
+  },
+  "keywords": [
+    "user-manual",
+    "github-wiki",
+    "publishing",
+    "documentation",
+    "mkdocs",
+    "material",
+    "pdf",
+    "api-docs",
+    "release-notes",
+    "migration-guides",
+    "screenshots",
+    "bilingual",
+    "arabic",
+    "rtl"
+  ],
+  "license": "MIT",
+  "repository": "https://github.com/samykabu/sanduq-skills"
+}

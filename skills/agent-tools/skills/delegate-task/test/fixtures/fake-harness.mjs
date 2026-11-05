@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+// A stand-in harness CLI, driven entirely by environment variables, so the suite
+// can exercise start -> supervise -> collect end to end without launching a real
+// agent CLI or spending a token.
+//
+// Reached through DELEGATE_BIN_<HARNESS>, which delegate.mjs honours in place of
+// a PATH lookup.
+//
+//   FAKE_VERSION   what `--version` prints                (default: 9.9.9)
+//   FAKE_STREAM    the stdout body for a normal run       (default: empty)
+//   FAKE_STREAM_FILE  read the body from this file instead (large bodies on Linux)
+//   FAKE_STDERR    the stderr body                        (default: empty)
+//   FAKE_EXIT      the process exit code                  (default: 0)
+//   FAKE_SLEEP_MS  delay before exiting                    (default: 0)
+//   FAKE_CHUNK     if set, stdout is emitted in N-byte chunks so a multibyte
+//                  character and a JSON line both straddle a chunk boundary
+
+import fs from 'node:fs';
+import { spawn } from 'node:child_process';
+
+const argv = process.argv.slice(2);
+
+if (argv.includes('--version')) {
+  process.stdout.write(`${process.env.FAKE_VERSION || '9.9.9'}\n`);
+  process.exit(0);
+}
+
+// FAKE_GRANDCHILD=<pidfile>: start a long-sleeping descendant that records its
+// pid there, the way a real harness starts a shell or a tool process. Detached,
+// so on Windows it is outside this process's own libuv job, as the plain child
+// of a non-Node harness is: only the supervisor's containment can stop it.
+if (process.env.FAKE_GRANDCHILD) {
+  spawn(process.execPath, ['-e', `require('fs').writeFileSync(${JSON.stringify(process.env.FAKE_GRANDCHILD)}, String(process.pid)); setTimeout(() => {}, 600000)`],
+    { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+}
+
+if (process.env.FAKE_CODEX_RESUME_SANDBOX) {
+  const expected = ['exec', '--json', '--skip-git-repo-check', '-m', 'test-model', '-s', 'read-only', 'resume', 'th_e2e'];
+  if (argv.length !== expected.length + 1 || expected.some((value, index) => argv[index] !== value)) {
+    process.stderr.write('Codex exec options must precede resume and its session ID.\n');
+    process.exit(2);
+  }
+}
+
+const body = process.env.FAKE_STREAM_FILE
+  ? fs.readFileSync(process.env.FAKE_STREAM_FILE, 'utf8') : (process.env.FAKE_STREAM || '');
+const errBody = process.env.FAKE_STDERR || '';
+const code = Number(process.env.FAKE_EXIT || 0);
+const sleepMs = Number(process.env.FAKE_SLEEP_MS || 0);
+const chunk = Number(process.env.FAKE_CHUNK || 0);
+// A real gap between writes, so each chunk becomes its own OS read on the pipe.
+// Without it the kernel coalesces them and a chunk-boundary test proves nothing.
+const chunkDelay = Number(process.env.FAKE_CHUNK_DELAY_MS || 25);
+
+if (errBody) process.stderr.write(errBody);
+
+// Report what the harness ACTUALLY received in its environment, so an isolation
+// test can check delivery rather than the caller's own self-report.
+if (process.env.FAKE_REPORT_ENV) {
+  const names = process.env.FAKE_REPORT_ENV.split(',').map((s) => s.trim()).filter(Boolean);
+  const present = {};
+  for (const n of names) present[n] = process.env[n] !== undefined;
+  process.stderr.write(`ENV_PROBE ${JSON.stringify(present)}\n`);
+}
+
+if (chunk > 0) {
+  const buf = Buffer.from(body, 'utf8');
+  let i = 0;
+  const pump = () => {
+    if (i >= buf.length) { finish(); return; }
+    process.stdout.write(buf.subarray(i, i + chunk));
+    i += chunk;
+    setTimeout(pump, chunkDelay);
+  };
+  pump();
+} else {
+  process.stdout.write(body);
+  finish();
+}
+
+function finish() {
+  const bye = () => {
+    // Die on a real signal, so the supervisor observes a signal exit rather than
+    // an exit code. POSIX only - Windows has no signal delivery to observe.
+    if (process.env.FAKE_SELF_SIGNAL && process.platform !== 'win32') {
+      process.kill(process.pid, process.env.FAKE_SELF_SIGNAL);
+      return;
+    }
+    // exitCode, not process.exit(): stdout writes to a pipe are asynchronous on
+    // POSIX, and exit() drops whatever the pipe has not yet accepted - on Linux
+    // everything past the first 64 KiB. A real harness does not lose its output.
+    process.exitCode = Number.isFinite(code) ? code : 0;
+  };
+  if (sleepMs > 0) setTimeout(bye, sleepMs);
+  else bye();
+}

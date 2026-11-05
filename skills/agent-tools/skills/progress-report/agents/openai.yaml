@@ -1,0 +1,4 @@
+interface:
+  display_name: "Progress Report"
+  short_description: "Track a plan or Spec Kit feature with a live progress report"
+  default_prompt: "Use $progress-report to create a progress report for this plan, install the hooks, and keep it current by recording only lanes, blockers and decisions."

@@ -1,0 +1,187 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Runners: every job runs on homek8-general except the windows-latest leg of the tests matrix (the self-hosted runners
+# are Linux pods) and jobs of pull requests from forks (ubuntu-latest: fork code never runs inside the self-hosted pool).
+jobs:
+  lint:
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-latest' || 'homek8-general' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: No private product names (pattern held in the PRIVATE_NAMES repository secret)
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
+        run: |
+          if [ -z "$PRIVATE_NAMES" ]; then echo "::notice::PRIVATE_NAMES is not set; the private-name check was skipped"; exit 0; fi
+          if git grep -I -i -n -E "$PRIVATE_NAMES" -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::Private product or customer names found (lines above). Remove them; this repository never names third-party products."; exit 1
+          fi
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Validate JSON
+        run: find . -path ./node_modules -prune -o -path '*/node_modules/*' -prune -o -name '*.json' -print0 | xargs -0 -n1 jq empty
+      - name: Plugin manifests match their bundles
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          for manifest in sorted(pathlib.Path('skills').glob('*/.claude-plugin/plugin.json')):
+              data = json.loads(manifest.read_text(encoding='utf-8'))
+              bundle = manifest.parent.parent
+              if data.get('name') != bundle.name:
+                  sys.exit(f'{manifest}: name must be {bundle.name}')
+              for key in ('version', 'license', 'description'):
+                  if not data.get(key):
+                      sys.exit(f'{manifest}: missing {key}')
+              if not any(bundle.glob('skills/*/SKILL.md')):
+                  sys.exit(f'{bundle}: no skills/<name>/SKILL.md')
+              # Codex reads the Agent Plugins manifest at the bundle root; it must say the same.
+              portable = bundle / 'plugin.json'
+              if not portable.is_file():
+                  sys.exit(f'{bundle}: missing root plugin.json')
+              root = json.loads(portable.read_text(encoding='utf-8'))
+              if root.get('$schema') != 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json':
+                  sys.exit(f'{portable}: $schema must be the Agent Plugins 1.0.0 schema')
+              for key in ('name', 'version', 'description', 'author', 'license', 'keywords', 'repository'):
+                  if root.get(key) != data.get(key):
+                      sys.exit(f'{portable}: {key} differs from .claude-plugin/plugin.json')
+          PY
+      # The validator lives in samykabu/sanduq (extensions/scripts/validate_skills.py).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          repository: samykabu/sanduq
+          ref: main
+          path: .sanduq
+          sparse-checkout: extensions/scripts/validate_skills.py
+          sparse-checkout-cone-mode: false
+      - name: Skills follow the Agent Skills frontmatter rules
+        run: |
+          python3 -m pip install --user pyyaml==6.0.3
+          python3 .sanduq/extensions/scripts/validate_skills.py skills
+      - name: Claude Code validates each plugin bundle
+        run: for b in skills/*/; do npx -y @anthropic-ai/claude-code plugin validate "$b"; done
+
+      - name: Skills CLI discovers every skill
+        run: |
+          npx -y skills@1.7.2 add . --list > list.txt
+          cat list.txt
+          for s in illustrate user-manual github-wiki-publish delegate-task progress-report planning-majlis; do
+            grep -q "$s" list.txt || { echo "missing $s"; exit 1; }
+          done
+      - run: git diff --check
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    # Only the literal windows-latest leg resolves to a GitHub-hosted runner; a label never comes from matrix data.
+    runs-on: ${{ matrix.os == 'windows-latest' && 'windows-latest' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || 'homek8-general' }}
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      # Parallel workers for pytest-xdist. The samykabu runner pods are limited to 4 CPUs, and the GitHub-hosted
+      # Windows and fork legs have 4 vCPUs. `-n auto` would read the node's cores.
+      PYTEST_WORKERS: '4'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '20'
+      - run: python -m pip install -r requirements-test.txt
+      # The browser tests in the Python suites need it; on Windows they skip, since the render-lint job already
+      # renders the same SVGs in the same Chromium on Linux.
+      - name: Install Playwright for the browser tests
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          python -m pip install playwright==1.63.0
+          python -m playwright install --with-deps chromium
+      - name: Install the hand-drawn generator's packages
+        run: npm ci --no-audit --no-fund --prefix skills/illustration-tools/skills/illustrate
+      # One pytest call for the four Python suites pays xdist's start-up once. Each suite also still runs under
+      # `python -m unittest discover -s <suite>` (README).
+      - name: Python tests (Illustrate, User Manual, Progress Report, Planning Majlis; browser tests opt in with PROGRESS_UI_TESTS=1)
+        shell: bash
+        env:
+          PROGRESS_UI_TESTS: ${{ github.event_name == 'push' && '1' || '' }}
+        run: |
+          suites=(skills/illustration-tools/tests skills/dev-tools/skills/user-manual/tests
+                  skills/agent-tools/skills/progress-report/tests skills/agent-tools/skills/planning-majlis/tests)
+          # pytest imports each test module (and the helpers beside it) by file name, so one name in two suites
+          # breaks collection of the combined run.
+          dups=$(find "${suites[@]}" -name '*.py' -not -path '*/fixtures/*' -not -name '__init__.py' -exec basename {} \; | sort | uniq -d)
+          if [ -n "$dups" ]; then echo "::error::Python file names shared by two test suites: $dups"; exit 1; fi
+          python -m pytest -n "$PYTEST_WORKERS" -p no:cacheprovider -q -rfEs "${suites[@]}"
+      - name: Illustrate builders and verifiers
+        shell: bash
+        working-directory: skills/illustration-tools/skills/illustrate
+        run: |
+          python scripts/build-exploded-examples.py --check
+          python scripts/build-axonometric-plan-examples.py --check
+          python scripts/verify-exploded.py --all
+          python scripts/verify-axonometric-plan.py --all
+          python scripts/verify-motion.py --shipped
+          python scripts/verify-semantic-motion.py
+          python scripts/verify-geometry.py --all --baseline
+          python scripts/verify-arrow-ends.py --all
+          python scripts/lint-skin.py --all --baseline
+          for v in architecture-delta treemap marimekko sankey heatmap waterfall slopegraph ridgeline streamgraph bump bubble beeswarm; do python scripts/verify-$v.py --all; done
+          python scripts/verify-polar.py
+          python scripts/verify-dumbbell.py
+          python scripts/verify-sequence-oauth.py
+          python scripts/verify-block-registry.py --all
+      - name: Delegate Task tests
+        shell: bash
+        run: |
+          node skills/agent-tools/skills/delegate-task/test/run.mjs
+          node --test --test-concurrency="$PYTEST_WORKERS" skills/agent-tools/skills/delegate-task/test/execution-*.test.mjs
+
+  # `lint-render.py --all` renders every shipped Illustrate asset in Chromium, so it runs as four slices
+  # (tests/lint_render_shard.py) in parallel with `tests`. Slice 0 also runs the checks only --all runs and
+  # the self-test. Linux only: a Windows leg would render the same SVGs in the same Chromium.
+  render-lint:
+    name: render lint (slice ${{ matrix.slice }})
+    strategy:
+      fail-fast: false
+      matrix:
+        slice: [0, 1, 2, 3]
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || 'homek8-general' }}
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        shell: bash
+        working-directory: skills/illustration-tools/skills/illustrate
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install Playwright
+        run: |
+          python -m pip install playwright==1.63.0
+          python -m playwright install --with-deps chromium
+      - name: lint-render.py self-test
+        if: matrix.slice == 0
+        run: python scripts/lint-render.py --self-test
+      - name: lint-render.py --all, slice ${{ matrix.slice }} of 4
+        run: python ../../tests/lint_render_shard.py "${{ matrix.slice }}" 4

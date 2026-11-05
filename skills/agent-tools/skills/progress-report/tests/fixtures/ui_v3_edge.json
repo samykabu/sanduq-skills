@@ -1,0 +1,105 @@
+{
+ "schema": "sanduq.progress.v3",
+ "rev": 3,
+ "generated_at": "2026-10-17T14:05:00Z",
+ "stale_after_seconds": 600,
+ "collection": {
+  "automatic": true,
+  "dirty": false
+ },
+ "feature": {
+  "id": "plan-launch",
+  "title": "Launch plan",
+  "dir": "docs",
+  "branch": "main",
+  "issue": null,
+  "workflow": null,
+  "mode": "plan",
+  "source": "docs/plan.md",
+  "started_at": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "stage": {
+   "value": null,
+   "status": null,
+   "validity": "unknown",
+   "source": "none"
+  },
+  "next_action": null
+ },
+ "orchestrator": {
+  "host": null,
+  "session_id": null,
+  "model": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "effort": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "context": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "host_elapsed": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "active": {
+   "value": null,
+   "source": "none",
+   "observed_at": null,
+   "fidelity": "unknown"
+  },
+  "since": null,
+  "provenance": {},
+  "note": null
+ },
+ "attention": [],
+ "stages": [],
+ "workstreams": [],
+ "runs": [],
+ "dispatch": [],
+ "decisions": {
+  "pending": [],
+  "made": [],
+  "sources": [
+   {
+    "name": "workflow decisions",
+    "state": "available"
+   },
+   {
+    "name": "clarifications",
+    "state": "unsupported"
+   }
+  ]
+ },
+ "timeline": [],
+ "history": {
+  "lane_aliases": {},
+  "unresolved": []
+ },
+ "sources": [],
+ "summary": {
+  "tasks_total": 0,
+  "tasks_done": 0,
+  "stages_selected": 0,
+  "stages_accepted": 0,
+  "runs_total": 0,
+  "runs_failed": 0,
+  "decisions_pending": 0,
+  "blockers_open": 0
+ }
+}
