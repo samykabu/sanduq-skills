@@ -322,7 +322,8 @@ def run_cases(h):
 
     # The detector must not drag the other example types into scope.
     for other in ("example-line.html", "example-slopegraph.html",
-                  "example-sankey.html", "example-treemap.html"):
+                  "example-sankey.html", "example-treemap.html",
+                  "example-service-blueprint.html"):
         path = ROOT / "assets" / other
         if path.exists():
             h.expect_out_of_scope(
