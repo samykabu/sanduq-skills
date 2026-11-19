@@ -73,6 +73,30 @@ test('a cancel marker present before launch starts nothing and proves closure', 
   assert.equal(result.state, 'closed'); assert.equal(result.started, false); assert.equal(result.root_pid, null); assert.equal(result.launch_error, null);
   assert.equal(fs.existsSync(marker), false);
 });
+test('Linux containment names a malformed request field and launches nothing', { skip: process.platform !== 'linux' }, () => {
+  const script = `
+import importlib.util, json, os, subprocess, sys, tempfile
+spec = importlib.util.spec_from_file_location('containment_linux', sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+d = tempfile.mkdtemp()
+good = dict(nonce='0' * 32, proof=os.path.join(d, 'p.json'), stdout=os.path.join(d, 'o'), stderr=os.path.join(d, 'e'),
+            cancel=os.path.join(d, 'c'), cwd=d, file=sys.executable, args=['-c', 'pass'], env={}, owner_pid=os.getpid(), timeout_s=5)
+assert m.invalid_field(good) is None
+for key, bad in [('nonce', 'xyz'), ('cwd', 'relative'), ('file', os.path.join(d, 'missing')), ('args', 'not-a-list'),
+                 ('env', {'K': 1}), ('owner_pid', True), ('timeout_s', 0)]:
+    assert m.invalid_field(dict(good, **{key: bad})) == key, key
+assert m.invalid_field([]) == 'request'
+marker = os.path.join(d, 'ran')
+req = dict(good, args=['-c', 'open(%r, "w")' % marker], env='bad')
+r = subprocess.run([sys.executable, '-I', '-u', sys.argv[1]], input=json.dumps(req), text=True, capture_output=True)
+proof = json.load(open(good['proof']))
+assert proof['state'] == 'closed' and proof['launch_error'] == 'INVALID_REQUEST' and proof['invalid_field'] == 'env', proof
+assert not os.path.exists(marker)
+r = subprocess.run([sys.executable, '-I', '-u', sys.argv[1]], input='[1]', text=True, capture_output=True)
+assert r.returncode == 2, r.returncode
+`;
+  const r = spawnSync('python3', ['-c', script, path.join(here, '../containment-linux.py')], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+});
 test('Linux containment enumerates children by /proc scan when the kernel children file is missing', { skip: process.platform !== 'linux' }, () => {
   const script = `
 import builtins, importlib.util, subprocess, sys

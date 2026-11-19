@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
 """Private Linux subreaper. Input is JSON over stdin, never shell source."""
 import ctypes
 import errno
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -41,6 +43,42 @@ def list_children():
         if len(fields) > 1 and fields[1].isdigit() and int(fields[1]) == me:
             found.append(int(name))
     return found
+
+
+PATH_FIELDS = ('proof', 'stdout', 'stderr', 'cancel', 'cwd', 'file')
+
+
+def invalid_field(req):
+    """Name the first malformed request field, or None.
+
+    containment.mjs builds the request from an already-resolved check (absolute cwd, an executable file, string
+    argv and env), so a failure here means a bug or a foreign writer on the pipe: nothing is launched."""
+    if not isinstance(req, dict):
+        return 'request'
+    nonce = req.get('nonce')
+    if not isinstance(nonce, str) or not re.fullmatch(r'[0-9a-f]{32}', nonce):
+        return 'nonce'
+    for key in PATH_FIELDS:
+        value = req.get(key)
+        if not isinstance(value, str) or '\0' in value or not os.path.isabs(value):
+            return key
+    if not os.path.isdir(req['cwd']):
+        return 'cwd'
+    if not os.path.isfile(req['file']) or not os.access(req['file'], os.X_OK):
+        return 'file'
+    args = req.get('args')
+    if not isinstance(args, list) or not all(isinstance(a, str) and '\0' not in a for a in args):
+        return 'args'
+    env = req.get('env')
+    if not isinstance(env, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in env.items()):
+        return 'env'
+    owner = req.get('owner_pid')
+    if isinstance(owner, bool) or not isinstance(owner, int) or owner <= 0:
+        return 'owner_pid'
+    timeout = req.get('timeout_s')
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not timeout > 0:
+        return 'timeout_s'
+    return None
 
 
 def run(req):
@@ -130,9 +168,19 @@ def run(req):
 
 
 if __name__ == '__main__':
-    request = json.loads(sys.stdin.read(4 * 1024 * 1024))
     try:
-        result = run(request)
+        request = json.loads(sys.stdin.read(4 * 1024 * 1024))
+    except ValueError:
+        sys.exit(2)
+    problem = invalid_field(request)
+    if problem in ('request', 'nonce', 'proof'):
+        sys.exit(2)  # no trustworthy proof binding to report on; the supervisor treats a missing proof as unresolved
+    try:
+        if problem:
+            result = dict(nonce=request['nonce'], state='closed', mechanism='linux_subreaper', started=False,
+                          root_pid=None, launch_error='INVALID_REQUEST', invalid_field=problem)
+        else:
+            result = run(request)
     except Exception:
         result = dict(nonce=request['nonce'], state='unresolved', mechanism='linux_subreaper',
                       started=True, launch_error='CONTAINMENT_HELPER_FAILED')

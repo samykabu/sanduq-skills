@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.1 — 2026-11-19
+
+- `delegate-task`: the Linux containment helper (`containment-linux.py`) checks every request field before launching anything: hex nonce, absolute paths, an existing working directory, an executable file, string argv and environment, a positive owner PID and timeout. A malformed request writes a `closed` proof with `launch_error: "INVALID_REQUEST"` and the offending `invalid_field`; one without a usable proof path or nonce exits 2 and the supervisor records it as unresolved. A Linux test covers both paths.
+- `delegate-task`: `check-runner.mjs` prints its usage for a missing or unknown command instead of a `DELEGATE_RUNS_DIR` error. `containment-linux.py` has a shebang.
+- `delegate-task`: `SKILL.md` adds a Purpose heading and lists the `assets/` diagrams and the helper scripts. The READMEs pin the install command to `npx skills@1.9.0`. Wording that SkillEvaluator's SkillSpector scan misread is changed: the Antigravity global path in `SKILL.md` is described rather than spelled out, `delegate.mjs` names the brief's rule list `briefRules`, and the test helper's environment overrides are `childEnv`. No behaviour change beyond the helper's input checks.
+- Validation: 185 driver checks and 59 execution checks passed locally (3 Linux checks skipped on Windows, including the new helper test).
+
 ## 1.10.0 — 2026-11-19
 
 - `delegate-task`: added **Antigravity (`agy`)** as a verified harness target in `delegate.mjs` (`-p`, `--output-format stream-json`, `--model`, `--conversation` resume, `--dangerously-skip-permissions` bypass, `--mode plan` read-only sandbox). Recognises `agy`'s `"event"`-keyed NDJSON records in structured progress tracking (`last_structured_event_at` / `--startup-timeout`), normalises disjoint `input_tokens` + `cache_read_tokens` and inclusive `output_tokens` / `thinking_tokens`, and preserves `cache_read_tokens` / `cache_write_tokens` during log secret redaction (`bounded.mjs`).

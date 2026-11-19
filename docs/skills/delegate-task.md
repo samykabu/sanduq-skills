@@ -6,7 +6,7 @@ git measured, and how many tokens it used.
 | | |
 | --- | --- |
 | Bundle | `agent-tools` (Claude Code plugin `agent-tools@sanduq`) |
-| Version | 1.10.0 |
+| Version | 1.10.1 |
 | Prerequisites | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
 | Hosts | Claude Code: yes. Codex: yes. Antigravity: yes. OpenCode: yes. Claude Desktop: no (needs local CLIs). |
 

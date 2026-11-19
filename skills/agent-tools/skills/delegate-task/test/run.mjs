@@ -1172,19 +1172,19 @@ function awaitSupervisor(runId, runs = scratchRuns) {
   }
 }
 
-function e2e(id, env, extraArgs = []) {
-  env = { ...env };
-  if ((env.FAKE_STREAM || '').length > 64 * 1024) {  // Linux caps one environment string at 128 KiB
+function e2e(id, overrides, extraArgs = []) {
+  const childEnv = { ...overrides };
+  if ((childEnv.FAKE_STREAM || '').length > 64 * 1024) {  // Linux caps one environment string at 128 KiB
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-stream-')), 'stream.jsonl');
-    fs.writeFileSync(file, env.FAKE_STREAM);
-    delete env.FAKE_STREAM;
-    env.FAKE_STREAM_FILE = file;
+    fs.writeFileSync(file, childEnv.FAKE_STREAM);
+    delete childEnv.FAKE_STREAM;
+    childEnv.FAKE_STREAM_FILE = file;
   }
   const start = spawnSync(process.execPath, [DRIVER, 'start',
     '--harness', 'codex', '--cwd', os.tmpdir(), '--timeout', '60',
     '--task', 'fake task', ...extraArgs], {
     encoding: 'utf8', timeout: 60_000,
-    env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_CODEX: FAKE, ...env },
+    env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_CODEX: FAKE, ...childEnv },
   });
   if (start.status !== 0) return { start, result: null };
   const runId = JSON.parse(start.stdout).run_id;

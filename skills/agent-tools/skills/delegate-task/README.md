@@ -24,7 +24,7 @@ Or install just this skill into the current project (or user config) for Claude 
 Antigravity, or OpenCode:
 
 ```bash
-npx skills add samykabu/sanduq-skills --skill delegate-task
+npx skills@1.9.0 add samykabu/sanduq-skills --skill delegate-task
 ```
 
 Where it lands depends on your host, so resolve `<SKILL_DIR>` (the folder holding `SKILL.md`) once
