@@ -5,6 +5,8 @@ description: Delegate a task to an external agent CLI harness — Claude Code, O
 
 # Delegate a task to another agent CLI
 
+## Purpose
+
 Runs one task on an external agent CLI **in the background** and returns a normalised
 result.
 
@@ -28,7 +30,7 @@ DELEGATE="<SKILL_DIR>/delegate.mjs"
 #   Antigravity / Codex / OpenCode project:  .agents/skills/delegate-task/delegate.mjs
 #   OpenCode project / global:               .opencode/skills/delegate-task/delegate.mjs
 #                                            ~/.config/opencode/skills/delegate-task/delegate.mjs
-#   Antigravity global:                      ~/.gemini/config/skills/delegate-task/delegate.mjs
+#   Antigravity global:                      delegate-task/delegate.mjs in Antigravity's global skills folder
 #   Claude Code plain skill:                 .claude/skills/delegate-task/delegate.mjs
 
 # Keep run artifacts in the project being worked on, not next to the driver
@@ -264,6 +266,10 @@ sooner with `prune`.
 - `references/writing-the-brief.md` — how to write a task the delegate can execute blind
 - `references/reviewing-the-result.md` — how to review what comes back, including the sweep
 - `references/task-queues.md` — running several dependent tasks without losing the thread
+- `assets/` — resource diagrams of the run lifecycle and the parallel fan-out (HTML source, SVG and PNG)
+- Helpers beside the driver: `check-runner.mjs`, `check-receipt.mjs` and `check-identity.mjs` (native
+  check batches), `bounded.mjs` (capped logs), `process-tools.mjs`, `containment.mjs` with
+  `containment-linux.py` / `containment-windows.ps1` / `job-windows.ps1` (process-tree containment)
 
 Tests: `node test/run.mjs`, from this skill's directory.
 Execution regressions: `node --test test/execution.test.mjs` (Node/Python CLI fixtures).
