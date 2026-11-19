@@ -1,11 +1,12 @@
 # Animated examples
 
 These [animated SVGs](glossary.md#animated-svg) were exported from example diagrams that ship with
-[illustrate](skills/illustrate.md). Each one uses a different [arrow style](glossary.md#arrow-style).
+[illustrate](skills/illustrate.md). They show five [arrow styles](glossary.md#arrow-style) and BPMN route playback.
 They play in a README with no script, and show the still figure to readers who ask for
 [reduced motion](glossary.md#reduced-motion).
 
-To reproduce one, run the command from the repository root. The output lands next to the HTML.
+To reproduce one, run the command from the repository root. Without `--output`, the export
+lands next to the HTML.
 
 ## draw: arrows draw on, then stop
 
@@ -68,6 +69,19 @@ python skills/illustration-tools/skills/illustrate/scripts/export_diagram.py doc
 
 Editable source: [example-flowchart.html](media/example-flowchart.html)
 
+## BPMN 2.0 route playback
+
+![BPMN expense approval in Employee, Manager, and Finance lanes. A token follows the approved route through claim review and payment. The rejected route remains visible and ends with Request denied.](media/example-bpmn-approved.animated.svg)
+
+One token follows the selected route. The approved and rejected paths stay visible, with solid
+sequence arrows. Use `--bpmn-route rejected` to play the other outcome.
+
+```bash
+python skills/illustration-tools/skills/illustrate/scripts/export_diagram.py skills/illustration-tools/skills/illustrate/assets/example-bpmn.html --animated --bpmn-route approved --output docs/media/example-bpmn-approved
+```
+
+[Editable expense approval HTML](../skills/illustration-tools/skills/illustrate/assets/example-bpmn.html)
+
 ## Sizes
 
 | File | Arrow style | Size |
@@ -77,6 +91,7 @@ Editable source: [example-flowchart.html](media/example-flowchart.html)
 | `example-state.animated.svg` | `pulse` | 10 KB |
 | `example-state-lifecycle.animated.svg` | `chevrons` | 15 KB |
 | `example-flowchart.animated.svg` | `draw-flow` | 12 KB |
+| `example-bpmn-approved.animated.svg` | BPMN route playback | 15 KB |
 
 ## Make your own
 

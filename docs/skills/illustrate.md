@@ -85,6 +85,26 @@ python scripts/export_diagram.py diagram.html --gif --arrows=chevrons --theme da
 - PNG accepts a finite `--scale` from 1 to 4. GIF accepts 1, 2, or 3.
 - `--theme light|dark` and `--fps 1-30` apply to GIFs only.
 
+### BPMN 2.0 Process
+
+Ask for BPMN 2.0 explicitly. The variant draws one pool with horizontal role lanes,
+standard event, task, and exclusive-gateway symbols, and solid sequence flows.
+
+```text
+Draw a BPMN 2.0 expense approval process with Employee, Manager, and Finance lanes.
+Show Claim opened, Fill Out Expense Form, and Review Expenses. Label the approved
+and rejected routes. Finance processes payments on approval. Save it as expense-approval.html.
+```
+
+```bash
+python scripts/export_diagram.py expense-approval.html --animated --bpmn-route approved
+python scripts/export_diagram.py expense-approval.html --gif --bpmn-route rejected
+```
+
+SVG and PNG show the complete process. Each animated export follows one selected route.
+See the [animated expense approval example](../examples.md#bpmn-20-route-playback)
+and [BPMN authoring guide](../../skills/illustration-tools/skills/illustrate/references/type-bpmn.md).
+
 **Redraw an existing diagram.** Give it a draw.io, Mermaid, Excalidraw or PlantUML file. PlantUML supports sequence and class diagrams. Mermaid also supports `quadrantChart`. It keeps the
 content and redraws it in your theme, then lists what it merged or dropped.
 
