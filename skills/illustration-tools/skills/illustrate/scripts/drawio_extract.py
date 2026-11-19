@@ -366,7 +366,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         if not inflated:
             return page
         _reject_unsafe_xml(inflated, f"page {index}")
-        model = ET.fromstring(inflated)
+        model = ET.fromstring(inflated)  # nosec B314 - _reject_unsafe_xml above refuses DTDs and entities
         if model.tag != "mxGraphModel":
             found = model.find(".//mxGraphModel")
             if found is None:
@@ -536,7 +536,7 @@ def parse_file(path: Path) -> list[Page]:
     xml = load_mxfile(path)
     _reject_unsafe_xml(xml, path.name)
     try:
-        root = ET.fromstring(xml)
+        root = ET.fromstring(xml)  # nosec B314 - _reject_unsafe_xml above refuses DTDs and entities
     except ET.ParseError as exc:
         _fail(f"{path.name}: malformed XML ({exc})")
     if root.tag == "mxGraphModel":

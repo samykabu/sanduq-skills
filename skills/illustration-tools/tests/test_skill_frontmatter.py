@@ -34,7 +34,8 @@ class SkillEntry(unittest.TestCase):
     def test_entry_is_small(self):
         text = SKILL.read_text(encoding="utf-8")
         self.assertLess(len(text.splitlines()), 200)
-        self.assertLessEqual(len(text.encode("utf-8")), 12_500)
+        # 13,000 leaves room for the Prerequisites, Limitations and Troubleshooting sections.
+        self.assertLessEqual(len(text.encode("utf-8")), 13_000)
         procedure, index = text.find("To create a new diagram"), text.find("Choosing the type")
         self.assertTrue(0 < procedure < index, "the create procedure comes before the type section")
 
