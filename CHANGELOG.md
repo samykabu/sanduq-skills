@@ -13,6 +13,7 @@ This file keeps each bundle's current major version (illustration-tools 3.x, dev
 ## 2026-11-20 — illustration-tools 3.9.1
 
 - Fix streamgraph detection so Service Blueprint lane groups are checked only by their own verifier.
+- Preserve exact fractional PNG sizes on Chromium versions that round screenshot clip bounds differently.
 - Includes the BPMN Process variant and the export and import updates below. This is the first published release of those changes.
 
 ## 2026-11-20 — illustration-tools 3.9.0
