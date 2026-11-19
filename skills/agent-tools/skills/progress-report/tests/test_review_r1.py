@@ -409,7 +409,7 @@ class F16FactValidation(Project):
 class F17LogPaths(Project):
     def test_windows_and_posix_absolute_paths_normalise_on_any_platform(self):
         root = self.root
-        cases = {'C:/Users/x/a.jsonl': 'external:a.jsonl', 'C:\\Users\\x\\a.jsonl': 'external:a.jsonl',
+        cases = {'D:/agent-logs/a.jsonl': 'external:a.jsonl', 'D:\\agent-logs\\a.jsonl': 'external:a.jsonl',
                  '/home/u/logs/a.jsonl': 'external:a.jsonl', '\\\\srv\\share\\a.jsonl': 'external:a.jsonl',
                  '//srv/share/a.jsonl': 'external:a.jsonl', 'logs/a.jsonl': 'logs/a.jsonl',
                  f'{root.as_posix()}/logs/a.jsonl': 'logs/a.jsonl', f'{root.as_posix()}-evil/a.jsonl': 'external:a.jsonl'}
@@ -420,7 +420,7 @@ class F17LogPaths(Project):
     def test_usage_json_with_a_foreign_absolute_log_is_stored_as_external(self):
         self.init()
         usage = self.root / 'usage.json'
-        usage.write_text(json.dumps({'fidelity': 'exact', 'log': 'C:/Users/runner/a.jsonl', 'fresh_input': 1}), encoding='utf-8')
+        usage.write_text(json.dumps({'fidelity': 'exact', 'log': 'D:/agent-logs/a.jsonl', 'fresh_input': 1}), encoding='utf-8')
         code, line = self.cli('attempt', 'record', '--overhead', 'review', '--run', 'r1', '--status', 'done', '--usage-json', str(usage))
         self.assertEqual(code, 0, line)
         fact = [json.loads(x) for x in self.ctx.facts.read_text(encoding='utf-8').splitlines()][-1]

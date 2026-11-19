@@ -9,7 +9,7 @@ record.
 | | |
 | --- | --- |
 | Bundle | `agent-tools` (Claude Code plugin `agent-tools@sanduq`) |
-| Version | 1.9.2 |
+| Version | 1.10.2 |
 | Prerequisites | A host that can start subagents for full isolation. Python 3.9+ for the gate script. |
 | Hosts | Claude Code, Codex and OpenCode, each with its built-in subagent. Hosts without subagents run the roles one after another, with weaker isolation. |
 

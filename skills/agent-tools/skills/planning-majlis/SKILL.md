@@ -1,13 +1,28 @@
 ---
 name: planning-majlis
 description: Plans new software or a new feature with a majlis, a committee of expert roles run as parallel subagents. Specialists drill into the problem, independent critics attack the result, everything is folded into one decision record, and rounds repeat until every seated role scores 9/10 with no open blockers; then writers produce the specs. Use when asked to "plan this product", "design this feature with a committee", "run a planning majlis", "get the experts to review this plan", or for a gated, multi-perspective plan before building.
+metadata:
+  author: Samy K. Abushanab
+  tags: planning, specs, architecture, review, subagents
 ---
 
 # Planning majlis
 
+## Purpose
+
 Run a committee of expert roles that plans software before anyone builds it. You are the **chair's
 clerk**: you brief the roles, keep the files and run the gate. You never score, and you never decide
 what the owner decides.
+
+## Prerequisites
+
+- A harness that can start subagents (Claude Code, Codex or OpenCode; see `references/spawning.md`). Without one
+  the roles run in sequence, with weaker isolation.
+- Python 3 for the gate script; standard library only.
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `<SKILL_DIR>/scripts/gate.py` | Decides the gate: roster, scores, OPEN rows, ids, tables. Exit 0 pass, 1 fail, 2 usage | `<workspace> [--record PATH] [--min-score 9] [--json]` |
 
 ## Rules that hold for the whole run
 
@@ -88,3 +103,30 @@ File templates: `references/templates/`.
 
 End with: the gate result as printed, the record version, the deliverables written, each open owner
 decision in one plain sentence with its default, and what was not verified.
+
+## Examples
+
+- "Plan a booking product, roles: core, ux, end-user" → full mode with the three named roles, deliverables D1–D6.
+- "Run a planning majlis on adding SSO to our admin app" → feature mode: recon on the repo, one design track,
+  critiques by the other roles, one feature spec.
+
+```bash
+python <SKILL_DIR>/scripts/gate.py planning/booking --json
+```
+
+## Limitations
+
+- Scores come from model critics, so two runs can differ; the gate checks the files, not the quality of the reasoning.
+- Facts the roles cannot verify stay `UNVERIFIED` in the spike register; the majlis does not run code or call services.
+- A full run is expensive (about 15× a normal chat) and stops after 6 re-score rounds without a pass.
+
+## Troubleshooting
+
+| Gate output | Cause | Fix |
+| --- | --- | --- |
+| `gate: error workspace not found` | Wrong path | Pass the workspace folder that holds `00-brief.md` |
+| `FAIL roster` | `00-brief.md` lacks `## Roster` or a core role | Add the section with all five core roles |
+| `FAIL scores` | `scorecard.md` lacks a seated role's row, or its latest score is below 9 | Run the next re-score round on that role's gaps |
+| `FAIL open` | `record.md` is missing or still has OPEN rows | Resolve each row or turn it into an owner decision with a default |
+| `FAIL ids` | A deliverable or the record cites an id the record never defines | Define the id in the record or fix the citation |
+| `FAIL tables` | A table row has a different cell count from its header | Fix the row the problem list names |

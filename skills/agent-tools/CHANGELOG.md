@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.2 — 2026-11-20
+
+- `progress-report`: the timeline id hash passes `usedforsecurity=False` to `hashlib.sha1`. The chained status-line command keeps `shell=True`, because it is the user's own previous status-line command run the way the host runs it; the code now says so and that it runs only from untracked local state matching `statusline.previous`. Test log paths use `D:/agent-logs/` instead of user home folders.
+- `progress-report`: `SKILL.md` gains metadata, Purpose, Prerequisites and Troubleshooting headings within the token budget the tests enforce; scripts, examples, limitations and error fixes are in the new `references/operations.md`. `docs/token-benchmark.md` is regenerated (resume and compaction now 898 tokens, the hand-edited Markdown cost).
+- `planning-majlis`: `SKILL.md` gains metadata, Purpose, Prerequisites with a `gate.py` table, Examples, Limitations, and a Troubleshooting table that maps each gate check to its fix. No behaviour change.
+- Validation: 538 Python tests passed across the User Manual, Progress Report and Planning Majlis suites (48 opt-in browser tests skipped). SkillEvaluator quality: progress-report 81.5 → 88.8, planning-majlis 83.2 → 95.2.
+
 ## 1.10.1 — 2026-11-19
 
 - `delegate-task`: the Linux containment helper (`containment-linux.py`) checks every request field before launching anything: hex nonce, absolute paths, an existing working directory, an executable file, string argv and environment, a positive owner PID and timeout. A malformed request writes a `closed` proof with `launch_error: "INVALID_REQUEST"` and the offending `invalid_field`; one without a usable proof path or nonce exits 2 and the supervisor records it as unresolved. A Linux test covers both paths.

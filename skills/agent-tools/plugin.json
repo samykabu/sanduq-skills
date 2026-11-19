@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agent-tools",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "delegate-task hands one task to another agent CLI and reports what it changed and the tokens it used. progress-report keeps a live progress report for a Markdown plan or a Spec Kit feature. planning-majlis plans software or a feature with a committee of expert roles run as subagents.",
   "author": {
     "name": "Samy K. Abushanab"

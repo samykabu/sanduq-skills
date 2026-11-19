@@ -1,13 +1,31 @@
 ---
 name: user-manual
-description: Create, update, audit and publish a standalone application User Manual with End User, Administrator and Technical editions, in English and optional Arabic. Use without Spec Kit to start a manual, document a feature or module, audit coverage, write API documentation (OpenAPI, AsyncAPI, GraphQL, webhooks), release notes and migration guides, plan and capture UI screenshots, set up private previews and versioned releases, or render the editions as Markdown for GitHub, through your own templates and tools (Pandoc, Quarto, a script), or as an MkDocs HTML site and PDF.
+description: Create, update, audit and publish a standalone application User Manual with End User, Administrator and Technical editions, in English and optional Arabic. Use without Spec Kit to start a manual, document a feature or module, audit coverage, write API documentation (OpenAPI, AsyncAPI, GraphQL, webhooks), release notes and migration guides, plan and capture UI screenshots, set up private previews and versioned releases, or render the editions as Markdown for GitHub, through the project's own templates and tools (Pandoc, Quarto, a script), or as an MkDocs HTML site and PDF.
+metadata:
+  author: Samy K. Abushanab
+  tags: documentation, user-manual, arabic, mkdocs, api-docs
 ---
 
 # User Manual
 
+## Purpose
+
 Maintain one evidence-backed Markdown source under `User-Manual/`. Publish three editions: End User,
 Administrator/Operator and Technical Reference. Markdown is the product; rendering is a separate,
 replaceable step.
+
+## Prerequisites
+
+- Python 3 with PyYAML and markdown-it-py (`User-Manual/requirements.lock`, written by `init_manual.py`).
+- Only for `renderer.kind: mkdocs`: `requirements-mkdocs.lock`, or `requirements-pdf.lock` for `--pdf`.
+- Only for `command`: the project's own tool (Pandoc, Quarto, a script) on `PATH`.
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `scripts/init_manual.py` | Scaffold an approved manual without overwriting authored pages | `--modules-file FILE [--product-name N] [--enable-arabic] [--no-tools] [--dry-run]` |
+| `scripts/audit_manual.py` | Check structure, metadata, links, assets, audiences, languages and secrets | `[--root User-Manual] [--json]` |
+| `scripts/build_manual.py` | Assemble and render editions | `[--all \| --audience A --language L] [--renderer R] [--pdf] [--version V]` |
+| `scripts/manual_state.py` | Record or check freshness; `status` exits 1 when stale | `record\|status --feature DIR [--summary]` |
 
 ## Choose the smallest workflow
 
@@ -68,10 +86,31 @@ work from the user's request, repository evidence and version-control changes.
    missing assets, and stages only the assets an edition's pages reach, so one audience never ships
    another's screenshots or samples.
 
-## Real-life example
+## Examples
 
 For "Create a manual for our booking platform," identify booking, customer, payment and operations
 modules from routes, navigation, APIs, tests and schema files. Ask the user to approve that module
 map. Then create audience-aware tutorials, safe screenshots, API and data references, English
 content and optional Arabic content under `User-Manual/`, and render it the way the project
 chooses: Markdown on GitHub, the team's Word template through Pandoc, or an MkDocs site with PDFs.
+
+```bash
+python <skill dir>/scripts/init_manual.py --modules-file modules.json --product-name "Booking" --enable-arabic
+python User-Manual/tools/audit_manual.py
+python User-Manual/tools/build_manual.py --all --version 1.4.0
+```
+
+## Limitations
+
+- The manual is only as accurate as the evidence: behavior the code, tests or schemas do not show is marked unknown.
+- Screenshots need a runnable app and a browser runner; without them the skill plans captures but cannot take them.
+- PDF output needs `renderer.kind: mkdocs` and the PDF lock file; other renderers produce what their own tool produces.
+
+## Troubleshooting
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `yaml is required; install User-Manual/requirements.lock` | Python packages missing | `pip install -r User-Manual/requirements.lock` |
+| `no Markdown pages under User-Manual/docs` | Audit ran before init, or on the wrong `--root` | Run `init_manual.py` or pass `--root` |
+| Build rejects a cross-audience link or missing asset | A page links to a page or file its edition does not ship | Link only within the audience, or move the asset |
+| `manual_state.py status` exits 1 | Code or manual outputs changed since the last record | Update the affected pages, then `record` again |
