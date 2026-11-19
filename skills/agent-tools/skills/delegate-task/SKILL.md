@@ -1,6 +1,6 @@
 ---
 name: delegate-task
-description: Delegate a task to an external agent CLI harness — Claude Code, OpenAI Codex, OpenCode, GitHub Copilot, or Pi — and get back a normalised result with status (successful / failed / abandoned), a summary, what actually changed on disk measured against git, and total input and output token usage. Use when asked to "use codex to ...", "delegate this to opencode", "have another agent do X", "run this task on a different model", to get a second opinion from another harness, or to compare harnesses on the same task.
+description: Delegate a task to an external agent CLI harness — Claude Code, OpenAI Codex, OpenCode, Antigravity (`agy`), GitHub Copilot, or Pi — and get back a normalised result with status (successful / failed / abandoned), a summary, what actually changed on disk measured against git, and total input and output token usage. Works when hosted in Claude Code, Codex, Antigravity, or OpenCode. Use when asked to "use codex to ...", "delegate this to opencode", "delegate this to agy / antigravity", "have another agent do X", "run this task on a different model", to get a second opinion from another harness, or to compare harnesses on the same task.
 ---
 
 # Delegate a task to another agent CLI
@@ -8,7 +8,7 @@ description: Delegate a task to an external agent CLI harness — Claude Code, O
 Runs one task on an external agent CLI **in the background** and returns a normalised
 result.
 
-Driver: `delegate.mjs`, in this skill's own directory (Node ≥ 18, no dependencies).
+Driver: `delegate.mjs`, in this skill's own directory (`<SKILL_DIR>/delegate.mjs`; Node ≥ 18, no dependencies).
 Behaviour is defined by three contracts in `contracts/` — read them before changing the driver.
 
 `start` returns a `run_id` immediately; `collect` retrieves the result. Nothing blocks you.
@@ -16,24 +16,36 @@ Behaviour is defined by three contracts in `contracts/` — read them before cha
 ## Resolve the driver and the runs directory first
 
 Where this skill is installed decides where `delegate.mjs` lives, and run artifacts default to
-sitting **beside the driver**. Set both once per session, then use `$DELEGATE` in every command
-below:
+sitting **beside the driver**. Resolve `<SKILL_DIR>` (the directory containing this `SKILL.md`)
+once per session and point `DELEGATE_RUNS_DIR` at the project being worked on:
 
 ```bash
-# Claude Code plugin install (agent-tools@sanduq)
-DELEGATE="$CLAUDE_PLUGIN_ROOT/skills/delegate-task/delegate.mjs"
+# Preferred: resolve relative to this skill's own folder (<SKILL_DIR>)
+DELEGATE="<SKILL_DIR>/delegate.mjs"
 
-# npx skills install, or a copy committed into the repository
-DELEGATE=".claude/skills/delegate-task/delegate.mjs"
+# Common install locations by host:
+#   Claude Code plugin (agent-tools@sanduq): $CLAUDE_PLUGIN_ROOT/skills/delegate-task/delegate.mjs
+#   Antigravity / Codex / OpenCode project:  .agents/skills/delegate-task/delegate.mjs
+#   OpenCode project / global:               .opencode/skills/delegate-task/delegate.mjs
+#                                            ~/.config/opencode/skills/delegate-task/delegate.mjs
+#   Antigravity global:                      ~/.gemini/config/skills/delegate-task/delegate.mjs
+#   Claude Code plain skill:                 .claude/skills/delegate-task/delegate.mjs
 
 # Keep run artifacts in the project being worked on, not next to the driver
 export DELEGATE_RUNS_DIR="$PWD/.delegate/runs"
 ```
 
-`DELEGATE_RUNS_DIR` is **required** for a plugin install: without it, artifacts from every project
-accumulate inside the shared plugin directory, and they contain your task text and the harness's
-raw output. Add `.delegate/` to the project's `.gitignore`. Every command that touches a run
-— `start`, `status`, `collect`, `list`, `prune` — must see the same value.
+On Windows PowerShell:
+
+```powershell
+$DELEGATE = "<SKILL_DIR>/delegate.mjs"
+$env:DELEGATE_RUNS_DIR = "$PWD/.delegate/runs"
+```
+
+`DELEGATE_RUNS_DIR` is **required** for any shared/plugin/global install: without it, artifacts from
+every project accumulate inside the shared skill directory, and they contain your task text and the
+harness's raw output. Add `.delegate/` to the project's `.gitignore`. Every command that touches a
+run — `start`, `status`, `collect`, `list`, `prune` — must see the same value.
 
 ## Check what is available first
 
@@ -49,10 +61,11 @@ broken** — and prints what `--sandbox` actually requests of each one.
 | Claude Code | `claude` | verified | verified | `--permission-mode plan` |
 | OpenAI Codex | `codex` | verified | verified | `-s read-only` (CLI-enforced) |
 | OpenCode | `opencode` | verified | verified | `--agent plan` |
+| Antigravity | `agy` | verified | verified | `--mode plan` |
 | GitHub Copilot | `copilot` | **experimental** | experimental | `--mode plan` |
 | Pi | `pi` | **experimental** | experimental | `--no-approve --tools read,grep,find,ls` |
 
-Prefer `claude`, `codex`, or `opencode`.
+Prefer `claude`, `codex`, `opencode`, or `agy`.
 
 ## Run a delegation
 
@@ -158,13 +171,17 @@ honours them.
    success-shaped event plus exit 1 was published `successful`. Fixed; pinned by
    `test/run.mjs` case `REPAIR-D1`. Always read `status_provenance`, never `exit_code` alone.
 2. **Token fields mean different things per harness.** Claude's `input_tokens` /
-   `cache_creation` / `cache_read` are **disjoint** — sum them (a probe reported `input_tokens: 2`
-   for a request that really sent 58,065). Codex's `input_tokens` is **inclusive** of
-   `cached_input_tokens` — subtract for the fresh count. Use `input_total` / `input_fresh`;
-   `usage_raw` keeps the harness's own numbers for audit but is never displayed as a total.
+   `cache_creation` / `cache_read` and Antigravity's `input_tokens` / `cache_read_tokens` are
+   **disjoint** — sum them (a Claude probe reported `input_tokens: 2` for a request that really
+   sent 58,065). Codex's `input_tokens` is **inclusive** of `cached_input_tokens` — subtract for
+   the fresh count. OpenCode reports `output` and `reasoning` separately — the driver sums them
+   into `output_total` so it matches Claude, Codex, and Antigravity. Use `input_total` /
+   `input_fresh`; `usage_raw` keeps the harness's own numbers for audit but is never displayed as
+   a total.
 3. **Totals are not comparable across harnesses.** OpenCode emits one `step_finish` per step and
-   the driver sums them, so context re-sent each step is counted each time. Same trivial task:
-   66,341 (codex), 117,014 (claude), 426,523 (opencode). Not an efficiency ranking.
+   the driver sums them, so context re-sent each step is counted each time. Antigravity's
+   `result.usage` (like Codex's `turn.completed`) is cumulative across resumed turns. Same trivial
+   task: 66,341 (codex), 117,014 (claude), 426,523 (opencode). Not an efficiency ranking.
 4. **Delegating to `claude` has a ~58k token floor.** `claude -p` loads CLAUDE.md and every
    discovered skill before reading the task.
 5. **Codex inherits your MCP servers.** If codex feels slow, read `runs/<run_id>/stderr.log` —
@@ -174,27 +191,31 @@ honours them.
 7. **Full bypass really is unsandboxed.** An OpenCode delegate once wrote a file *outside* its
    `--cwd`. Use `--sandbox`, or a throwaway directory.
 8. **Not every harness reports every field.** Copilot emits no token counts at all
-   (`fidelity: "unavailable"` — zeroes mean *unknown*, not *free*). **Codex emits neither a cost
-   nor a model** anywhere in its JSONL, so `cost_usd` and `model` are null by nature, not by a
-   parsing failure — `cost_reported` / `model_reported` say which, and the printed result reads
-   "not reported by this harness". Claude reports both; OpenCode reports cost.
+   (`fidelity: "unavailable"` — zeroes mean *unknown*, not *free*). **Codex and Antigravity (`agy`)
+   emit neither a cost nor a model** anywhere in their JSONL, so `cost_usd` and `model` are null by
+   nature, not by a parsing failure — `cost_reported` / `model_reported` say which, and the printed
+   result reads "not reported by this harness". Claude reports both; OpenCode reports cost (including
+   explicit `$0.0000`).
 9. **Task text never reaches a shell.** Each CLI is resolved to a real executable and spawned
    with `shell:false`.
-10. **`pi` persists a session in its own store.** `--no-session` is deliberately not passed —
+10. **`agy --mode plan` relies on slash-command expansion.** Do not add `--disable-slash-commands`
+    when customizing `agy` runs: `agy` implements plan mode via the built-in `/plan` command and
+    ignores `--mode plan` if slash commands are disabled.
+11. **`pi` persists a session in its own store.** `--no-session` is deliberately not passed —
     without a session there is nothing to resume. Sessions land in
     `~/.pi/agent/sessions/<cwd-slug>/`, keyed by working directory; `prune` does not touch them.
     Pi's auth is file-based (`~/.pi/agent/auth.json`), so `--clean-env` does not break it.
-11. **A run whose supervisor is killed is `lost`, not stuck.** `collect` synthesises a terminal
+12. **A run whose supervisor is killed is `lost`, not stuck.** `collect` synthesises a terminal
     result from the journal and logs. Its git delta is `null`: no run-start baseline survived, and
     reporting `false` would be an assurance nothing measured.
-12. **Run ids are validated.** They must match `<harness>-<14 digits>-<6 hex>`, and must resolve
+13. **Run ids are validated.** They must match `<harness>-<14 digits>-<6 hex>`, and must resolve
     directly under the runs directory. A caller-supplied id cannot traverse out of it.
-13. **A dead supervisor whose harness is still alive is `adrift`, not `lost`.** `collect` refuses
+14. **A dead supervisor whose harness is still alive is `adrift`, not `lost`.** `collect` refuses
     to publish, because a result written then would snapshot a run still in motion. Wait for the
     child, or kill the pid `status` names. `prune` will not delete an adrift run either.
-14. **`DELEGATE_BIN_<HARNESS>` overrides where a binary is found** — e.g.
-    `DELEGATE_BIN_CODEX=/opt/codex/bin/codex`. It is also how the test suite drives a fake harness
-    end to end without spending a token.
+15. **`DELEGATE_BIN_<HARNESS>` overrides where a binary is found** — e.g.
+    `DELEGATE_BIN_CODEX=/opt/codex/bin/codex` or `DELEGATE_BIN_AGY=/usr/local/bin/agy`. It is also
+    how the test suite drives a fake harness end to end without spending a token.
 
 ## Troubleshooting
 

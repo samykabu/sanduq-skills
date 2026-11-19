@@ -66,10 +66,14 @@ function redactPlain(text, extraValues = []) {
 
 const TOKEN_METRICS = new Set(['input_tokens', 'output_tokens', 'cached_input_tokens',
   'cache_creation_input_tokens', 'cache_read_input_tokens', 'cache_write_input_tokens',
+  'cache_read_tokens', 'cache_write_tokens',
   'reasoning_output_tokens', 'reasoning_tokens', 'thinking_tokens', 'total_tokens',
   'inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens']);
 const TOKEN_FIELDS = new Set(['input_total', 'input_fresh', 'cache_read', 'cache_write',
   'output_total', 'reasoning', 'total', 'input', 'output', 'cacheRead', 'cacheWrite']);
+const isCacheCounters = (v) => v && !Array.isArray(v) && typeof v === 'object'
+  && Object.keys(v).length > 0
+  && Object.entries(v).every(([k, n]) => (k === 'read' || k === 'write') && (typeof n === 'number' || n === null));
 
 // Replace value spans, not the serialized document: numeric lexemes, whitespace
 // and record boundaries survive, including counters outside JS's safe integers.
@@ -129,6 +133,7 @@ function redactJson(text, extraValues) {
     const counters = value === 'tokens' && parsed && !Array.isArray(parsed) && typeof parsed === 'object'
       && Object.keys(parsed).length > 0 && Object.entries(parsed).every(([key, number]) =>
         (TOKEN_FIELDS.has(key) || TOKEN_METRICS.has(key)) && (typeof number === 'number' || number === null)
+        || key === 'cache' && isCacheCounters(number)
         || key === 'fidelity' && ['exact', 'partial', 'unavailable'].includes(number));
     const details = value === 'output_tokens_details' && parsed && typeof parsed === 'object'
       && !Array.isArray(parsed) && Object.keys(parsed).length > 0

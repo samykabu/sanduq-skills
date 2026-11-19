@@ -34,6 +34,22 @@ test('observed structured events cancel startup deadline without shortening vali
   const c = cli(driver, ['collect', id, '--wait', '10', '--json']); const r = JSON.parse(c.stdout);
   assert.equal(r.status, 'successful'); assert.equal(r.execution.progress_state, 'harness_events'); assert.ok(r.execution.last_structured_event_at); assert.equal(r.actual_model, null);
 });
+test('agy event-keyed structured records cancel startup deadline and record harness progress', async () => {
+  const agyStream = JSON.stringify({ event: 'init', conversation_id: 'agy-startup' }) + '\n'
+    + JSON.stringify({ event: 'result', result: { conversation_id: 'agy-startup', status: 'SUCCESS', response: 'ok', usage: { input_tokens: 10, cache_read_tokens: 5, output_tokens: 2, thinking_tokens: 1 } } }) + '\n';
+  const start = cli(driver, ['start', '--harness', 'agy', '--cwd', tmp, '--task', 'agy startup', '--timeout', '15', '--startup-timeout', '0.4'], {
+    DELEGATE_BIN_AGY: path.join(here, 'fixtures/fake-harness.mjs'), FAKE_STREAM: agyStream, FAKE_SLEEP_MS: '1200',
+  });
+  assert.equal(start.status, 0, start.stderr);
+  const id = JSON.parse(start.stdout).run_id;
+  await until(() => {
+    try { return JSON.parse(fs.readFileSync(path.join(tmp, id, 'progress.json'), 'utf8')).last_structured_event_at; }
+    catch { return null; }
+  });
+  const c = cli(driver, ['collect', id, '--wait', '10', '--json']); const r = JSON.parse(c.stdout);
+  assert.equal(r.status, 'successful'); assert.equal(r.execution.progress_state, 'harness_events'); assert.ok(r.execution.last_structured_event_at);
+  assert.equal(r.session_id, 'agy-startup');
+});
 test('startup deadline is opt-in; silent startup status does not declare completion', async () => {
   const id = startHarness({ FAKE_SLEEP_MS: '800' }, ['--no-output-after', '0.05']);
   await until(() => fs.existsSync(path.join(tmp, id, 'progress.json')));

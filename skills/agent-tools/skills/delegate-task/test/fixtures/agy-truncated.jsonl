@@ -1,0 +1,2 @@
+{"event":"init","conversation_id":"845a100e-1398-4d6b-94ce-ede4bd07bf9d","init":{"cwd":"/work/repo","permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"845a100e-1398-4d6b-94ce-ede4bd07bf9d","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"Halfway through"}}

@@ -273,6 +273,12 @@ t('CONTRACT resume argv is harness-shaped', () => {
     'codex exec options precede the resume subcommand');
   assert.ok(HARNESSES.claude.args({ task: 't', model: null, perm: 'bypass', resume: 's1' }).includes('--resume'));
   assert.ok(HARNESSES.opencode.args({ task: 't', model: null, perm: 'bypass', resume: 's1' }).includes('--session'));
+  assert.deepEqual(
+    HARNESSES.agy.args({ task: 't', model: 'gemini-2.5-pro', perm: 'sandbox', resume: 'conv-1' }),
+    ['-p', 't', '--output-format', 'stream-json', '--model', 'gemini-2.5-pro', '--conversation', 'conv-1', '--mode', 'plan'],
+    'agy sandbox uses --mode plan without disabling slash commands');
+  assert.ok(HARNESSES.agy.args({ task: 't', model: null, perm: 'bypass', resume: null }).includes('--dangerously-skip-permissions'));
+  assert.ok(!HARNESSES.agy.args({ task: 't', model: null, perm: 'sandbox', resume: null }).includes('--disable-slash-commands'));
   assert.ok(HARNESSES.copilot.args({ task: 't', model: null, perm: 'bypass', resume: 's1' }).includes('--resume=s1'));
   assert.ok(HARNESSES.pi.args({ task: 't', model: null, perm: 'bypass', resume: 's1' }).includes('--session'));
 });
@@ -288,6 +294,9 @@ t('CONTRACT session extractors pull the id each CLI actually emits', () => {
   assert.equal(HARNESSES.codex.session({ thread: { id: 'th_8' } }), 'th_8');
   assert.equal(HARNESSES.claude.session({ session_id: 'cs_1' }), 'cs_1');
   assert.equal(HARNESSES.opencode.session({ sessionID: 'oc_1' }), 'oc_1');
+  assert.equal(HARNESSES.agy.session({ event: 'init', conversation_id: 'agy-1' }), 'agy-1');
+  assert.equal(HARNESSES.agy.session({ event: 'step_update', step_update: { conversation_id: 'agy-2' } }), 'agy-2');
+  assert.equal(HARNESSES.agy.session({ event: 'result', result: { conversation_id: 'agy-3' } }), 'agy-3');
   assert.equal(HARNESSES.copilot.session({ type: 'result', sessionId: 'cp_1' }), 'cp_1');
   assert.equal(HARNESSES.pi.session({ type: 'session', id: 'pi_1' }), 'pi_1');
   assert.equal(HARNESSES.pi.session({ type: 'message_end', id: 'not-a-session' }), null);
@@ -347,6 +356,65 @@ t('CONTRACT opencode sums per-step usage rather than last-wins', () => {
   const p = HARNESSES.opencode.parse(fixture('opencode-success.jsonl'), '', 0);
   assert.equal(p.tokens.input_fresh, 300, 'three steps of 100 must sum, not last-win');
   assert.equal(p.tokens.output_total, 60);
+});
+
+t('CONTRACT opencode v2.3.2 adds reasoning into output_total and preserves explicit zero cost', () => {
+  const p = HARNESSES.opencode.parse(fixture('opencode-v2-reasoning.jsonl'), '', 0);
+  assert.equal(p.complete, true);
+  assert.equal(p.status, 'successful');
+  assert.equal(p.tokens.input_fresh, 15254);
+  assert.equal(p.tokens.cache_read, 2688);
+  assert.equal(p.tokens.input_total, 15254 + 2688);
+  assert.equal(p.tokens.reasoning, 21);
+  assert.equal(p.tokens.output_total, 23, 'disjoint output (2) + reasoning (21) must sum into output_total');
+  assert.equal(p.cost_usd, 0, 'explicitly reported cost: 0 must not collapse to null');
+});
+
+t('CONTRACT opencode explicit error event fails instead of reporting telemetry_incomplete', () => {
+  const p = HARNESSES.opencode.parse(
+    '{"type":"step_start","sessionID":"oc_err"}\n{"type":"error","error":{"message":"model not found"}}\n', '', 0);
+  assert.equal(p.complete, true);
+  assert.equal(p.status, 'failed');
+  assert.equal(p.reason, 'model not found');
+});
+
+t('CONTRACT agy input_tokens and cache_read_tokens are disjoint and output_tokens includes thinking', () => {
+  const p = HARNESSES.agy.parse(fixture('agy-success.jsonl'), '', 0);
+  assert.equal(p.complete, true);
+  assert.equal(p.status, 'successful');
+  assert.equal(p.session, '845a100e-1398-4d6b-94ce-ede4bd07bf9d');
+  assert.equal(p.tokens.input_fresh, 16064);
+  assert.equal(p.tokens.cache_read, 10917);
+  assert.equal(p.tokens.input_total, 16064 + 10917);
+  assert.equal(p.tokens.output_total, 117);
+  assert.equal(p.tokens.reasoning, 112);
+  assert.equal(p.tokens.total, 16064 + 10917 + 117);
+  assert.equal(p.tokens.fidelity, 'exact');
+  assert.equal(p.usage_raw.input_tokens, 16064);
+});
+
+t('CONTRACT agy truncated stream without result event is incomplete', () => {
+  const p = HARNESSES.agy.parse(fixture('agy-truncated.jsonl'), '', 0);
+  assert.equal(p.complete, false);
+  assert.equal(p.status, 'abandoned');
+  assert.equal(p.tokens.fidelity, 'unavailable');
+  const r = resolveStatus({ exitCode: 0, parse: p });
+  assert.equal(r.status, 'abandoned');
+  assert.equal(r.provenance.primary, 'telemetry_incomplete');
+});
+
+t('CONTRACT agy error and abandoned result statuses map honestly', () => {
+  const err = HARNESSES.agy.parse(fixture('agy-error.jsonl'), '', 0);
+  assert.equal(err.complete, true);
+  assert.equal(err.status, 'failed');
+  assert.equal(err.reason, 'model quota exceeded');
+  assert.equal(err.tokens.fidelity, 'unavailable');
+
+  const cancelled = HARNESSES.agy.parse(
+    '{"event":"result","result":{"conversation_id":"c1","status":"CANCELLED","response":""}}\n', '', 0);
+  assert.equal(cancelled.complete, true);
+  assert.equal(cancelled.status, 'abandoned');
+  assert.equal(cancelled.tokens.fidelity, 'unavailable');
 });
 
 // C9/C10: an adapter must key completeness on a TERMINAL event, and must not
@@ -1786,6 +1854,44 @@ t('AMENDMENT-4 resume restates the parent\'s original constraints', () => {
   assert.match(prompt, /ORIGINAL-DELIVERABLE/, 'the parent\'s deliverable was dropped on resume');
   assert.match(prompt, /Do NOT run `git add` or `git commit`/);
   assert.match(prompt, /just the delta/);
+});
+
+t('CONTRACT/E2E agy start, collect, streaming session capture and resume work end to end', () => {
+  const agyStream = fixture('agy-success.jsonl');
+  const start = spawnSync(process.execPath, [DRIVER, 'start',
+    '--harness', 'agy', '--cwd', os.tmpdir(), '--timeout', '60', '--sandbox', '--task', 'agy e2e'], {
+    encoding: 'utf8', timeout: 60_000,
+    env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_AGY: FAKE, FAKE_STREAM: agyStream, FAKE_EXIT: '0', FAKE_VERSION: '1.5.12' },
+  });
+  assert.equal(start.status, 0, start.stderr);
+  const runId = JSON.parse(start.stdout).run_id;
+  awaitSupervisor(runId);
+  const col = spawnSync(process.execPath, [DRIVER, 'collect', runId, '--wait', '45', '--json'], {
+    encoding: 'utf8', timeout: 60_000, env: { ...process.env, ...RUNS_ENV },
+  });
+  assert.equal(col.status, 0, col.stderr);
+  const res = JSON.parse(col.stdout);
+  assert.equal(res.status, 'successful');
+  assert.equal(res.harness, 'agy');
+  assert.equal(res.session_id, '845a100e-1398-4d6b-94ce-ede4bd07bf9d');
+  assert.equal(res.session_capture, 'streaming');
+  assert.equal(res.permission_mode_applied, 'agy: --mode plan');
+  assert.equal(res.tokens.input_total, 26981);
+  assert.equal(res.tokens.output_total, 117);
+  assert.equal(res.cost_reported, false);
+  assert.equal(res.model_reported, false);
+  assert.ok(res.execution.last_structured_event_at, 'agy event records must count as structured progress');
+
+  const resumed = spawnSync(process.execPath, [DRIVER, 'start',
+    '--harness', 'agy', '--cwd', os.tmpdir(), '--timeout', '60', '--sandbox', '--resume', runId, '--task', 'follow up'], {
+    encoding: 'utf8', timeout: 60_000,
+    env: { ...process.env, ...RUNS_ENV, DELEGATE_BIN_AGY: FAKE, FAKE_STREAM: agyStream, FAKE_EXIT: '0', FAKE_VERSION: '1.5.12' },
+  });
+  assert.equal(resumed.status, 0, resumed.stderr);
+  const resumedObj = JSON.parse(resumed.stdout);
+  assert.equal(resumedObj.parent_run_id, runId);
+  assert.equal(resumedObj.resumed_session, '845a100e-1398-4d6b-94ce-ede4bd07bf9d');
+  awaitSupervisor(resumedObj.run_id);
 });
 
 t('CONTRACT resume refuses a harness-version change', () => {

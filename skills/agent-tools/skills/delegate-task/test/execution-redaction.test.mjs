@@ -37,13 +37,22 @@ test('disjoint secret unions preserve every nonsecret gap', () => {
 test('JSON masking preserves usage lexemes, scalar types and nested token counters', () => {
   const source = `{
     "usage": {"input_tokens": 9007199254740993, "cache_creation_input_tokens": 1e3,
-      "cache_read_input_tokens": 0, "cached_input_tokens": 42, "output_tokens": -0,
+      "cache_read_input_tokens": 0, "cache_read_tokens": 10917, "cache_write_tokens": 0,
+      "cached_input_tokens": 42, "output_tokens": -0,
       "output_tokens_details": {"reasoning_tokens": 3, "thinking_tokens": null}},
     "tokens": {"input_total": 1042, "output_total": 3, "fidelity": "exact"},
     "complete": true, "cost": 0.125, "unknown": null, "items": [false, 2, "visible"]
   }`;
   assert.equal(redact(source), source);
   assert.deepEqual(JSON.parse(redact(source)), JSON.parse(source));
+
+  const opencodeLine = JSON.stringify({
+    type: 'step_finish',
+    part: { reason: 'stop', cost: 0, tokens: { input: 15254, output: 2, reasoning: 21, cache: { read: 2688, write: 0 } } },
+  });
+  assert.equal(redact(opencodeLine), opencodeLine);
+  const badCache = JSON.stringify({ tokens: { input: 1, cache: { read: 'opaque-secret' } } });
+  assert.deepEqual(JSON.parse(redact(badCache)), { tokens: '[redacted]' });
 });
 
 test('JSON credential values are masked as valid JSON regardless of their type or nesting', () => {

@@ -5,6 +5,10 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-19 — agent-tools 1.10.0
+
+- **agent-tools 1.10.0.** `delegate-task` adds Antigravity (`agy`) as a verified harness target (streaming `conversation_id` capture, `--conversation` resume, `--mode plan` read-only mode, disjoint `input_tokens` + `cache_read_tokens` accounting, `"event"`-keyed structured progress tracking), updates the OpenCode harness and log redaction for `opencode v2.3.2` (nested `tokens.cache` preserved on redaction, `reasoning` summed into `output_total`, explicit `cost: 0`, explicit `error` event handling), and makes `SKILL.md` and docs host-agnostic across Claude Code, Codex, Antigravity, and OpenCode. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+
 ## 2026-11-05 — dev-tools 2.0.5
 
 - **dev-tools 2.0.5.** `user-manual`: `build_manual.py --all` builds the audiences configured in `manual.yml`, so a manual with end-user and administrator editions no longer fails for missing technical pages. Omitting the audience selection retains the three-audience fallback; invalid selections fail before building. Explicit single-edition behavior is unchanged.
