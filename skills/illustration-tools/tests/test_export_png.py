@@ -70,8 +70,8 @@ class PngExportTests(unittest.TestCase):
     def test_subpixel_position_preserves_exact_dimensions_and_content(self):
         from PIL import Image
         with tempfile.TemporaryDirectory() as tmp:
-            for width, height, scale in ((101, 101, 1.25), (1024, 640, 1.5)):
-                with self.subTest(scale=scale):
+            for width, height, scale in ((101, 101, 1.25), (107, 111, 1.25), (1024, 640, 1.5)):
+                with self.subTest(width=width, height=height, scale=scale):
                     source = page(tmp, "offset.html", FIGURE.format(w=width, h=height, edge=width - 15),
                                   "<style>svg{display:block}</style>", 'style="margin:0.5px"')
                     out = Path(tmp) / "offset.png"
