@@ -142,7 +142,7 @@ jobs:
           python scripts/verify-geometry.py --all --baseline
           python scripts/verify-arrow-ends.py --all
           python scripts/lint-skin.py --all --baseline
-          for v in architecture-delta treemap marimekko sankey heatmap waterfall slopegraph ridgeline streamgraph bump bubble beeswarm service-blueprint steps unit-grid requirement-traceability event-modeling schedule-network sbgn architecture-containment box-plot arc-diagram; do python scripts/verify-$v.py --all; done
+          for v in architecture-delta treemap marimekko sankey heatmap waterfall slopegraph ridgeline streamgraph bump bubble beeswarm service-blueprint steps unit-grid requirement-traceability event-modeling schedule-network sbgn bpmn architecture-containment box-plot arc-diagram; do python scripts/verify-$v.py --all; done
           python scripts/verify-polar.py
           python scripts/verify-dumbbell.py
           python scripts/verify-sequence-oauth.py

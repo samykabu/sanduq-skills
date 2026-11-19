@@ -5,7 +5,7 @@ Illustrate draws diagrams and charts as one self-contained HTML file you can ope
 | | |
 | --- | --- |
 | Bundle | `illustration-tools` (Claude Code plugin `illustration-tools@sanduq`) |
-| Version | 3.8.0 |
+| Version | 3.9.0 |
 | Prerequisites | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG and GIF; Pillow for GIF. |
 | Hosts | Claude Code: yes. Codex: yes. Claude Desktop: HTML yes; exports unverified. |
 
@@ -61,6 +61,7 @@ and fonts. Each has a light and a dark palette. The theme applies to every diagr
 | Educational process notation | SBGN Process Description |
 
 Architecture containment, Box plot and Arc diagram are variants of Architecture, Scatter and Dependency graph.
+Ask for BPMN 2.0 explicitly to use the Process variant with standard symbols and role lanes.
 
 **Styles.** Each diagram can be minimal light, minimal dark, full editorial, or hand-drawn. Two
 technical-color families cover cloud and infrastructure maps and numbered process flows. They
@@ -78,6 +79,7 @@ python scripts/export_diagram.py diagram.html --gif --arrows=chevrons --theme da
 
 - `--animated` writes an [animated SVG](../glossary.md#animated-svg) for READMEs.
 - `--gif` writes the same animation as a GIF.
+- `--bpmn-route <name>` plays one named BPMN outcome while keeping all sequence flows visible.
 - `--arrows` sets the [arrow style](../glossary.md#arrow-style): `draw` (the default), `flow`,
   `pulse`, `draw-flow`, or `chevrons`.
 - PNG accepts a finite `--scale` from 1 to 4. GIF accepts 1, 2, or 3.

@@ -29,6 +29,7 @@ Or in plain language:
 
 - *"Draw an architecture diagram for a React frontend, Node API, Postgres, and Redis on AWS."*
 - *"Make a hand-drawn process flow for our expense-approval workflow with a manager decision step."*
+- *"Draw a BPMN 2.0 expense approval process with Employee, Manager and Finance lanes. Animate the approved route."*
 
 Iterate in chat — "add a Redis cache", "add a rejection branch from step 3", "wrap this to a second row" — and Claude edits the same HTML file.
 

@@ -5,6 +5,11 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-20 — illustration-tools 3.9.0
+
+- Adds BPMN 2.0 as an opt-in Process variant with role lanes, BPMN symbols, a semantic verifier, and light, dark, full and handwritten examples.
+- Adds route playback for BPMN animated SVG and GIF. Each token follows one selected outcome while the full process stays visible in motion and static exports.
+
 ## 2026-11-19 — illustration-tools 3.8.0
 
 - Added Service blueprint, Steps, Unit Grid, Requirement traceability, Event modeling, Schedule network and educational SBGN Process Description. Architecture containment, Box plot and Arc diagram are variants. All ten have light, dark, full and handwritten examples.
