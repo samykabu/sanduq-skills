@@ -2,12 +2,12 @@
 
 > English version: [README.md](README.md)
 
-تُسلّم مهمة واحدة إلى أداة وكيل أخرى — Claude Code أو OpenAI Codex أو OpenCode أو GitHub Copilot أو
-Pi — تعمل في الخلفية، وتعود إليك بنتيجة يمكن الوثوق بها فعلاً.
+تُسلّم مهمة واحدة إلى أداة وكيل أخرى — Claude Code أو OpenAI Codex أو OpenCode أو Antigravity
+(`agy`) أو GitHub Copilot أو Pi — تعمل في الخلفية، وتعود إليك بنتيجة يمكن الوثوق بها فعلاً.
 
-هذه [مهارة لـ Claude Code](https://docs.claude.com/en/docs/claude-code/skills)، فيلتقطها Claude
-تلقائياً حين تقول «استخدم codex لإعادة هيكلة هذا». وهي في الوقت نفسه مجرد سكربت Node، فتستطيع
-تشغيلها من أي طرفية.
+هي مهارة وكلاء محمولة (`SKILL.md`) تعمل في **Claude Code** و**Codex** و**Antigravity** و**OpenCode**،
+فيلتقطها المضيف تلقائياً حين تقول «استخدم codex لإعادة هيكلة هذا» أو «فوّض هذه المهمة إلى agy». وهي في
+الوقت نفسه مجرد سكربت Node، فتستطيع تشغيلها من أي طرفية.
 
 ## التثبيت
 
@@ -15,30 +15,38 @@ Pi — تعمل في الخلفية، وتعود إليك بنتيجة يمكن 
 [sanduq-skills](https://github.com/samykabu/sanduq-skills).
 
 ```text
+# سوق إضافات Claude Code
 /plugin marketplace add samykabu/sanduq
 /plugin install agent-tools@sanduq
 ```
 
-أو ثبّت هذه المهارة وحدها في المشروع الحالي:
+أو ثبّت هذه المهارة وحدها في المشروع الحالي (أو إعدادات المستخدم) لـ Claude Code أو Codex أو
+Antigravity أو OpenCode:
 
 ```bash
 npx skills add samykabu/sanduq-skills --skill delegate-task
 ```
 
-موضع التثبيت يحدّد مكان المحرّك، 
-فحدّده مرة واحدة واستخدمه في كل الأوامر:
+موضع التثبيت يحدّد مكان المحرّك، فحدّد `<SKILL_DIR>` (المجلد الذي يحوي `SKILL.md`) مرة واحدة
+واستخدمه في كل الأوامر:
 
 ```bash
-# تثبيت كإضافة
+# تثبيت كإضافة في Claude Code
 DELEGATE="$CLAUDE_PLUGIN_ROOT/skills/delegate-task/delegate.mjs"
-# تثبيت بـ npx skills أو نسخة محفوظة داخل المستودع
+# تثبيت مشروع مشترك (Antigravity / Codex / OpenCode)
+DELEGATE=".agents/skills/delegate-task/delegate.mjs"
+# تثبيت OpenCode في المشروع (أو ~/.config/opencode/skills/delegate-task/delegate.mjs)
+DELEGATE=".opencode/skills/delegate-task/delegate.mjs"
+# تثبيت Antigravity عام
+DELEGATE="$HOME/.gemini/config/skills/delegate-task/delegate.mjs"
+# تثبيت مهارة Claude Code مستقلة
 DELEGATE=".claude/skills/delegate-task/delegate.mjs"
 
 # ابقِ مخرجات التشغيل داخل المشروع، لا بجانب المحرّك
 export DELEGATE_RUNS_DIR="$PWD/.delegate/runs"
 ```
 
-اضبط `DELEGATE_RUNS_DIR` عند التثبيت كإضافة، وأضف `.delegate/` إلى `.gitignore` للمشروع.
+اضبط `DELEGATE_RUNS_DIR` عند أي تثبيت مشترك أو عام أو كإضافة، وأضف `.delegate/` إلى `.gitignore` للمشروع.
 مخرجات التشغيل تحوي نص مهمتك ومخرجات الأداة الخامة.
 
 ## لماذا وُجدت أصلاً
@@ -61,7 +69,7 @@ export DELEGATE_RUNS_DIR="$PWD/.delegate/runs"
 رصده git فعلياً على القرص مقابل ما ادّعى الوكيل أنه غيّره، وحساب tokens موحّد مع إشارة تقول لك إلى
 أي مدى تثق به، وسجلّ تشغيلات يبقى بعد انتهاء الجلسة التي بدأته.
 
-خمس أدوات في جدول واحد. إضافة السادسة سطر في الجدول، لا برنامج جديد.
+ست أدوات في جدول واحد. إضافة السابعة سطر في الجدول، لا برنامج جديد.
 
 ## كيف يسير التشغيل
 
@@ -138,6 +146,10 @@ delegate.mjs start --harness codex --model gpt-5.5 --cwd ~/work/myrepo --task '.
 
 # OpenCode يحتاج اسماً مسبوقاً بالمزوّد
 delegate.mjs start --harness opencode --model anthropic/claude-sonnet-4-5 \
+  --cwd ~/work/myrepo --task '...'
+
+# Antigravity (agy)
+delegate.mjs start --harness agy --model gemini-2.5-pro \
   --cwd ~/work/myrepo --task '...'
 ```
 
@@ -294,9 +306,9 @@ JSON يسرد كل ما كان صحيحاً غير ذلك.
 **دقة الـ tokens** — `exact` أو `partial` أو `unavailable`. في الحالة الأخيرة الأصفار تعني *غير
 معروف*، لا *مجاني*.
 
-ليست كل أداة تُبلغ عن كل شيء. Codex لا يُصدر تكلفة ولا اسم نموذج في أي مكان من بثّه، فيظهر الحقلان
-بعبارة *not reported by this harness* بدل `null` صامت يبدو كأنه خلل. Claude يُبلغ عن الاثنين،
-وOpenCode يُبلغ عن التكلفة.
+ليست كل أداة تُبلغ عن كل شيء. Codex وAntigravity (`agy`) لا يُصدران تكلفة ولا اسم نموذج في أي مكان
+من بثّهما، فيظهر الحقلان بعبارة *not reported by this harness* بدل `null` صامت يبدو كأنه خلل. Claude
+يُبلغ عن الاثنين، وOpenCode يُبلغ عن التكلفة (بما فيها `$0.0000`).
 
 ## الأوامر
 
@@ -401,7 +413,8 @@ SIGTERM قابلاً للالتقاط، ولا شيء ينجو من SIGKILL، و
 |---|---|---|
 | Claude | `input` و`cache_creation` و`cache_read` **منفصلة** | نجمعها في `input_total` |
 | Codex | `input_tokens` **يشمل** المخزّن مؤقتاً | نطرح المخزّن لنحصل على `input_fresh` |
-| OpenCode | `step_finish` **لكل خطوة** | نجمع كل الخطوات |
+| OpenCode | `step_finish` **لكل خطوة**؛ و`output` و`reasoning` **منفصلان** | نجمع كل الخطوات ونضمّ `reasoning` في `output_total` |
+| Antigravity (`agy`) | `input_tokens` و`cache_read_tokens` **منفصلان**؛ و`output_tokens` يشمل `thinking_tokens` | نجمع المدخلات والكاش في `input_total` |
 
 استخدم `input_total` لكل ما أُرسل، و`input_fresh` للجزء غير المخزّن وهو ما يحرّك التكلفة. ونحتفظ
 بـ `usage_raw` كما أصدرته الأداة، حتى يمكن إعادة حساب تشغيل قديم إن تبيّن لاحقاً خطأ في محلّل ما.
@@ -423,6 +436,7 @@ SIGTERM قابلاً للالتقاط، ولا شيء ينجو من SIGKILL، و
 | `codex` | `-s read-only`، مفروض من الأداة نفسها |
 | `claude` | `--permission-mode plan` |
 | `opencode` | `--agent plan`، ولا `--auto` إطلاقاً |
+| `agy` | `--mode plan` (دون `--disable-slash-commands`) |
 | `copilot` | `--mode plan` |
 | `pi` | `--no-approve --tools read,grep,find,ls` |
 

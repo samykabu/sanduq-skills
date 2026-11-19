@@ -66,13 +66,13 @@ Where it matters: [delegate-task](skills/delegate-task.md).
 ### Harness
 
 An agent command-line tool that `delegate-task` can hand a task to: Claude Code, Codex, OpenCode,
-Copilot, or Pi. A harness is the target of a delegation, not the place you run the skill from.
-Compare [host](#host). Where it matters: [delegate-task](skills/delegate-task.md).
+Antigravity (`agy`), Copilot, or Pi. A harness is the target of a delegation, not the place you run
+the skill from. Compare [host](#host). Where it matters: [delegate-task](skills/delegate-task.md).
 
 ### Host
 
-The agent application you run a skill in: Codex, Claude Code, or Claude Desktop. Hosts differ in
-how you install and call skills and in what local tools they can run.
+The agent application you run a skill in: Claude Code, Codex, Antigravity, OpenCode, or Claude
+Desktop. Hosts differ in how you install and call skills and in what local tools they can run.
 Where it matters: every skill page, the README's support table.
 
 ### Lane

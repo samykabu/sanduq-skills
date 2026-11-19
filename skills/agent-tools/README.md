@@ -4,7 +4,7 @@ Skills for driving *other* agent CLIs from inside one, and for keeping a live pr
 
 | Skill | Use it for |
 | --- | --- |
-| `delegate-task` | Hand one task to Claude Code, OpenAI Codex, OpenCode, GitHub Copilot, or Pi; run it in the background; get back a status with its provenance, the file changes git actually measured, and normalised token counts. |
+| `delegate-task` | Hand one task to Claude Code, OpenAI Codex, OpenCode, Antigravity (`agy`), GitHub Copilot, or Pi; run it in the background; get back a status with its provenance, the file changes git actually measured, and normalised token counts. Works in Claude Code, Codex, Antigravity, and OpenCode. |
 | `planning-majlis` | Plan new software or a feature with a committee of expert roles run as parallel subagents: tracks, isolated critiques, one decision record, and re-score rounds until every seated role scores 9/10 with no open blockers. Works in Claude Code, Codex and OpenCode. |
 | `progress-report` | A live, deterministic progress report for a Markdown plan checklist or a Spec Kit feature: lanes, tasks, blockers, decisions, and the model, effort and context the hooks observe. Installs native Claude Code and Codex hooks; spends no agent tokens on upkeep. |
 
@@ -29,9 +29,15 @@ The driver is a dependency-free Node script (Node ≥ 18) that lives inside the 
 skill was installed decides where the driver is. Resolve it once:
 
 ```bash
-# plugin install
+# Claude Code plugin install
 DELEGATE="$CLAUDE_PLUGIN_ROOT/skills/delegate-task/delegate.mjs"
-# npx skills install, or a copy committed into the repository
+# Antigravity / Codex / OpenCode project install (.agents/skills/)
+DELEGATE=".agents/skills/delegate-task/delegate.mjs"
+# OpenCode project install (or ~/.config/opencode/skills/delegate-task/delegate.mjs)
+DELEGATE=".opencode/skills/delegate-task/delegate.mjs"
+# Antigravity global install
+DELEGATE="$HOME/.gemini/config/skills/delegate-task/delegate.mjs"
+# Claude Code plain skill install
 DELEGATE=".claude/skills/delegate-task/delegate.mjs"
 
 export DELEGATE_RUNS_DIR="$PWD/.delegate/runs"

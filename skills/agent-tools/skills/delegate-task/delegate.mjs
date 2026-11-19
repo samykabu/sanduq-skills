@@ -616,14 +616,19 @@ const HARNESSES = {
       const ev = jsonl(out);
       // One step_finish PER STEP - these must be summed, not last-wins.
       const steps = ev.filter((e) => e.type === 'step_finish');
+      const errEv = ev.filter((e) => e.type === 'error').pop();
       const acc = { i: 0, o: 0, r: 0, cr: 0, cw: 0, cost: 0 };
       let sawTokens = false;
+      let sawCost = false;
       for (const s of steps) {
         const t = (s.part && s.part.tokens) || {};
         if (hasUsage(t)) sawTokens = true;
         acc.i += t.input || 0; acc.o += t.output || 0; acc.r += t.reasoning || 0;
         acc.cr += (t.cache && t.cache.read) || 0; acc.cw += (t.cache && t.cache.write) || 0;
-        acc.cost += (s.part && s.part.cost) || 0;
+        if (s.part && typeof s.part.cost === 'number') {
+          sawCost = true;
+          acc.cost += s.part.cost;
+        }
       }
       const text = ev.filter((e) => e.type === 'text').map((e) => (e.part && e.part.text) || '').join('');
       const last = steps.length ? steps[steps.length - 1].part.reason : null;
@@ -634,18 +639,90 @@ const HARNESSES = {
       const TERMINAL = new Set(['stop', 'length', 'error', 'aborted', 'cancelled']);
       const terminal = last !== null && TERMINAL.has(last);
       let status = 'successful', reason = last && last !== 'stop' ? last : '';
-      if (!steps.length) { status = 'abandoned'; reason = 'no step_finish event'; }
+      let complete = terminal;
+      if (!terminal && errEv) {
+        complete = true;
+        status = 'failed';
+        reason = (errEv.error && (errEv.error.message || (errEv.error.data && errEv.error.data.message)))
+          || (typeof errEv.error === 'string' ? errEv.error : '')
+          || errEv.message || 'opencode error';
+      } else if (!steps.length) { status = 'abandoned'; reason = 'no step_finish event'; }
       else if (!terminal) { status = 'abandoned'; reason = `stream ended after a non-terminal step (reason: ${last})`; }
       else if (last !== 'stop') { status = last === 'length' ? 'abandoned' : 'failed'; }
       return {
-        status, reason, complete: terminal, text, model: null,
-        cost_usd: acc.cost || null,
+        status, reason, complete, text, model: null,
+        cost_usd: sawCost ? acc.cost : null,
         usage_raw: steps.length ? { steps: steps.length, summed: acc } : null,
+        // OpenCode reports output and reasoning as disjoint fields; add them into
+        // output_total so output_total includes reasoning like Claude/Codex/agy.
         tokens: tokens({
           input_total: acc.i + acc.cr + acc.cw, input_fresh: acc.i,
           cache_read: acc.cr, cache_write: acc.cw,
-          output_total: acc.o, reasoning: acc.r,
+          output_total: acc.o + acc.r, reasoning: acc.r,
           fidelity: sawTokens ? 'exact' : 'unavailable',
+        }),
+      };
+    },
+  },
+
+  agy: {
+    bin: 'agy', label: 'Antigravity', tier: 'verified',
+    readOnly: 'plan', resume: 'verified', session_capture: 'streaming',
+    // agy's stream-json carries neither a cost nor a model field anywhere.
+    reports: { cost: false, model: false },
+    versionArgs: ['--version'],
+    // Never pass --disable-slash-commands with --mode plan: agy implements plan
+    // mode by expanding the built-in /plan command and warns that --mode plan
+    // has no effect while slash command expansion is disabled.
+    args: ({ task, model, perm, resume }) => [
+      '-p', task, '--output-format', 'stream-json',
+      ...(model ? ['--model', model] : []),
+      ...(resume ? ['--conversation', resume] : []),
+      ...(perm === 'bypass' ? ['--dangerously-skip-permissions'] : ['--mode', 'plan']),
+    ],
+    mode: (perm) => (perm === 'bypass' ? '--dangerously-skip-permissions' : '--mode plan'),
+    session: (e) => e.conversation_id
+      ?? (e.result && e.result.conversation_id)
+      ?? (e.step_update && e.step_update.conversation_id)
+      ?? null,
+    parse: (out) => {
+      const ev = jsonl(out);
+      // Strictly the terminal result record; init and step_update are intermediate.
+      const term = ev.filter((e) => e.event === 'result' && e.result && typeof e.result === 'object').pop();
+      const deltas = ev
+        .filter((e) => e.event === 'step_update' && e.step_update && typeof e.step_update.text_delta === 'string')
+        .map((e) => e.step_update.text_delta).join('');
+      if (!term) {
+        return {
+          status: 'abandoned', reason: 'no result event', complete: false,
+          text: deltas, usage_raw: null, tokens: tokens({ fidelity: 'unavailable' }),
+        };
+      }
+      const r = term.result;
+      const u = (r.usage && typeof r.usage === 'object') ? r.usage : {};
+      const fresh = u.input_tokens || 0;
+      const cr = u.cache_read_tokens || 0;
+      const cw = u.cache_write_tokens || 0;
+      const rawStatus = String(r.status || '').toUpperCase();
+      const ABANDONED = new Set(['CANCELLED', 'CANCELED', 'ABORTED', 'TIMEOUT', 'TIMED_OUT', 'MAX_TURNS']);
+      let status = 'successful', reason = '';
+      if (rawStatus !== 'SUCCESS') {
+        status = ABANDONED.has(rawStatus) ? 'abandoned' : 'failed';
+        reason = r.error || r.message || (r.status ? `result status: ${r.status}` : 'result error');
+      }
+      const text = typeof r.response === 'string' && r.response.length > 0 ? r.response : deltas;
+      return {
+        status, reason, complete: true, text, model: null, cost_usd: null,
+        session: r.conversation_id || term.conversation_id || null,
+        usage_raw: hasUsage(u) ? u : null,
+        // agy's input_tokens and cache_read_tokens are DISJOINT (verified on resumed
+        // turns where input_tokens < cache_read_tokens). output_tokens includes thinking_tokens.
+        tokens: tokens({
+          input_total: fresh + cr + cw, input_fresh: fresh,
+          cache_read: cr, cache_write: cw,
+          output_total: u.output_tokens || 0,
+          reasoning: u.thinking_tokens || 0,
+          fidelity: hasUsage(u) ? 'exact' : 'unavailable',
         }),
       };
     },
@@ -1513,7 +1590,7 @@ async function cmdSupervise(id) {
       if (!s.startsWith('{')) continue;
       if (s.length > MAX_LINE_CHARS) { if (streams.out.capped) retained.dropped++; continue; }
       let e; try { e = JSON.parse(s); } catch { continue; }
-      if (typeof e.type === 'string') {
+      if (typeof e.type === 'string' || typeof e.event === 'string') {
         const first = !progress.last_structured_event_at;
         progress.last_structured_event_at = new Date().toISOString();
         clearTimeout(startupTimer);

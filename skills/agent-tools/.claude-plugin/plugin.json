@@ -1,7 +1,7 @@
 {
   "name": "agent-tools",
   "description": "delegate-task hands one task to another agent CLI and reports what it changed and the tokens it used. progress-report keeps a live progress report for a Markdown plan or a Spec Kit feature. planning-majlis plans software or a feature with a committee of expert roles run as subagents.",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "author": {
     "name": "Samy K. Abushanab"
   },
@@ -13,6 +13,8 @@
     "claude-code",
     "codex",
     "opencode",
+    "antigravity",
+    "agy",
     "copilot",
     "orchestration",
     "background",

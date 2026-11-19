@@ -1,7 +1,7 @@
 # Sanduq Skills
 
 Portable agent skills for software delivery. Each one does one job and runs in Claude Code, Codex,
-or Claude Desktop. None needs Spec Kit.
+Antigravity, OpenCode, or Claude Desktop. None needs Spec Kit.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-233C32)](LICENSE)
 [![Skills](https://img.shields.io/badge/skills-6-C65B36)](#the-skills)
@@ -17,7 +17,7 @@ Choose a skill by task. You install a bundle as a Claude Code plugin and call th
 | Job | Skill | What it does | Bundle |
 | --- | --- | --- | --- |
 | Plan | [`planning-majlis`](docs/skills/planning-majlis.md) | Plans new software or a feature with a committee of expert roles run as subagents. It stops when every role scores 9/10 with no open blockers, or after six re-score rounds. *Majlis* is Arabic for a council. | `agent-tools` |
-| Delegate and track | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
+| Delegate and track | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Antigravity `agy`, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
 | Delegate and track | [`progress-report`](docs/skills/progress-report.md) | Keeps a live HTML progress report for a Markdown plan or a Spec Kit feature, fed by Claude Code and Codex hooks. Spends no agent tokens on upkeep. | `agent-tools` |
 | Draw diagrams | [`illustrate`](docs/skills/illustrate.md) | Draws 44 kinds of diagrams and charts as editable HTML in your project's colors, with SVG, PNG, animated SVG and GIF export. | `illustration-tools` |
 | Write and publish docs | [`user-manual`](docs/skills/user-manual.md) | Writes and maintains an application manual in Markdown, with editions per audience, API references, release notes and screenshots. Renders as Markdown, through your own tools, or as an MkDocs site and PDF; Arabic is optional. | `dev-tools` |
@@ -77,6 +77,31 @@ Start a new session, then call a skill with `$illustrate`.
 </details>
 
 <details>
+<summary><strong>Antigravity</strong></summary>
+
+```bash
+npx skills add samykabu/sanduq-skills --skill delegate-task
+```
+
+Antigravity discovers workspace skills under `.agents/skills/<name>/SKILL.md` (and global skills
+under `~/.gemini/config/skills/<name>/SKILL.md`). Start a session and describe what you want — for
+example, *"delegate this review to codex"* or *"have opencode check this diff"* — and Antigravity
+loads `SKILL.md` on demand.
+</details>
+
+<details>
+<summary><strong>OpenCode</strong></summary>
+
+```bash
+npx skills add samykabu/sanduq-skills --skill delegate-task
+```
+
+OpenCode discovers project skills under `.opencode/skills/<name>/SKILL.md`, `.agents/skills/<name>/SKILL.md`,
+or `.claude/skills/<name>/SKILL.md`, and user-wide skills under `~/.config/opencode/skills/<name>/SKILL.md`.
+Describe the delegation in plain English and OpenCode loads `SKILL.md` on demand.
+</details>
+
+<details>
 <summary><strong>Claude Desktop</strong></summary>
 
 1. Download the skill archive (for example `illustrate-v3.7.1.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
@@ -105,16 +130,14 @@ authenticated Git and a browser). See [support by host](#support-by-host).
 
 ## Support by host
 
-| Skill | Claude Code | Codex | Claude Desktop |
-| --- | --- | --- | --- |
-| `illustrate` | Yes | Yes | HTML yes; exports unverified |
-| `user-manual` | Yes | Yes | Unverified |
-| `github-wiki-publish` | Yes (published two wikis, 2026-11-05) | Local Git checks passed; live browser test unrun | Unverified; needs an authenticated Git/browser workspace |
-| `delegate-task` | Yes | Yes | No (needs local CLIs) |
-| `progress-report` | Yes | Yes (Codex hook file unverified) | No (needs local files and hooks) |
-| `planning-majlis` | Yes (4 evals behaved as expected; a feature-mode run takes more than an hour) | Yes (4 evals passed) | Unverified (no subagents; runs the roles in sequence) |
-
-`planning-majlis` was also run in OpenCode with DeepSeek V4.1 Flash. All four evals behaved as expected, and its subagents ran through the Task tool.
+| Skill | Claude Code | Codex | Antigravity | OpenCode | Claude Desktop |
+| --- | --- | --- | --- | --- | --- |
+| `illustrate` | Yes | Yes | Unverified | Unverified | HTML yes; exports unverified |
+| `user-manual` | Yes | Yes | Unverified | Unverified | Unverified |
+| `github-wiki-publish` | Yes (published two wikis, 2026-11-05) | Local Git checks passed; live browser test unrun | Unverified | Unverified | Unverified; needs an authenticated Git/browser workspace |
+| `delegate-task` | Yes | Yes | Yes | Yes | No (needs local CLIs) |
+| `progress-report` | Yes | Yes (Codex hook file unverified) | Unverified | Unverified | No (needs local files and hooks) |
+| `planning-majlis` | Yes (4 evals behaved as expected; a feature-mode run takes more than an hour) | Yes (4 evals passed) | Unverified | Yes (4 evals behaved as expected with DeepSeek V4.1 Flash) | Unverified (no subagents; runs the roles in sequence) |
 
 "Unverified" means not yet tested on a clean install. Reports are welcome.
 

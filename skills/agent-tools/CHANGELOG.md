@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.0 — 2026-11-19
+
+- `delegate-task`: added **Antigravity (`agy`)** as a verified harness target in `delegate.mjs` (`-p`, `--output-format stream-json`, `--model`, `--conversation` resume, `--dangerously-skip-permissions` bypass, `--mode plan` read-only sandbox). Recognises `agy`'s `"event"`-keyed NDJSON records in structured progress tracking (`last_structured_event_at` / `--startup-timeout`), normalises disjoint `input_tokens` + `cache_read_tokens` and inclusive `output_tokens` / `thinking_tokens`, and preserves `cache_read_tokens` / `cache_write_tokens` during log secret redaction (`bounded.mjs`).
+- `delegate-task`: refreshed the **OpenCode** adapter and log redaction for `opencode v2.3.2` — preserves OpenCode's nested `tokens.cache` counters in `bounded.mjs`, adds disjoint `reasoning` into `output_total` to match Claude/Codex/Antigravity, preserves explicit `cost: 0`, and classifies explicit `type: "error"` events as `failed` instead of `telemetry_incomplete`.
+- `delegate-task`: refactored `SKILL.md` and documentation (`README.md`, `README.ar.md`, `docs/skills/delegate-task.md`, `docs/glossary.md`, root `README.md`) to support **Antigravity** and **OpenCode** as first-class host platforms alongside Claude Code and Codex, with host-agnostic `<SKILL_DIR>` resolution and Windows PowerShell examples.
+- Validation: 185 driver checks and 59 execution checks passed locally (2 POSIX/Linux checks skipped on Windows), plus live read-only `start` → `collect` → `--resume` → `collect` smoke runs against local `agy 1.5.12` and `opencode v2.3.2` (`read_only_violation: false`, session continuity preserved).
+
 ## 1.9.2 — 2026-11-05
 
 - Changed: plugin description names each of the three skills. No behaviour change.

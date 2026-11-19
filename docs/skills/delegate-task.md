@@ -6,18 +6,20 @@ git measured, and how many tokens it used.
 | | |
 | --- | --- |
 | Bundle | `agent-tools` (Claude Code plugin `agent-tools@sanduq`) |
-| Version | 1.9.2 |
+| Version | 1.10.0 |
 | Prerequisites | Node 18+, git (to measure changes), and at least one signed-in agent CLI to delegate to. |
-| Hosts | Claude Code: yes. Codex: yes. Claude Desktop: no (needs local CLIs). |
+| Hosts | Claude Code: yes. Codex: yes. Antigravity: yes. OpenCode: yes. Claude Desktop: no (needs local CLIs). |
 
 ## Install
 
 Follow the [Install section of the README](../../README.md#install). In Claude Code, install the
-`agent-tools` [plugin](../glossary.md#plugin).
+`agent-tools` [plugin](../glossary.md#plugin). In Antigravity, OpenCode, or Codex, install the
+skill into `.agents/skills/delegate-task/` (or `.opencode/skills/delegate-task/`, or your user
+skills directory).
 
-With a plugin install, set `DELEGATE_RUNS_DIR` (for example to `.delegate/runs` in your project)
-and add `.delegate/` to `.gitignore`. Otherwise run files from every project pile up inside the
-shared plugin folder.
+With a shared, global, or plugin install, set `DELEGATE_RUNS_DIR` (for example to `.delegate/runs`
+in your project) and add `.delegate/` to `.gitignore`. Otherwise run files from every project pile
+up inside the shared skill folder.
 
 ## First prompt
 
@@ -26,9 +28,10 @@ shared plugin folder.
 bad-input path. Don't let it commit.
 ```
 
-Or just ask: "have opencode give a second opinion on this fix".
+Or just ask: "have opencode give a second opinion on this fix" or "delegate this review to agy".
 
-In Codex, use the same prompt with `$delegate-task`.
+In Codex, use the same prompt with `$delegate-task`. In Antigravity and OpenCode, describe the
+delegation in plain English (or invoke the skill directly) and the host loads `SKILL.md` on demand.
 
 The skill runs `doctor` first to see which CLIs are installed and working.
 
@@ -66,11 +69,12 @@ Run files (prompt, logs, journal, result) go in `$DELEGATE_RUNS_DIR/<run_id>/`.
 | Claude Code | `claude` | verified | plan permission mode |
 | Codex | `codex` | verified | read-only sandbox, enforced by the CLI |
 | OpenCode | `opencode` | verified | plan agent |
+| Antigravity | `agy` | verified | plan mode (`--mode plan`) |
 | Copilot | `copilot` | experimental | plan mode |
 | Pi | `pi` | experimental | no approvals, read and search tools only |
 
-Prefer `claude`, `codex`, or `opencode`. You can run the skill from Codex or Claude Code and target
-any of these harnesses, including the one you are in.
+Prefer `claude`, `codex`, `opencode`, or `agy`. You can run the skill from Claude Code, Codex,
+Antigravity, or OpenCode and target any of these harnesses, including the one you are in.
 
 **Flags you will use most:**
 
@@ -91,8 +95,8 @@ Other commands: `status`, `collect --wait N`, `list`, `prune`, and `contract`.
 - A read-only check of `false` means no change was detected, not that nothing was written. It
   cannot see writes that were undone, ignored files, or files outside the repository.
 - If something commits or stages during the run, the result is marked for review.
-- Token totals are not comparable across harnesses. Copilot reports no tokens, and Codex reports
-  no cost or model.
+- Token totals are not comparable across harnesses. Copilot reports no tokens, and Codex and
+  Antigravity (`agy`) report no cost or model.
 - Delegating to `claude` costs about 58,000 tokens before the task starts.
 - Run files hold your task text and the raw output. Token shapes are masked in the two log files
   when a run finishes, and `collect` deletes finished runs older than 30 days (`DELEGATE_PRUNE_DAYS`;

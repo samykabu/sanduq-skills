@@ -2,12 +2,12 @@
 
 > النسخة العربية: [README.ar.md](README.ar.md)
 
-Hand one task to another agent CLI — Claude Code, OpenAI Codex, OpenCode, GitHub Copilot or Pi —
-run it in the background, and get back a result you can actually trust.
+Hand one task to another agent CLI — Claude Code, OpenAI Codex, OpenCode, Antigravity (`agy`),
+GitHub Copilot or Pi — run it in the background, and get back a result you can actually trust.
 
-It is a [Claude Code skill](https://docs.claude.com/en/docs/claude-code/skills), so Claude picks it
-up when you say *"use codex to refactor this"*. It is also just a Node script, so you can drive it
-from any shell.
+It is a portable agent skill (`SKILL.md`) that runs in **Claude Code**, **Codex**, **Antigravity**,
+and **OpenCode**, so your host picks it up when you say *"use codex to refactor this"* or *"delegate
+this to agy"*. It is also just a Node script, so you can drive it from any shell.
 
 ## Install
 
@@ -15,31 +15,40 @@ from any shell.
 bundle.
 
 ```text
+# Claude Code plugin marketplace
 /plugin marketplace add samykabu/sanduq
 /plugin install agent-tools@sanduq
 ```
 
-Or install just this skill into the current project:
+Or install just this skill into the current project (or user config) for Claude Code, Codex,
+Antigravity, or OpenCode:
 
 ```bash
 npx skills add samykabu/sanduq-skills --skill delegate-task
 ```
 
-Where it lands decides where the driver is, so resolve it once and reuse it:
+Where it lands depends on your host, so resolve `<SKILL_DIR>` (the folder holding `SKILL.md`) once
+and reuse it:
 
 ```bash
-# plugin install
+# Claude Code plugin install
 DELEGATE="$CLAUDE_PLUGIN_ROOT/skills/delegate-task/delegate.mjs"
-# npx skills install, or a copy committed into the repository
+# Antigravity / Codex / OpenCode cross-agent project install
+DELEGATE=".agents/skills/delegate-task/delegate.mjs"
+# OpenCode project install (or ~/.config/opencode/skills/delegate-task/delegate.mjs)
+DELEGATE=".opencode/skills/delegate-task/delegate.mjs"
+# Antigravity global install
+DELEGATE="$HOME/.gemini/config/skills/delegate-task/delegate.mjs"
+# Claude Code plain skill install
 DELEGATE=".claude/skills/delegate-task/delegate.mjs"
 
 # keep run artifacts in the project, not beside the driver
 export DELEGATE_RUNS_DIR="$PWD/.delegate/runs"
 ```
 
-Set `DELEGATE_RUNS_DIR` on a plugin install and add `.delegate/` to the project's `.gitignore`.
-Artifacts hold your task text and the harness's raw output; without it they accumulate in the
-shared plugin directory, mixed across every project.
+Set `DELEGATE_RUNS_DIR` on any shared, global, or plugin install and add `.delegate/` to the
+project's `.gitignore`. Artifacts hold your task text and the harness's raw output; without it they
+accumulate in the shared skill directory, mixed across every project.
 
 ## Why it exists
 
@@ -64,7 +73,7 @@ that produced it**, what git actually saw change on disk next to what the delega
 normalised token counts with a flag saying how far to trust them, and a run registry that outlives
 the session that started it.
 
-Five harnesses sit in one lookup table. Adding a sixth is a table entry, not a new program.
+Six harnesses sit in one lookup table. Adding a seventh is a table entry, not a new program.
 
 ## How a run works
 
@@ -146,6 +155,10 @@ delegate.mjs start --harness codex --model gpt-5.5 --cwd ~/work/myrepo --task '.
 
 # OpenCode wants a provider-qualified name
 delegate.mjs start --harness opencode --model anthropic/claude-sonnet-4-5 \
+  --cwd ~/work/myrepo --task '...'
+
+# Antigravity (agy)
+delegate.mjs start --harness agy --model gemini-2.5-pro \
   --cwd ~/work/myrepo --task '...'
 ```
 
@@ -306,9 +319,9 @@ in the result or in `--json`.
 **Token fidelity** — `exact`, `partial` or `unavailable`. On `unavailable` the zeroes mean
 *unknown*, not *free*.
 
-Not every CLI reports everything. Codex emits no cost and no model anywhere in its stream, so both
-read *not reported by this harness* rather than a bare null that looks like a bug. Claude reports
-both; OpenCode reports cost.
+Not every CLI reports everything. Codex and Antigravity (`agy`) emit no cost and no model anywhere
+in their streams, so both read *not reported by this harness* rather than a bare null that looks
+like a bug. Claude reports both; OpenCode reports cost (including `$0.0000`).
 
 ## Commands
 
@@ -430,7 +443,8 @@ The harnesses disagree about what `input_tokens` means:
 |---|---|---|
 | Claude | `input` / `cache_creation` / `cache_read` are **separate** | sum them into `input_total` |
 | Codex | `input_tokens` **already includes** cached | subtract cached for `input_fresh` |
-| OpenCode | one `step_finish` **per step** | sum across all steps |
+| OpenCode | one `step_finish` **per step**; `output` and `reasoning` are **separate** | sum across steps; add `reasoning` into `output_total` |
+| Antigravity (`agy`) | `input_tokens` and `cache_read_tokens` are **separate**; `output_tokens` includes `thinking_tokens` | sum input + cache into `input_total` |
 
 Use `input_total` for everything sent, `input_fresh` for the uncached part that drives cost.
 `usage_raw` keeps each harness's own object so an old run can be recomputed if a parser later turns
@@ -453,6 +467,7 @@ deliberate, and it is real: on the very first bypass test an OpenCode delegate w
 | `codex` | `-s read-only`, enforced by the CLI |
 | `claude` | `--permission-mode plan` |
 | `opencode` | `--agent plan`, never `--auto` |
+| `agy` | `--mode plan` (never `--disable-slash-commands`, which disables plan mode) |
 | `copilot` | `--mode plan` |
 | `pi` | `--no-approve --tools read,grep,find,ls` |
 
