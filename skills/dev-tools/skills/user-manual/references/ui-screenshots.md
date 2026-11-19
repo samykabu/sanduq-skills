@@ -12,5 +12,6 @@ alt text and a caption that explains the task and expected result in plain audie
 language. Record the scenario, role, state, viewport, theme, locale, runner and source test in
 coverage metadata.
 
-For "reset a password", capture the sign-in page, request confirmation, and successful reset states
-in English and Arabic mobile widths, while masking email addresses and tokens.
+For a password-recovery flow, capture the sign-in page, the request confirmation and the
+"password changed" success screen in English and Arabic mobile widths, while masking email
+addresses and tokens.

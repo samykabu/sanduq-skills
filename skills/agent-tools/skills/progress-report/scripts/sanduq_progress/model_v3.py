@@ -43,7 +43,7 @@ def _label(stage):
 
 
 def _stable(kind, at, key):
-    return 'tl-' + hashlib.sha1(f'{kind}|{at}|{key}'.encode('utf-8')).hexdigest()[:10]
+    return 'tl-' + hashlib.sha1(f'{kind}|{at}|{key}'.encode('utf-8'), usedforsecurity=False).hexdigest()[:10]
 
 
 def _seconds(start, end):

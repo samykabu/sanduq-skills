@@ -5,6 +5,11 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-20 — agent-tools 1.10.2 and dev-tools 2.0.6
+
+- **agent-tools 1.10.2.** `progress-report`: the SHA1 timeline id says it is not used for security, the chained status-line command documents its trust boundary, and test log paths no longer look like personal home folders. `progress-report` and `planning-majlis` gain metadata, Purpose, Prerequisites, Examples, Limitations and Troubleshooting guidance; `progress-report` keeps SKILL.md inside its token budget and moves the detail to `references/operations.md`. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).
+- **dev-tools 2.0.6.** `user-manual` and `github-wiki-publish` gain metadata, Purpose, Prerequisites, Examples, Limitations and Troubleshooting sections, with a script table for `user-manual`. The `user-manual` description is in the third person, and a screenshot example that a security scanner misread is reworded. No behaviour change.
+
 ## 2026-11-20 — illustration-tools 3.9.0
 
 - Adds BPMN 2.0 as an opt-in Process variant with role lanes, BPMN symbols, a semantic verifier, and light, dark, full and handwritten examples.

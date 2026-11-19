@@ -6,7 +6,7 @@ publication. It works independently of the manual skills and does not require Sp
 
 | | |
 | --- | --- |
-| Bundle | `dev-tools` 2.0.4 (Claude Code plugin `dev-tools@sanduq`) |
+| Bundle | `dev-tools` 2.0.6 (Claude Code plugin `dev-tools@sanduq`) |
 | Prerequisites | Supplied content and access to the destination Wiki through a suitable connector or authenticated Git. An authenticated browser for rendered verification. |
 | Verification | Used on 2026-11-05 to publish the wikis of both Sanduq repositories from Claude Code: remote commits checked, and every page's headings, links, sidebar and images checked in a signed-in browser through the page DOM. Screenshots were not available in that session. |
 | Hosts | Claude Code: yes (live publication, see above). Codex: local Git checks passed. Claude Desktop: unverified; needs an authenticated Git/browser workspace. |
@@ -36,12 +36,12 @@ accept the replacement, or for a user installation run `npx skills update github
 To pin a release, check out the bundle tag in a separate directory and install from it:
 
 ```bash
-git clone --branch dev-tools-v2.0.4 --depth 1 https://github.com/samykabu/sanduq-skills.git sanduq-skills-v2.0.4
-npx skills add ./sanduq-skills-v2.0.4 --skill github-wiki-publish -a claude-code
+git clone --branch dev-tools-v2.0.6 --depth 1 https://github.com/samykabu/sanduq-skills.git sanduq-skills-v2.0.6
+npx skills add ./sanduq-skills-v2.0.6 --skill github-wiki-publish -a claude-code
 ```
 
 Each dev-tools release, for example
-[dev-tools 2.0.4](https://github.com/samykabu/sanduq-skills/releases/tag/dev-tools-v2.0.4), has
+[dev-tools 2.0.6](https://github.com/samykabu/sanduq-skills/releases/tag/dev-tools-v2.0.6), has
 `dev-tools-v<version>.zip` for the bundle, `github-wiki-publish-v<version>.zip` for this skill, and
 `SHA256SUMS`. The single-skill archive is the upload route in the root
 [Claude Desktop instructions](../../README.md#install). Desktop has no authenticated Git or browser,

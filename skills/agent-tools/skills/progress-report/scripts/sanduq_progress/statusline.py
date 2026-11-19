@@ -85,7 +85,9 @@ def run(raw, root, now=None):
     if chained:
         import subprocess
         try:
-            out = subprocess.run(chained, shell=True, input=raw, capture_output=True, timeout=5, cwd=str(root))
+            # The user's own previous statusLine command is a shell string, run the same way the host runs it.
+            # chained_command() returns it only from untracked local state that matches statusline.previous.
+            out = subprocess.run(chained, shell=True, input=raw, capture_output=True, timeout=5, cwd=str(root))  # nosec B602
             if out.stdout or out.returncode == 0:
                 return out.stdout
         except (OSError, subprocess.SubprocessError):

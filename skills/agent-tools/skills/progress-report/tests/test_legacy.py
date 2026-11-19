@@ -40,7 +40,7 @@ class LegacyAttempts(Project):
     def test_external_log_path_keeps_only_a_name_and_unavailable_stays_unknown(self):
         self.init()
         self.cli('lane', 'L1', '--tasks', 'T001')
-        path = self.usage_file(log='C:/Users/someone/.claude/projects/x/a.jsonl', fidelity='unavailable',
+        path = self.usage_file(log='D:/agent-logs/projects/x/a.jsonl', fidelity='unavailable',
                                reason='log not found', fresh_input=None)
         self.assertEqual(self.cli('attempt', 'record', '--lane', 'L1', '--run', 'r1', '--status', 'blocked',
                                   '--usage-json', path)[0], 0)

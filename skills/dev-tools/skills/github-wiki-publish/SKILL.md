@@ -1,11 +1,23 @@
 ---
 name: github-wiki-publish
-description: "Publish or update pages, reports, diagrams and assets in a GitHub repository Wiki, preserving existing content and verifying the published result. Use for GitHub Wiki publishing or sync requests, rather than GitHub Pages deployment or general documentation generation."
+description: "Publish or update pages, reports, diagrams and assets in a GitHub repository Wiki, preserving existing content and verifying the published result. Use for GitHub Wiki publishing or sync requests, rather than GitHub Pages deployment or writing new documentation."
+metadata:
+  author: Samy K. Abushanab
+  tags: github, wiki, publishing, documentation, git
 ---
 
 # GitHub Wiki Publish
 
+## Purpose
+
 Publish the requested material to the repository's existing Wiki. Keep content generation separate from publication: use the supplied pages, reports and assets, adapting links and navigation as needed. Follow the target project's rules without importing conventions from another project.
+
+## Prerequisites
+
+- Git, and write access to the repository through an existing authenticated connection, GitHub connector or Git
+  credentials. No script ships with this skill.
+- The Wiki enabled on the repository. A Wiki with no pages has no Git repository until its first page is created.
+- For rendered verification: an authenticated browser. Without one, report that check as not run.
 
 ## Establish the destination and scope
 
@@ -37,3 +49,37 @@ Apply publication only within the user's existing authorization. A Wiki update d
 - If authenticated rendered verification is unavailable, report publication and remote verification separately from the unrun browser check. Do not claim a rendered pass from local files, an HTTP response or a successful push.
 
 Report the page URL, published revision, material changes, checks performed and any unresolved limitation. Keep recovery paths when work remains unpublished. Do not add a new approval gate, content schema, project lifecycle or test regime.
+
+## Examples
+
+"Publish `docs/architecture.md` and its diagrams to our Wiki, linked from the sidebar". The page starts with
+`# Architecture`, so it becomes `Architecture.md` without that H1; its images are copied byte for byte and its
+links rewritten. The flow follows [the Git procedure](references/git-publication.md):
+
+```text
+git ls-remote --symref https://github.com/OWNER/REPO.wiki.git HEAD      # discover the default branch
+git clone https://github.com/OWNER/REPO.wiki.git <new scratch dir>
+git -C <scratch> add -- Architecture.md images/architecture.png _Sidebar.md
+git -C <scratch> diff --cached --stat
+git -C <scratch> commit -m "Publish Architecture"
+git -C <scratch> fetch origin
+git -C <scratch> push origin HEAD:refs/heads/<default-branch>
+git -C <scratch> ls-remote origin refs/heads/<default-branch>          # matches rev-parse HEAD
+```
+
+Then open `https://github.com/OWNER/REPO/wiki/Architecture` and check text, images and the sidebar link.
+
+## Limitations
+
+- The Wiki renders Markdown and images only: interactive HTML reports and animated diagrams get a static preview plus a link.
+- Wiki pages have no review step on GitHub; a push is live at once, which is why the diff is checked before it.
+- This skill publishes content; it does not write the documentation or regenerate reports.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Clone returns `Repository not found` | Wiki disabled, no first page yet, or no access | Check the repository settings; create the first page on GitHub; confirm credentials |
+| Push rejected | Another writer pushed first | Fetch, integrate, recheck the diff and push once more; never force-push |
+| Page title appears twice | The page starts with an H1 equal to its filename | Drop that H1 |
+| Images or links break on Home | Home is served at `/wiki`, so relative links resolve outside the Wiki | Use absolute Wiki URLs on Home and in the sidebar |
