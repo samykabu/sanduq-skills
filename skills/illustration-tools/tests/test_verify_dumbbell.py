@@ -75,6 +75,21 @@ def check_all_zero_is_finite():
        "all-zero data puts every dot on the floor, which is the truth")
 
 
+def check_finite_extremes_scale_without_overflow():
+    for values in ([5e-324], [1.7e308], [-1.7e308, 1.7e308]):
+        floor, ceiling = resolve_domain(values)
+        ok(math.isfinite(floor) and math.isfinite(ceiling),
+           "finite extreme values resolve finite axis bounds")
+        coordinates = [scale(value, floor, ceiling) for value in values]
+        ok(all(math.isfinite(value) for value in coordinates),
+           "finite extreme values scale without overflow")
+        ok(all(verify_dumbbell.PLOT_X0 <= value <= verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH
+               for value in coordinates), "extreme values remain inside the plot")
+        if len(values) == 2:
+            ok(coordinates == [verify_dumbbell.PLOT_X0, verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH],
+               "opposite extreme endpoints retain the whole plot width")
+
+
 def check_zero_touching_domains():
     floor, ceiling = resolve_domain([0, 5, 12])
     ok((floor, ceiling) == (0.0, 20.0),
@@ -103,6 +118,21 @@ def check_identical_and_tiny_values():
        "a pair of identical non-zero values still scales")
     floor, ceiling = resolve_domain([0.0004, 0.0009])
     ok(ceiling > floor, "sub-unit magnitudes still yield a usable domain")
+
+
+def check_small_domains_round_outward():
+    for values in ([4e-13, 9e-13], [-9e-13, -4e-13],
+                   [-4e-13, 9e-13], [0, 9e-13], [-9e-13, 0],
+                   [4e-100, 9e-100], [1e-13, 1e-13]):
+        floor, ceiling = resolve_domain(values)
+        ok(floor <= min(values) <= max(values) <= ceiling,
+           "small values %r remain inside the outward-rounded domain" % (values,))
+        ok(all(verify_dumbbell.PLOT_X0 <= scale(value, floor, ceiling)
+               <= verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH
+               for value in values),
+           "small values %r map inside the prescribed plot" % (values,))
+    ok(resolve_domain([4e-13, 9e-13]) == (0.0, 1e-12),
+       "small positive data chooses the first enclosing ladder magnitude")
 
 
 def check_empty_and_non_finite_rejected():
@@ -189,9 +219,11 @@ def main() -> int:
 
     FAILURES.clear()  # each run reports only its own failures
     check_all_zero_is_finite()
+    check_finite_extremes_scale_without_overflow()
     check_zero_touching_domains()
     check_sign_cases_resolve()
     check_identical_and_tiny_values()
+    check_small_domains_round_outward()
     check_empty_and_non_finite_rejected()
     check_truncated_bounds_are_detected()
     check_scaling_preserves_gap_ratios()

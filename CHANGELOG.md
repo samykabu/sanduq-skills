@@ -5,6 +5,18 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-20 — illustration-tools 3.9.0
+
+- Adds BPMN 2.0 as an opt-in Process variant with role lanes, BPMN symbols, a semantic verifier, and light, dark, full and handwritten examples.
+- Adds route playback for BPMN animated SVG and GIF. Each token follows one selected outcome while the full process stays visible in motion and static exports.
+
+## 2026-11-19 — illustration-tools 3.8.0
+
+- Added Service blueprint, Steps, Unit Grid, Requirement traceability, Event modeling, Schedule network and educational SBGN Process Description. Architecture containment, Box plot and Arc diagram are variants. All ten have light, dark, full and handwritten examples.
+- Added PlantUML sequence and class redraws and Mermaid quadrant chart redraws. Updated Mermaid, draw.io and Excalidraw to retain source details such as relationship labels, nested geometry and authored text.
+- Improved standalone SVG serialization and static PNG capture, including fractional PNG scales. Preserved project themes and the animated SVG and GIF workflows. Added diagram checks for clipping, overflowing labels and malformed documents.
+- Adapted [Diagram Design at d74d8c2d](https://github.com/cathrynlavery/diagram-design/tree/d74d8c2d0c78a9e1efd43137f6a9a51182a8b5f0) under the existing MIT notice.
+
 ## 2026-11-19 — agent-tools 1.10.1
 
 - **agent-tools 1.10.1.** `delegate-task`'s Linux containment helper validates its request before launching anything and reports a malformed one as `INVALID_REQUEST`; `check-runner.mjs` prints usage for an unknown command; `SKILL.md` gains a Purpose heading and a list of its assets and helpers; the README install command is pinned to `npx skills@1.9.0`; and wording that a security scanner misread is changed. See the [bundle changelog](skills/agent-tools/CHANGELOG.md).

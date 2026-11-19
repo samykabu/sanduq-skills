@@ -159,6 +159,16 @@ class Apply(unittest.TestCase):
                         declared = re.search(rf"--color-{role}:\s*(#[0-9a-fA-F]{{6}})", out).group(1)
                         self.assertEqual(declared.lower(), theme["colors"][role].lower(), role)
 
+    def test_upstream_palette_roles_apply_without_changing_project_presets(self):
+        source = DOC.replace("#eb6c36", "#bf4520").replace("rgba(235,108,54,0.85)", "rgba(191,69,32,0.85)")
+        source = source.replace("</svg>", '<rect fill="rgba(191,69,32,0.08)" stroke="#739fdf"/></svg>')
+        theme = it.resolve_for(config_for("cobalt"), "light", "cobalt")
+        output = it.apply_theme(source, theme)
+        colors = theme["colors"]
+        self.assertIn(f'fill="{colors["accent"]}"', output)
+        self.assertIn(f'fill="{colors["accent-tint"]}" stroke="{colors["link"]}"', output)
+        self.assertNotRegex(output, r'#bf4520|rgba\(191,69,32|#739fdf')
+
     def test_cobalt_template_source_is_rethemed(self):
         cobalt = it.registry()["themes"]["cobalt"]
         cobalt_hex = {

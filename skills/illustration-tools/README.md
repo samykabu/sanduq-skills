@@ -1,6 +1,6 @@
 # Illustration Tools
 
-Generate polished technical and product illustrations as **self-contained HTML files** with inline SVG and embedded CSS. The unified `illustrate` skill supports forty-four diagram types, tracked project-level color and font themes, editorial and technical-color families, light/dark/full/hand variants, and SVG/PNG/PDF export paths.
+Generate polished technical and product illustrations as **self-contained HTML files** with inline SVG and embedded CSS. The unified `illustrate` skill supports 51 diagram types, tracked project-level color and font themes, editorial and technical-color families, light/dark/full/hand variants, and SVG, PNG, PDF, animated SVG and GIF export paths.
 
 ## Included Skill
 
@@ -29,6 +29,7 @@ Or in plain language:
 
 - *"Draw an architecture diagram for a React frontend, Node API, Postgres, and Redis on AWS."*
 - *"Make a hand-drawn process flow for our expense-approval workflow with a manager decision step."*
+- *"Draw a BPMN 2.0 expense approval process with Employee, Manager and Finance lanes. Animate the approved route."*
 
 Iterate in chat — "add a Redis cache", "add a rejection branch from step 3", "wrap this to a second row" — and Claude edits the same HTML file.
 

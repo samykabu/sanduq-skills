@@ -52,6 +52,20 @@ class GeometryCases(unittest.TestCase):
                 result = findings(body)
                 self.assertEqual(len(result), expected, result)
 
+    def test_browser_attributes_and_translated_rectangles(self):
+        quoted_mask = "<rect width='48' data-detail='x=0; y=0' height='12' y='80' x='240'/>"
+        self.assertEqual(len(findings(quoted_mask + NODE)), 1)
+        self.assertEqual(len(findings("<g transform='translate(200,60)'>" + mask(40, y=20) + "</g>" + NODE)), 1)
+        self.assertEqual(findings("<g transform='translate(300 0)'>" + quoted_mask + "</g>" + NODE), [])
+
+    def test_nonpainting_rectangles_do_not_clip(self):
+        for container in ("defs", "symbol", "marker", "pattern", "clipPath", "mask"):
+            with self.subTest(container=container):
+                self.assertEqual(findings(f"{mask(240)}<{container}>{NODE}</{container}>"), [])
+        self.assertEqual(findings(mask(240) + f"<!--{NODE}-->"), [])
+        self.assertEqual(findings(mask(240) + f'<g display="none">{NODE}</g>'), [])
+        self.assertEqual(findings(mask(240) + "</svg>" + SVG_HEAD + NODE), [])
+
 
 def ortho(body: str) -> list[str]:
     return geometry.orthogonal_findings(f"<!DOCTYPE html><html><body>{SVG_HEAD}{body}</svg></body></html>", "t")

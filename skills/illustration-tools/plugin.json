@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "illustration-tools",
-  "version": "3.7.2",
-  "description": "Generate, import, and export forty-four kinds of technical, product, architecture, process, and data illustrations through one unified skill",
+  "version": "3.9.0",
+  "description": "Generate, import, and export 51 kinds of technical, product, architecture, process, and data illustrations through one unified skill",
   "author": {
     "name": "Samy K. Abushanab"
   },

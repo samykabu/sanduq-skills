@@ -90,6 +90,20 @@ class StaticContract(unittest.TestCase):
         self.assertEqual(verify(cobalt), [])
         self.assertEqual(verify(STATIC.replace(STATIC.splitlines()[5] + "\n", "")), [])
 
+    def test_incomplete_documents_and_ambiguous_accessible_names(self):
+        for source, needle in (
+            (STATIC.replace("</html>", "<!-- </html>"), "file looks truncated"),
+            (STATIC.replace("</html>", ""), "file looks truncated"),
+            (STATIC.replace("</body>", "<div></body>"), "document is not balanced"),
+            (STATIC.replace("Title", "Tit\ufffdle"), "U+FFFD replacement character"),
+            (STATIC.replace("</body>", '<p id="t-desc">Another label</p></body>'),
+             "duplicate accessible SVG naming ID 't-desc'"),
+        ):
+            with self.subTest(needle=needle):
+                self.assertRejected(source, needle)
+        self.assertEqual(verify(STATIC + "\n<!-- a trailing note -->\n<!-- another note -->"), [])
+        self.assertEqual(verify(STATIC.replace("<title>T", "<title>Literal <span> token")), [])
+
 
 @unittest.skipUnless(TEMPLATE.is_file() and ANIMATED.is_file(), "motion template/example not shipped")
 class MotionContract(unittest.TestCase):
@@ -307,6 +321,34 @@ class StrictContract(unittest.TestCase):
             ".node-name { font-family: 'Geist', sans-serif; }", ".node-name { font-family: 'Geist Mono', monospace; }", 1
         )
         self.assertEqual(verify_strict(source), [])
+
+    def test_viewbox_flags_actual_paint_after_translation(self):
+        mark = '<rect class="place" x="390" y="16" width="8" height="8"/>'
+        translated = '<g transform="translate(10 0)">' + mark + "</g>"
+        anchor = '<g class="legend">'
+        source = STRICT.replace(anchor, translated + anchor, 1)
+        self.assertTrue(any("past the viewBox right edge" in error for error in verify_strict(source)))
+        for wrapper in ('<defs>{}</defs>', '<g display="none">{}</g>', '<g opacity="0">{}</g>'):
+            with self.subTest(wrapper=wrapper):
+                self.assertEqual(verify_strict(STRICT.replace(anchor, wrapper.format(translated) + anchor, 1)), [])
+
+    def test_viewbox_distinguishes_geometry_from_css_strings(self):
+        mark = '<rect class="place" x="399" y="16" width="8" height="8"/>'
+        anchor = '<g class="legend">'
+        source = STRICT.replace(anchor, mark + anchor, 1)
+        styled = source.replace("</style>", '.place { --label: "x; transform: none"; }</style>', 1)
+        self.assertTrue(any("past the viewBox right edge" in error for error in verify_strict(styled)))
+        shifted = source.replace("</style>", ".place { transform: translateX(-16px); }</style>", 1)
+        self.assertEqual(verify_strict(shifted), [])
+
+    def test_boxed_label_fit_ignores_transparent_or_unboxed_labels(self):
+        box = '<rect x="8" y="8" width="80" height="28" fill="#dae3ef"/>'
+        label = '<text x="12" y="26" font-size="14">A much longer boxed label</text>'
+        anchor = '<g class="legend">'
+        source = STRICT.replace(anchor, box + label + anchor, 1)
+        self.assertTrue(any("overflows its 80px box" in error for error in verify_strict(source)))
+        self.assertEqual(verify_strict(source.replace(box, "")), [])
+        self.assertEqual(verify_strict(source.replace("#dae3ef", "transparent")), [])
 
     def test_lint_skin_shares_the_skin_checks(self):
         lint_skin = load("lint-skin.py")
