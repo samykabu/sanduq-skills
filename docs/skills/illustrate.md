@@ -5,7 +5,7 @@ Illustrate draws diagrams and charts as one self-contained HTML file you can ope
 | | |
 | --- | --- |
 | Bundle | `illustration-tools` (Claude Code plugin `illustration-tools@sanduq`) |
-| Version | 3.9.0 |
+| Version | 3.9.1 |
 | Prerequisites | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG and GIF; Pillow for GIF. |
 | Hosts | Claude Code: yes. Codex: yes. Claude Desktop: HTML yes; exports unverified. |
 

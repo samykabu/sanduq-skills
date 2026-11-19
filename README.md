@@ -104,7 +104,7 @@ Describe the delegation in plain English and OpenCode loads `SKILL.md` on demand
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-1. Download the skill archive (for example `illustrate-v3.9.0.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
+1. Download the skill archive (for example `illustrate-v3.9.1.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
    or zip the skill folder yourself (for example `skills/illustration-tools/skills/illustrate/`).
 2. In Claude Desktop, open **Settings → Capabilities**, make sure code execution is on, and upload
    the zip under **Skills**.

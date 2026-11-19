@@ -5,6 +5,11 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-20 — illustration-tools 3.9.1
+
+- Fix streamgraph detection so Service Blueprint lane groups are checked only by their own verifier.
+- Includes the BPMN Process variant and the export and import updates below. This is the first published release of those changes.
+
 ## 2026-11-20 — illustration-tools 3.9.0
 
 - Adds BPMN 2.0 as an opt-in Process variant with role lanes, BPMN symbols, a semantic verifier, and light, dark, full and handwritten examples.
