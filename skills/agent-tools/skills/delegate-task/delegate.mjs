@@ -319,7 +319,7 @@ const RESULT_RE = new RegExp(BEGIN + '([\\s\\S]*?)' + END);
 // Policy, not enforcement. The runner cannot stop a bypassed delegate from doing
 // any of this; it can only measure afterwards (see contracts/git-fields.md).
 function policyLines({ allowCommit, extra }) {
-  const rules = [
+  const briefRules = [
     'Complete the objective end to end. Do not stop to ask for confirmation.',
     'Stay inside the working directory unless the objective says otherwise.',
     allowCommit
@@ -329,7 +329,7 @@ function policyLines({ allowCommit, extra }) {
     'If you cannot finish, stop and report status "abandoned" with the reason.',
     ...(extra || []),
   ];
-  return rules.map((r) => `- ${r}`).join('\n');
+  return briefRules.map((r) => `- ${r}`).join('\n');
 }
 
 function resultBlockSpec() {

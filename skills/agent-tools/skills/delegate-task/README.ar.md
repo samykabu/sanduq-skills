@@ -24,7 +24,7 @@
 Antigravity أو OpenCode:
 
 ```bash
-npx skills add samykabu/sanduq-skills --skill delegate-task
+npx skills@1.9.0 add samykabu/sanduq-skills --skill delegate-task
 ```
 
 موضع التثبيت يحدّد مكان المحرّك، فحدّد `<SKILL_DIR>` (المجلد الذي يحوي `SKILL.md`) مرة واحدة

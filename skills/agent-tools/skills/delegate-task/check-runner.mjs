@@ -261,13 +261,15 @@ export function collectBatch(root, batchId, attemptId = null, limit = 10, output
     }),
   };
 }
+const USAGE = 'usage: check-runner.mjs run --plan FILE [--retry-of ATTEMPT] [--max-bytes N] | collect --batch ID [--attempt ID] [--limit N] [--output-bytes N] [--max-bytes N] [--cursor TOKEN] [--check-index N]';
 async function main(args) {
   let diagnosticsSecrets = secretValues(null);
   try {
   const cmd = args.shift(), opts = {};
+  if (cmd !== 'run' && cmd !== 'collect') throw new Error(USAGE);
   while (args.length) {
     const k = args.shift();
-    if (!['--plan', '--batch', '--attempt', '--limit', '--output-bytes', '--max-bytes', '--retry-of', '--cursor', '--check-index'].includes(k) || !args.length) throw new Error('usage: check-runner.mjs run --plan FILE [--retry-of ATTEMPT] [--max-bytes N] | collect --batch ID [--attempt ID] [--limit N] [--output-bytes N] [--max-bytes N] [--cursor TOKEN] [--check-index N]');
+    if (!['--plan', '--batch', '--attempt', '--limit', '--output-bytes', '--max-bytes', '--retry-of', '--cursor', '--check-index'].includes(k) || !args.length) throw new Error(USAGE);
     opts[k] = args.shift();
   }
   const root = process.env.DELEGATE_RUNS_DIR;
