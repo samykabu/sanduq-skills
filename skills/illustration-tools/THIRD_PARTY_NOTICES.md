@@ -6,7 +6,7 @@ material; each bundle also carries a copy of this file.
 
 ## Illustrate skill
 
-Portions of the Illustrate skill are derived from work by Cathryn Lavery:
+Portions of the Illustrate skill are derived from [Diagram Design](https://github.com/cathrynlavery/diagram-design) by Cathryn Lavery. This includes material from [d74d8c2d](https://github.com/cathrynlavery/diagram-design/tree/d74d8c2d0c78a9e1efd43137f6a9a51182a8b5f0).
 
 > MIT License
 >

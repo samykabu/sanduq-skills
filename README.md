@@ -19,7 +19,7 @@ Choose a skill by task. You install a bundle as a Claude Code plugin and call th
 | Plan | [`planning-majlis`](docs/skills/planning-majlis.md) | Plans new software or a feature with a committee of expert roles run as subagents. It stops when every role scores 9/10 with no open blockers, or after six re-score rounds. *Majlis* is Arabic for a council. | `agent-tools` |
 | Delegate and track | [`delegate-task`](docs/skills/delegate-task.md) | Hands one task to another agent CLI (Claude Code, Codex, OpenCode, Antigravity `agy`, Copilot, Pi) in the background and reports what it did, what git measured, and the tokens used. | `agent-tools` |
 | Delegate and track | [`progress-report`](docs/skills/progress-report.md) | Keeps a live HTML progress report for a Markdown plan or a Spec Kit feature, fed by Claude Code and Codex hooks. Spends no agent tokens on upkeep. | `agent-tools` |
-| Draw diagrams | [`illustrate`](docs/skills/illustrate.md) | Draws 44 kinds of diagrams and charts as editable HTML in your project's colors, with SVG, PNG, animated SVG and GIF export. | `illustration-tools` |
+| Draw diagrams | [`illustrate`](docs/skills/illustrate.md) | Draws 51 kinds of diagrams and charts as editable HTML in your project's colors, with SVG, PNG, animated SVG and GIF export. | `illustration-tools` |
 | Write and publish docs | [`user-manual`](docs/skills/user-manual.md) | Writes and maintains an application manual in Markdown, with editions per audience, API references, release notes and screenshots. Renders as Markdown, through your own tools, or as an MkDocs site and PDF; Arabic is optional. | `dev-tools` |
 | Write and publish docs | [`github-wiki-publish`](docs/skills/github-wiki-publish.md) | Publishes existing pages, reports, diagrams, and assets to a GitHub Wiki, preserving unrelated content and checking what was published. It does not need a manual. | `dev-tools` |
 
@@ -104,7 +104,7 @@ Describe the delegation in plain English and OpenCode loads `SKILL.md` on demand
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-1. Download the skill archive (for example `illustrate-v3.7.2.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
+1. Download the skill archive (for example `illustrate-v3.8.0.zip`) from [Releases](https://github.com/samykabu/sanduq-skills/releases),
    or zip the skill folder yourself (for example `skills/illustration-tools/skills/illustrate/`).
 2. In Claude Desktop, open **Settings → Capabilities**, make sure code execution is on, and upload
    the zip under **Skills**.

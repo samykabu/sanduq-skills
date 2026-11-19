@@ -5,6 +5,13 @@ existed is in [samykabu/sanduq](https://github.com/samykabu/sanduq/blob/main/CHA
 
 This file keeps each bundle's current major version (illustration-tools 3.x, dev-tools 2.x, agent-tools 1.x).
 
+## 2026-11-19 — illustration-tools 3.8.0
+
+- Added Service blueprint, Steps, Unit Grid, Requirement traceability, Event modeling, Schedule network and educational SBGN Process Description. Architecture containment, Box plot and Arc diagram are variants. All ten have light, dark, full and handwritten examples.
+- Added PlantUML sequence and class redraws and Mermaid quadrant chart redraws. Updated Mermaid, draw.io and Excalidraw to retain source details such as relationship labels, nested geometry and authored text.
+- Improved standalone SVG serialization and static PNG capture, including fractional PNG scales. Preserved project themes and the animated SVG and GIF workflows. Added diagram checks for clipping, overflowing labels and malformed documents.
+- Adapted [Diagram Design at d74d8c2d](https://github.com/cathrynlavery/diagram-design/tree/d74d8c2d0c78a9e1efd43137f6a9a51182a8b5f0) under the existing MIT notice.
+
 ## 2026-11-19 — illustration-tools 3.7.2
 
 - **illustration-tools 3.7.2.** Fixes from a SkillEvaluator Tier 1 review; diagrams and the generated examples are unchanged. `SKILL.md` adds Purpose, Prerequisites (which scripts need Playwright, Pillow or Node), Limitations and Troubleshooting sections and `metadata.author` / `metadata.tags`; the entry-size test allows 13,000 bytes for them. `build-icons.py` refuses non-https icon sources, and `drawio_extract.py` documents that its DTD and entity guard runs before every XML parse. The Node packages are pinned to the exact locked versions. `fix-mojibake.py` has a shebang, a usage message, and exits 1 on a missing or non-UTF-8 file instead of a traceback; `axonometry.Rect` rejects inverted bounds and negative radii, and `svg_scan.median` names an empty input. The export button's picture emoji is written as an HTML entity, so no invisible variation selector sits in the source, and a few example phrases that security scanners read as instructions or credentials are reworded. The icon and exploded-example builders are flattened; `--check` confirms their output is byte-identical.

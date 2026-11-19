@@ -14,12 +14,15 @@ from __future__ import annotations
 
 import contextlib
 import io
+import re
 import unittest
 
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from _helpers import load
 
 ROOT = Path(__file__).resolve().parent.parent / "skills" / "illustrate"
 VERIFIER = ROOT / "scripts/verify-sequence-oauth.py"
@@ -118,6 +121,25 @@ class UpstreamCases(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             code = main()
         self.assertEqual(code, 0, out.getvalue())
+
+    def test_normal_access_return_and_principal_alt_guards(self):
+        check = load("verify-sequence-oauth.py").check_oauth
+        source = OAUTH[0].read_text(encoding="utf-8")
+        self.assertEqual(check(source), [])
+        cases = (
+            (r'(<line[^>]*\by1="456"[^>]*) stroke-dasharray="5,4"', r'\1',
+             "ordinary return at y=456 must be dashed"),
+            (r'(<text\b[^>]*>\[token valid\]</text>)', r'<!-- \1 -->',
+             "missing visible [token valid] guard"),
+            (r'(<text\b)([^>]*>\[else[^<]+</text>)', r'\1 style="display:none"\2',
+             "missing visible else-region guard"),
+        )
+        for pattern, replacement, needle in cases:
+            with self.subTest(needle=needle):
+                modified, count = re.subn(pattern, replacement, source, count=1)
+                self.assertEqual(count, 1, pattern)
+                errors = check(modified)
+                self.assertTrue(any(needle in error for error in errors), errors)
 
 
 if __name__ == "__main__":

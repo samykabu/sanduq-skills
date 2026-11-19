@@ -75,7 +75,7 @@ class AnimatedExportTests(unittest.TestCase):
 
     def test_animation_is_the_only_addition_to_the_static_figure(self):
         html = (SKILL / "assets" / "template-motion.html").read_text(encoding="utf-8")
-        static = export.DECORATIVE_RE.sub("", export.standalone_svg(html).replace(export.FONT_STYLE, ""))
+        static = export.DECORATIVE_RE.sub("", export.standalone_svg(html, system_fonts=True))
         for style in ARROW_STYLES:
             with self.subTest(arrows=style):
                 animated = strip_animation(export.animated_svg(html, style))

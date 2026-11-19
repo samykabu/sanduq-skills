@@ -5,7 +5,7 @@ Illustrate draws diagrams and charts as one self-contained HTML file you can ope
 | | |
 | --- | --- |
 | Bundle | `illustration-tools` (Claude Code plugin `illustration-tools@sanduq`) |
-| Version | 3.7.2 |
+| Version | 3.8.0 |
 | Prerequisites | Nothing for HTML. Python 3.10+ for themes and SVG export. Node 18+ for the hand-drawn style. Playwright with Chromium for PNG and GIF; Pillow for GIF. |
 | Hosts | Claude Code: yes. Codex: yes. Claude Desktop: HTML yes; exports unverified. |
 
@@ -47,17 +47,20 @@ More in [examples](../examples.md).
 **Themes.** Pick Cobalt Porcelain (the default), Emerald Mist, Sanduq Classic, or your own colors
 and fonts. Each has a light and a dark palette. The theme applies to every diagram in the project.
 
-**Diagram types.** There are 44, in these groups:
+**Diagram types.** There are 51, in these groups:
 
 | Group | Types |
 | --- | --- |
 | Systems and structure | architecture, architecture delta, IT current-state, high-level, deployment, layer stack, nested, data-platform integration, dependency graph, UML class |
-| Behavior and process | flowchart, sequence, state machine, swimlane, process, data flow, loop, user journey, story map, kanban |
-| Data models | ER, database schema, medallion, data-platform security matrix |
-| Time and planning | timeline, Gantt, Wardley map |
+| Behavior and process | flowchart, sequence, state machine, swimlane, process, data flow, loop, user journey, story map, kanban, service blueprint, steps, event modeling |
+| Data models | ER, database schema, medallion, data-platform security matrix, requirement traceability |
+| Time and planning | timeline, Gantt, Wardley map, schedule network |
 | Hierarchy and comparison | tree, org chart, pyramid or funnel, Venn, quadrant, fishbone |
-| Charts | bar, line, scatter, heatmap, waterfall, treemap, radar, polar, Sankey |
+| Charts | bar, line, scatter, heatmap, waterfall, treemap, radar, polar, Sankey, Unit Grid |
 | Spatial | exploded axonometric, axonometric plan |
+| Educational process notation | SBGN Process Description |
+
+Architecture containment, Box plot and Arc diagram are variants of Architecture, Scatter and Dependency graph.
 
 **Styles.** Each diagram can be minimal light, minimal dark, full editorial, or hand-drawn. Two
 technical-color families cover cloud and infrastructure maps and numbered process flows. They
@@ -68,7 +71,7 @@ include a built-in copy, PNG, and PDF toolbar.
 ```bash
 python scripts/export_diagram.py diagram.html                  # SVG and PNG
 python scripts/export_diagram.py diagram.html --svg-only
-python scripts/export_diagram.py diagram.html --png-only --scale 3
+python scripts/export_diagram.py diagram.html --png-only --scale 1.5
 python scripts/export_diagram.py diagram.html --animated --arrows=pulse
 python scripts/export_diagram.py diagram.html --gif --arrows=chevrons --theme dark --fps 15
 ```
@@ -77,9 +80,10 @@ python scripts/export_diagram.py diagram.html --gif --arrows=chevrons --theme da
 - `--gif` writes the same animation as a GIF.
 - `--arrows` sets the [arrow style](../glossary.md#arrow-style): `draw` (the default), `flow`,
   `pulse`, `draw-flow`, or `chevrons`.
+- PNG accepts a finite `--scale` from 1 to 4. GIF accepts 1, 2, or 3.
 - `--theme light|dark` and `--fps 1-30` apply to GIFs only.
 
-**Redraw an existing diagram.** Give it a `.drawio`, `.mmd`, or `.excalidraw` file. It keeps the
+**Redraw an existing diagram.** Give it a draw.io, Mermaid, Excalidraw or PlantUML file. PlantUML supports sequence and class diagrams. Mermaid also supports `quadrantChart`. It keeps the
 content and redraws it in your theme, then lists what it merged or dropped.
 
 ## Limits

@@ -82,14 +82,50 @@ class PageStyleExportTests(unittest.TestCase):
         svg = export.standalone_svg(html)
         ET.fromstring(svg.encode("utf-8"))
         css = re.search(r'<style data-illustrate-export-page="true">(.*?)</style>', svg, re.S).group(1)
-        self.assertIn(":root{color:#123;--ink:#111;font-family:Geist}", css)
-        self.assertIn("@media (prefers-color-scheme: dark){:root{--ink:#eee}}", css)
-        self.assertIn(".node{fill:var(--ink)}", css)
+        root = ET.fromstring(svg)
+        scope = f'[data-illustrate-export="{root.get("data-illustrate-export")}"]'
+        guard = f":where({scope},{scope} *)"
+        self.assertIn(f"{scope}{{color:#123;--ink:#111;font-family:Geist}}", css)
+        self.assertIn(f"@media (prefers-color-scheme: dark){{{scope}{{--ink:#eee}}}}", css)
+        self.assertIn(f".node{guard}{{fill:var(--ink)}}", css)
+        self.assertIn(f".label{guard}::after", css)
         self.assertIn("a&lt;b &amp; c", css)
         for absent in ("@import", "@font-face", "@keyframes", "display:flex", "min-width", "min-height",
                        "animation", "transition", "data-motion", "motion-ready"):
             self.assertNotIn(absent, css)
         self.assertNotIn("@import", export.animated_svg(html.replace("<rect", '<rect data-motion-item data-step="1"')))
+
+    def test_inline_exports_keep_independent_theme_tokens_and_selectors(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest("Playwright is needed for the rendered comparison")
+
+        markup = ('<svg id="art" class="diagram" viewBox="0 0 10 10">'
+                  '<rect width="10" height="10" class="label" data-label="cell ::before"/>'
+                  '</svg>')
+        rules = ('<style>:root{--ink:INK}'
+                 '@media all { #art { stroke: var(--ink) } }'
+                 '.diagram > [data-label="cell ::before"].label { fill: var(--ink) }</style>')
+
+        def inline(fig):
+            return fig.split("\n", 1)[1]
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            try:
+                page = browser.new_page()
+                for source in (None, Path("custom.html")):
+                    with self.subTest(source=source):
+                        red = export.standalone_svg(rules.replace("INK", "red") + markup, source, system_fonts=True)
+                        blue = export.standalone_svg(rules.replace("INK", "blue") + markup, source, system_fonts=True)
+                        page.set_content("<!doctype html><body>" + inline(red) + inline(blue) + markup)
+                        self.assertEqual(page.locator("svg .label").evaluate_all(
+                            "(marks) => marks.map(m => [getComputedStyle(m).fill, getComputedStyle(m).stroke])"
+                        ), [["rgb(255, 0, 0)", "rgb(255, 0, 0)"],
+                            ["rgb(0, 0, 255)", "rgb(0, 0, 255)"], ["rgb(0, 0, 0)", "none"]])
+            finally:
+                browser.close()
 
     def test_page_styled_figures_render_without_fallback_black(self):
         try:
