@@ -12,7 +12,7 @@ Editable source: [product-map.html](media/product-map.html). Still version:
 
 | Bundle | Version | Skills | What it is for |
 | --- | --- | --- | --- |
-| `illustration-tools` | 3.9.0 | [illustrate](skills/illustrate.md) | Diagrams and charts as editable HTML, with SVG, PNG, animated SVG, and GIF export. |
+| `illustration-tools` | 3.9.1 | [illustrate](skills/illustrate.md) | Diagrams and charts as editable HTML, with SVG, PNG, animated SVG, and GIF export. |
 | `dev-tools` | 2.0.6 | [user-manual](skills/user-manual.md) and [github-wiki-publish](skills/github-wiki-publish.md) | Application manuals and standalone publishing of existing pages, reports, diagrams, and assets to a GitHub Wiki. |
 | `agent-tools` | 1.10.2 | [delegate-task](skills/delegate-task.md), [progress-report](skills/progress-report.md) and [planning-majlis](skills/planning-majlis.md) | Handing a task to another agent CLI and measuring what it did; keeping a live progress report of a plan or feature; planning software or a feature with a gated committee of expert roles. |
 
